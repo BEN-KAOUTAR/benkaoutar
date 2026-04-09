@@ -1,0 +1,6 @@
+/// Abstract data repository for future backend integration.
+/// Currently implemented by MockRepository.
+abstract class DataRepository {
+  Stream<Map<String, dynamic>> getChildLocation(String childId);
+  Future<void> savePayment(Map<String, dynamic> data);
+}
