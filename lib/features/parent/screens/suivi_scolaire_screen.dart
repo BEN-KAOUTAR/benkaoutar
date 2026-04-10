@@ -7,7 +7,7 @@ import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../viewmodels/suivi_view_model.dart';
-
+//hello
 class SuiviScolaireScreen extends StatefulWidget {
   final StudentModel student;
   const SuiviScolaireScreen({super.key, required this.student});
