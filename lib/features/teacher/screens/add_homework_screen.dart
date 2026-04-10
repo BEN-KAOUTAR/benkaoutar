@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 
@@ -21,17 +21,15 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize with a safe value from MockData
-    final classes = MockData.teacherClasses;
-    _selectedClass = classes.isNotEmpty ? classes.first.name : '4ème Année A';
-    _selectedSubject = 'math';
+    _selectedClass = '';
+    _selectedSubject = '';
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Re-sync class selection when locale changes class names
-    final classNames = MockData.teacherClasses.map((c) => c.name).toList();
+    final classNames = <String>[];
     if (classNames.isNotEmpty && !classNames.contains(_selectedClass)) {
       setState(() => _selectedClass = classNames.first);
     }
@@ -98,7 +96,7 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
                         context,
                         AppLocalizations.of(context)!.translate('class_label'),
                         _selectedClass,
-                        MockData.teacherClasses.map((c) => c.name).toList(),
+                        <String>[].map((c) => c).toList(),
                         (val) => setState(() => _selectedClass = val!),
                       ),
                     ),

@@ -12,44 +12,7 @@ class BehaviorHistoryScreen extends StatelessWidget {
     final pt = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;
 
-    final List<Map<String, dynamic>> history = [
-      {
-        'date': '05 Avril 2026',
-        'student': 'Ahmed Alami',
-        'type': 'Positif',
-        'points': 10,
-        'note': 'Excellente participation en classe et aide aux camarades.',
-        'icon': Icons.emoji_events_rounded,
-        'color': Colors.greenAccent,
-      },
-      {
-        'date': '04 Avril 2026',
-        'student': 'Sara Benani',
-        'type': 'Négatif',
-        'points': 5,
-        'note': 'Bavardages incessants malgré plusieurs avertissements.',
-        'icon': Icons.warning_amber_rounded,
-        'color': Colors.redAccent,
-      },
-      {
-        'date': '03 Avril 2026',
-        'student': 'Yassine Karim',
-        'type': 'Positif',
-        'points': 5,
-        'note': 'Deoirs très bien faits et rendus à temps.',
-        'icon': Icons.thumb_up_rounded,
-        'color': Colors.greenAccent,
-      },
-      {
-        'date': '02 Avril 2026',
-        'student': 'Lina Fahmi',
-        'type': 'Positif',
-        'points': 15,
-        'note': 'Projet de groupe mené avec brio et leadership.',
-        'icon': Icons.stars_rounded,
-        'color': Colors.greenAccent,
-      },
-    ];
+    final List<Map<String, dynamic>> history = [];
 
     return Scaffold(
       extendBodyBehindAppBar: true,

@@ -100,7 +100,7 @@ class ApiService {
 
   Future<CommentModel> addComment(String postId, String content) async {
     try {
-      final response = await _dio.post('/news/$postId/comment', data: { // Updated from /posts to /news and structure
+      final response = await _dio.post('/news/$postId/comments', data: { // Updated to plural /comments
         'content': content,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -126,14 +126,34 @@ class ApiService {
 
   Future<List<GradeModel>> getGrades(String studentId) async {
     try {
-      // Use student result endpoint ( student role )
-      final response = await _dio.get('/exams/my-results');
-      if (response.statusCode == 200) {
-        final List data = _handleResponseData(response);
-        return data.map((json) => GradeModel.fromJson(json)).toList();
+      // Fetch both exams and notes as some results might be in one or the other
+      final responses = await Future.wait([
+        _dio.get('/exams/my-results'),
+        _dio.get('/notes/my-results').catchError((e) => Response(requestOptions: RequestOptions(path: ''), statusCode: 404, data: {'data': []})),
+      ]);
+
+      List<GradeModel> allGrades = [];
+      
+      for (final response in responses) {
+        if (response.statusCode == 200) {
+          final List data = _handleResponseData(response);
+          allGrades.addAll(data.map((json) => GradeModel.fromJson(json)));
+        }
       }
-      throw Exception('Failed to load grades');
+      
+      // Sort by date descending if possible
+      allGrades.sort((a, b) => b.date.compareTo(a.date));
+      
+      return allGrades;
     } catch (e) {
+      // Fallback to one of them if the wait fails
+      try {
+        final response = await _dio.get('/exams/my-results');
+        if (response.statusCode == 200) {
+          final List data = _handleResponseData(response);
+          return data.map((json) => GradeModel.fromJson(json)).toList();
+        }
+      } catch (_) {}
       rethrow;
     }
   }
@@ -362,7 +382,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(response.data);
       }
-      return []; // Return empty instead of throwing 404
+      return []; // Return empty on non-200
     } catch (e) {
       return []; // Silently fail for dashboard widgets
     }

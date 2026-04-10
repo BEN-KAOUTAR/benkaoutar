@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/widgets/deep_space_background.dart';
 
 class AddExamScreen extends StatefulWidget {
@@ -71,7 +71,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;
 
-    final classes = MockData.teacherClasses.map((c) => c.name).toList();
+    final classes = <String>[];
 
     return Scaffold(
       extendBodyBehindAppBar: true,

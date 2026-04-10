@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 
@@ -17,7 +17,7 @@ class _TeacherTimetableScreenState extends State<TeacherTimetableScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheduleMap = MockData.teacherTimetable;
+    final scheduleMap = <String, List<dynamic>>{};
     // Map internal key to display name for mock data access if necessary, or just translate the key if mock data matches
     // But mock data seems to use 'Lundi', etc.
     final displayDay = _getDisplayDay(_selectedDay);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -16,7 +16,7 @@ class TeacherHomeworkScreen extends StatefulWidget {
 class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
   @override
   Widget build(BuildContext context) {
-    final homeworkList = MockData.teacherHomework;
+    final homeworkList = <HomeworkModel>[];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
 

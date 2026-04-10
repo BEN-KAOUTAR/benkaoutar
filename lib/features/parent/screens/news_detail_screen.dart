@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class NewsDetailScreen extends StatelessWidget {
@@ -96,9 +97,27 @@ class NewsDetailScreen extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              imageUrl,
+            CachedNetworkImage(
+              imageUrl: imageUrl,
               fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent)),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.image_not_supported_rounded, color: Colors.white24, size: 64),
+                    const SizedBox(height: 12),
+                    Text(
+                      AppLocalizations.of(context)!.translate('image_not_available'),
+                      style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
             ),
             Container(
               decoration: BoxDecoration(
@@ -175,8 +194,22 @@ class NewsDetailScreen extends StatelessWidget {
       margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(image: NetworkImage(url), fit: BoxFit.cover),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: Colors.white.withValues(alpha: 0.1),
+            child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.white.withValues(alpha: 0.1),
+            child: const Icon(Icons.broken_image_rounded, color: Colors.white24),
+          ),
+        ),
       ),
     );
   }

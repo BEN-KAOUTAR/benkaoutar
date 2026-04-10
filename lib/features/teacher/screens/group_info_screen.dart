@@ -5,7 +5,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/app_state.dart';
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
-import '../../../core/services/mock_data.dart';
+
 import 'student_detail_full_screen.dart';
 import 'media_history_screen.dart';
 
@@ -29,7 +29,7 @@ class GroupInfoScreen extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     
     // Fallback students if classModel is null
-    final students = classModel?.students ?? MockData.teacherClasses.first.students;
+    final students = classModel?.students ?? <StudentModel>[];
 
     return Scaffold(
       extendBodyBehindAppBar: true,

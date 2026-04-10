@@ -70,7 +70,7 @@ class _LocationScreenState extends State<LocationScreen>
         builder: (context, vm, child) {
           final busLoc = vm.currentLocation != null 
               ? LatLng(vm.currentLocation!.latitude, vm.currentLocation!.longitude)
-              : const LatLng(33.5701, -7.5928);
+              : _schoolLoc; // Fallback to school if no bus location
 
           return Stack(
             children: [
@@ -374,7 +374,7 @@ class _LocationScreenState extends State<LocationScreen>
       children: [
         _buildStatItem(AppLocalizations.of(context)!.translate('speed_label'), "${bus?.speed.toInt() ?? 0} km/h", Icons.speed_rounded, Colors.blueAccent),
         const SizedBox(width: 16),
-        _buildStatItem(AppLocalizations.of(context)!.translate('capacity_label'), "18/30", Icons.people_outline_rounded, Colors.indigoAccent),
+        _buildStatItem(AppLocalizations.of(context)!.translate('capacity_label'), "--/--", Icons.people_outline_rounded, Colors.indigoAccent),
       ],
     );
   }

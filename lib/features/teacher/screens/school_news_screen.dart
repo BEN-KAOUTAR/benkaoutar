@@ -59,63 +59,7 @@ class SchoolNewsScreen extends StatefulWidget {
 }
 
 class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
-  final List<NewsPost> _posts = [
-    NewsPost(
-      id: '1',
-      authorName: 'news_author_atelier_tech',
-      authorRole: 'news_cat_info',
-      content: 'Félicitations à nos élèves de 5ème pour leur victoire au concours régional de robotique ! Leurs prototypes innovants ont impressionné le jury.',
-      time: 'Il y a 1h',
-      imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80',
-      likes: 34,
-      comments: 8,
-    ),
-    NewsPost(
-      id: '2',
-      authorName: 'news_author_dept_sport',
-      authorRole: 'news_cat_club',
-      content: 'Le tournoi de football inter-classes commence ce vendredi. Venez nombreux encourager nos jeunes athلهètes sur le terrain principal !',
-      time: 'Il y a 3h',
-      imageUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
-      likes: 62,
-      comments: 15,
-      isEvent: true,
-      eventDate: '5 Avril 2026',
-    ),
-    NewsPost(
-      id: '4',
-      authorName: 'news_author_sciences',
-      authorRole: 'news_cat_exploration',
-      content: 'Sortie scolaire au jardin botanique ! Une journée riche en découvertes pour nos élèves qui ont pu observer des espèces rares et apprendre sur la biodiversité.',
-      time: 'Hier',
-      imageUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800&q=80',
-      likes: 45,
-      comments: 12,
-    ),
-    NewsPost(
-      id: '3',
-      authorName: 'news_author_admin',
-      authorRole: 'news_cat_official',
-      content: 'Rappel : Les réunions parents-profs sont prévues pour la semaine prochaine. Veuillez choisir votre créneau via le portail.',
-      time: 'Hier',
-      likes: 19,
-      comments: 3,
-      commentList: [
-        NewsComment(author: 'Mme. Lahlou', text: 'Merci pour l\'information !', time: '10h30'),
-        NewsComment(author: 'M. Bensaid', text: 'Confirmé pour le jeudi.', time: '11:00'),
-      ],
-    ),
-    NewsPost(
-      id: '5',
-      authorName: 'news_author_library',
-      authorRole: 'news_cat_culture',
-      content: 'Nouvel arrivage de livres ! Venez découvrir notre sélection "Coups de cœur du mois" de littérature jeunesse et de bandes dessinées.',
-      time: '2 Jours',
-      imageUrl: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80',
-      likes: 28,
-      comments: 5,
-    ),
-  ];
+  final List<NewsPost> _posts = [];
 
   bool _isSearching = false;
   String _searchQuery = '';

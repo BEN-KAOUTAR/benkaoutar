@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/providers/app_state.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'student_detail_full_screen.dart';
@@ -38,7 +38,7 @@ class _TeacherChatScreenState extends State<TeacherChatScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final classes = MockData.teacherClasses;
+    final classes = <ClassModel>[];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black26;
@@ -329,11 +329,11 @@ class _NewChatSearchScreenState extends State<NewChatSearchScreen> {
   String _query = '';
 
   List<String> get _parentNames {
-    final classes = MockData.teacherClasses;
+    final classes = <ClassModel>[];
     if (classes.isNotEmpty && classes.first.students.isNotEmpty) {
       return classes.first.students.take(6).map((s) => s.name).toList();
     }
-    return ['Yassin Benali', 'Omar Chraibi', 'Meryem Amrani', 'Karim El Alami', 'Zineb Bennani'];
+    return [];
   }
 
   @override
@@ -356,7 +356,7 @@ class _NewChatSearchScreenState extends State<NewChatSearchScreen> {
     final loc = AppLocalizations.of(context)!;
 
     final filteredParents = _parentNames.where((n) => n.toLowerCase().contains(_query)).toList();
-    final filteredClasses = MockData.teacherClasses.where((c) => c.name.toLowerCase().contains(_query)).toList();
+    final filteredClasses = <ClassModel>[].where((c) => c.name.toLowerCase().contains(_query)).toList();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -549,12 +549,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  final List<Map<String, dynamic>> _messages = [
-    {'isMe': false, 'content': 'Bonjour, est-ce que Yassin a bien reçu son polycopié ?', 'time': '14:30', 'type': 'text'},
-    {'isMe': true, 'content': 'Oui, je lui ai donné personnellement.', 'time': '14:32', 'type': 'text'},
-    {'isMe': false, 'content': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500&q=80', 'time': '14:35', 'type': 'photo'},
-    {'isMe': true, 'content': 'Voice note', 'time': '14:36', 'type': 'audio', 'duration': '0:08'},
-  ];
+  final List<Map<String, dynamic>> _messages = [];
 
   @override
   void dispose() {
@@ -592,7 +587,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                    messages: _messages,
                  )));
                } else {
-                 final allStudents = MockData.teacherClasses.expand((c) => c.students).toList();
+                 final allStudents = <ClassModel>[].expand((c) => c.students).toList();
                  final student = allStudents.firstWhere((s) => s.name.contains(widget.name.split(' ').last), orElse: () => allStudents.first);
                  Navigator.push(context, MaterialPageRoute(builder: (_) => StudentDetailFullScreen(student: student)));
                }
@@ -742,10 +737,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _sendMockAttachment(
+                      _sendAttachment(
                         (type.contains('Photo') || type.contains('Galerie') || type.contains('Selfie')) ? 'photo' : (type.contains('Audio') ? 'audio' : 'text'), 
-                        (type.contains('Photo') || type.contains('Galerie') || type.contains('Selfie')) ? 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=500&q=80' : 'Fichier_Selectionne',
-                        duration: type.contains('Audio') ? '0:45' : null
+                        (type.contains('Photo') || type.contains('Galerie') || type.contains('Selfie')) ? '' : '',
+                        duration: type.contains('Audio') ? '0:00' : null
                       );
                     },
                     child: const Text("Envoyer"),
@@ -759,7 +754,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  void _sendMockAttachment(String type, String content, {String? duration}) {
+  void _sendAttachment(String type, String content, {String? duration}) {
     setState(() {
       _messages.add({
         'isMe': true,
@@ -1031,7 +1026,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   onLongPressEnd: isAdminOnly ? null : (_) {
                     final duration = _formatDuration(_recordingSeconds);
                     _stopRecordingTimer();
-                    _sendMockAttachment('audio', 'Voice note', duration: duration);
+                    _sendAttachment('audio', 'Voice note', duration: duration);
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),

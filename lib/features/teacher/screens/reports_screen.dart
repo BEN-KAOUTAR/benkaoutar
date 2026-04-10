@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -11,7 +11,26 @@ class ReportsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final classes = MockData.teacherClasses;
+    final classes = <ClassModel>[];
+    
+    if (classes.isEmpty) {
+      return Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(AppLocalizations.of(context)!.translate('reports_stats'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        ),
+        body: DeepSpaceBackground(
+          showOrbs: true,
+          child: Center(
+            child: Text(AppLocalizations.of(context)!.translate('no_results'), style: const TextStyle(color: Colors.white24, fontWeight: FontWeight.w900, fontSize: 16)),
+          ),
+        ),
+      );
+    }
+
     final selectedClass = classes[0];
     final students = selectedClass.students..sort((a, b) => b.average.compareTo(a.average));
     final top5 = students.take(5).toList();
@@ -62,7 +81,7 @@ class ReportsScreen extends StatelessWidget {
                           children: [
                             Text(AppLocalizations.of(context)!.translate('class_average'), style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                             const SizedBox(height: 8),
-                            Text('14.80 / 20', style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -1)),
+                            Text('-- / 20', style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -1)),
                           ],
                         ),
                         Container(
@@ -82,9 +101,9 @@ class ReportsScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildMiniStat(context, AppLocalizations.of(context)!.translate('assiduity'), '94.5%', Colors.greenAccent),
-                        _buildMiniStat(context, AppLocalizations.of(context)!.translate('success'), '88%', Colors.blueAccent),
-                        _buildMiniStat(context, AppLocalizations.of(context)!.translate('alerts_label'), '2', Colors.orangeAccent),
+                         _buildMiniStat(context, AppLocalizations.of(context)!.translate('assiduity'), '--%', Colors.greenAccent),
+                        _buildMiniStat(context, AppLocalizations.of(context)!.translate('success'), '--%', Colors.blueAccent),
+                        _buildMiniStat(context, AppLocalizations.of(context)!.translate('alerts_label'), '0', Colors.orangeAccent),
                       ],
                     ),
                   ],
@@ -159,7 +178,7 @@ class ReportsScreen extends StatelessWidget {
                     borderData: FlBorderData(show: false),
                     lineBarsData: [
                       LineChartBarData(
-                        spots: const [FlSpot(0, 13), FlSpot(1, 14.2), FlSpot(2, 13.8), FlSpot(3, 15.1), FlSpot(4, 14.8)],
+                         spots: const [FlSpot(0, 0)],
                         isCurved: true,
                         gradient: const LinearGradient(colors: [Colors.blueAccent, Colors.cyanAccent]),
                         barWidth: 6,
@@ -183,7 +202,7 @@ class ReportsScreen extends StatelessWidget {
                         ),
                       ),
                       LineChartBarData(
-                        spots: const [FlSpot(0, 12), FlSpot(1, 12.5), FlSpot(2, 13), FlSpot(3, 13.5), FlSpot(4, 14)],
+                         spots: const [FlSpot(0, 0)],
                         isCurved: true,
                         color: Colors.white24,
                         barWidth: 2,

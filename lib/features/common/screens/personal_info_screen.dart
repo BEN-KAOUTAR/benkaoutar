@@ -22,10 +22,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   void initState() {
     super.initState();
     final appState = Provider.of<AppState>(context, listen: false);
-    _nameController = TextEditingController(text: appState.currentUser?.name ?? 'Mme. Lahlou Nadia');
-    _emailController = TextEditingController(text: appState.currentUser?.email ?? 'n.lahlou@alirfane.ma');
-    _dobController = TextEditingController(text: '12 Février 1985');
-    _phoneController = TextEditingController(text: appState.currentUser?.phone ?? '06 12 34 56 78');
+    _nameController = TextEditingController(text: appState.currentUser?.name ?? '');
+    _emailController = TextEditingController(text: appState.currentUser?.email ?? '');
+    _dobController = TextEditingController(text: '-- / -- / ----');
+    _phoneController = TextEditingController(text: appState.currentUser?.phone ?? '');
   }
 
   @override

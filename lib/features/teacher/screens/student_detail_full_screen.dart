@@ -156,7 +156,7 @@ class StudentDetailFullScreen extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: secondaryTextColor, letterSpacing: 1.5),
                     ),
                     const SizedBox(height: 16),
-                    _buildContactTile(context, Icons.phone_iphone_rounded, loc.translate('emergency_contact'), student.parentPhone ?? '+212 600-000000', Colors.redAccent),
+                    _buildContactTile(context, Icons.phone_iphone_rounded, loc.translate('emergency_contact'), student.parentPhone ?? '---', Colors.redAccent),
 
                     const SizedBox(height: 30),
 
@@ -222,8 +222,8 @@ class StudentDetailFullScreen extends StatelessWidget {
       Icons.family_restroom_rounded, 
       Colors.indigoAccent,
       [
-        {'label': loc.translate('father_mother'), 'value': student.parentName ?? 'Mr. Benali'},
-        {'label': loc.translate('phone'), 'value': student.parentPhone ?? '+212 6 00 00 00 00'},
+        {'label': loc.translate('father_mother'), 'value': student.parentName ?? '---'},
+        {'label': loc.translate('phone'), 'value': student.parentPhone ?? '---'},
       ]
     );
   }
@@ -236,7 +236,7 @@ class StudentDetailFullScreen extends StatelessWidget {
       Icons.medical_services_rounded, 
       Colors.redAccent,
       [
-        {'label': loc.translate('blood_type'), 'value': loc.translate('blood_type_mock')},
+        {'label': loc.translate('blood_type'), 'value': '---'},
         {'label': loc.translate('allergies'), 'value': loc.translate('no_allergy')},
       ]
     );
@@ -251,7 +251,7 @@ class StudentDetailFullScreen extends StatelessWidget {
       Colors.amberAccent,
       [
         {'label': loc.translate('general_average'), 'value': '${student.average.toStringAsFixed(2)}/20'},
-        {'label': loc.translate('ranking_class'), 'value': '3ème / 32'},
+        {'label': loc.translate('ranking_class'), 'value': '-- / --'},
       ]
     );
   }

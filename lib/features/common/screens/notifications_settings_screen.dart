@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/app_state.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -12,17 +14,9 @@ class NotificationSettingsScreen extends StatefulWidget {
 }
 
 class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
-  // Mock settings state
-  final Map<String, bool> _pushSettings = {
-    'academic': true,
-    'security': true,
-    'financial': false,
-    'announcements': true,
-  };
-
-
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;
@@ -146,8 +140,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   context,
                   AppLocalizations.of(context)!.translate('push_notifications'),
                   Icons.notifications_active_outlined,
-                  _pushSettings[key]!,
-                  (val) => setState(() => _pushSettings[key] = val),
+                  _getValue(context, key),
+                  (val) => _toggleValue(context, key, val),
                   color,
                 ),
               ],
@@ -156,6 +150,27 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         ),
       ),
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, curve: Curves.easeOutQuart);
+  }
+
+  bool _getValue(BuildContext context, String key) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    switch (key) {
+      case 'academic': return appState.academicAlertsEnabled;
+      case 'security': return appState.securitySafetyEnabled;
+      case 'announcements': return appState.newsAlertsEnabled;
+      case 'financial': return appState.pushEnabled;
+      default: return true;
+    }
+  }
+
+  void _toggleValue(BuildContext context, String key, bool value) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    switch (key) {
+      case 'academic': appState.toggleAcademicAlerts(value); break;
+      case 'security': appState.toggleSecuritySafety(value); break;
+      case 'announcements': appState.toggleNewsAlerts(value); break;
+      case 'financial': appState.togglePush(value); break;
+    }
   }
 
   Widget _buildToggleRow(

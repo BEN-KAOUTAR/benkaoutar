@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -24,25 +24,20 @@ class _TeacherBehaviorScreenState extends State<TeacherBehaviorScreen> {
     if (_selectedStudent == null || _noteController.text.isEmpty) return;
 
     setState(() => _isSaving = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${AppLocalizations.of(context)!.translate('behavior_recorded')}${_selectedStudent!.name}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: _isPositive ? Colors.greenAccent : Colors.redAccent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-        Navigator.pop(context);
-      }
-    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${AppLocalizations.of(context)!.translate('behavior_recorded')}${_selectedStudent!.name}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: _isPositive ? Colors.greenAccent : Colors.redAccent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final students = MockData.teacherClasses[0].students;
+    final students = <StudentModel>[];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black26;

@@ -546,7 +546,7 @@ class _ParentHomeState extends State<_ParentHome> {
             child: CircleAvatar(
               radius: 22,
               backgroundImage: NetworkImage(
-                  user?.avatarUrl ?? 'https://i.pravatar.cc/150?u=parent'),
+                  user?.avatarUrl ?? 'https://ui-avatars.com/api/?name=${user?.name ?? 'User'}&background=random'),
               backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
             ),
           ),
@@ -958,9 +958,7 @@ class _ParentHomeState extends State<_ParentHome> {
                         lineBarsData: [
                           LineChartBarData(
                             spots: context.read<DashboardViewModel>().evolutionData.isEmpty 
-                              ? (_selectedSemester == 'S1' 
-                                ? const [FlSpot(0, 14.5), FlSpot(1, 15.2), FlSpot(2, 14.8), FlSpot(3, 16.5), FlSpot(4, 15.8)]
-                                : const [FlSpot(0, 15.2), FlSpot(1, 14.8), FlSpot(2, 16.5), FlSpot(3, 15.8), FlSpot(4, 17.2)])
+                              ? const [FlSpot(0, 0)] // Empty fallback
                               : context.read<DashboardViewModel>().evolutionData.map((e) => FlSpot(
                                   (e['index'] as num).toDouble(), 
                                   (e['grade'] as num).toDouble()
@@ -1014,7 +1012,7 @@ class _ParentHomeState extends State<_ParentHome> {
                       children: context.read<DashboardViewModel>().children.asMap().entries.map((entry) {
                         final index = entry.key;
                         final child = entry.value;
-                        final color = yassinColor;
+                        final color = Colors.blueAccent;
                         return Row(
                           children: [
                             _buildLegendItem(child.name.split(' ')[0], color, isDark),
@@ -1186,7 +1184,7 @@ class _ChildPlatinumCard extends StatelessWidget {
                       : Colors.black.withValues(alpha: 0.05)),
               _buildCompactStat(
                   AppLocalizations.of(context)!.translate('homework'),
-                  '02',
+                  '--',
                   Colors.orangeAccent,
                   isDark),
               Container(

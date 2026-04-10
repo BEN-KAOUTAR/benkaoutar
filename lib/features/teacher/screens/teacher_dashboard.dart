@@ -16,7 +16,7 @@ import 'add_activity_screen.dart';
 import 'school_news_screen.dart';
 import 'add_exam_screen.dart';
 import '../../../core/models/models.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/providers/app_state.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -256,17 +256,17 @@ class _TeacherHome extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('32', AppLocalizations.of(context)!.translate('students'), Icons.groups_rounded, Colors.blueAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 300)).slideY(begin: 0.1)),
+            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('students'), Icons.groups_rounded, Colors.blueAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 300)).slideY(begin: 0.1)),
             const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('02', AppLocalizations.of(context)!.translate('absent'), Icons.person_off_rounded, Colors.redAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 400)).slideY(begin: 0.1)),
+            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('absent'), Icons.person_off_rounded, Colors.redAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 400)).slideY(begin: 0.1)),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildStatCard('14', AppLocalizations.of(context)!.translate('correction'), Icons.pending_actions_rounded, Colors.amberAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 500)).slideY(begin: 0.1)),
+            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('correction'), Icons.pending_actions_rounded, Colors.amberAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 500)).slideY(begin: 0.1)),
             const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('05', AppLocalizations.of(context)!.translate('new_homework'), Icons.assignment_rounded, Colors.greenAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 600)).slideY(begin: 0.1)),
+            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('new_homework'), Icons.assignment_rounded, Colors.greenAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 600)).slideY(begin: 0.1)),
           ],
         ),
       ],
@@ -365,7 +365,7 @@ class _TeacherHome extends StatelessWidget {
   }
 
   Widget _buildClassesList(BuildContext context, bool isDark) {
-    final classes = MockData.teacherClasses;
+    final classes = <ClassModel>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

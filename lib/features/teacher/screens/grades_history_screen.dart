@@ -13,36 +13,7 @@ class GradesHistoryScreen extends StatelessWidget {
     final pt = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;
 
-    final List<Map<String, dynamic>> history = [
-      {
-        'date': '05 Avril 2026',
-        'class': '4ème Année A',
-        'subject': 'Français',
-        'assignment': 'Contrôle 1',
-        'status': 'Validé',
-      },
-      {
-        'date': '04 Avril 2026',
-        'class': '4ème Année A',
-        'subject': 'Mathématiques',
-        'assignment': 'Examen Final',
-        'status': 'En cours',
-      },
-      {
-        'date': '03 Avril 2026',
-        'class': '3ème Année B',
-        'subject': 'Arabe',
-        'assignment': 'Contrôle 2',
-        'status': 'Validé',
-      },
-      {
-        'date': '02 Avril 2026',
-        'class': '4ème Année A',
-        'subject': 'Sciences',
-        'assignment': 'Projet Pratique',
-        'status': 'Brouillon',
-      },
-    ];
+    final List<Map<String, dynamic>> history = []; // Will be fetched from the API
 
     return Scaffold(
       extendBodyBehindAppBar: true,

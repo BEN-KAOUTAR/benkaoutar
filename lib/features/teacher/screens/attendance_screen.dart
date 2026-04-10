@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -38,41 +38,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final loc = AppLocalizations.of(context);
     if (loc == null) return;
 
-    // Get the weekday string used in MockData keys
-    String dayKey = _getDayKey(_selectedDate);
-    
-    final timetable = MockData.teacherTimetable;
-    final scheduledItems = timetable[dayKey] ?? [];
-    
-    if (scheduledItems.isNotEmpty && _selectedSubject == null) {
-      _selectedSubject = scheduledItems.first['subject'];
-    } else if (scheduledItems.isEmpty) {
-      _selectedSubject = null;
-    }
-
-    List<ClassModel> matchingClasses = [];
-    for (var scheduleItem in scheduledItems) {
-      if (_selectedSubject != null && scheduleItem['subject'] != _selectedSubject) {
-        continue;
-      }
-
-      final className = scheduleItem['class'];
-      // Find the class model that matches this class name
-      try {
-        final cls = MockData.teacherClasses.firstWhere(
-          (c) => c.name.toLowerCase().contains(className.toLowerCase()) || 
-                 className.toLowerCase().contains(c.name.toLowerCase())
-        );
-        if (!matchingClasses.contains(cls)) {
-          matchingClasses.add(cls);
-        }
-      } catch (e) {
-        // Class not found in mock models, skip
-      }
-    }
-
+    // TODO: Integrate with ApiService to fetch actual teacher schedule
     setState(() {
-      _todaysClasses = matchingClasses;
+      _todaysClasses = [];
+      _selectedSubject = null;
       _initStatus();
     });
   }
@@ -253,7 +222,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       },
                       itemBuilder: (BuildContext context) {
                         String dayKey = _getDayKey(_selectedDate);
-                        final daySessions = MockData.teacherTimetable[dayKey] ?? [];
+                        final daySessions = [];
                         return daySessions.map((session) {
                           return PopupMenuItem<String>(
                             value: session['subject'],

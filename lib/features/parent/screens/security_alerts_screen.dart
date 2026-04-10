@@ -152,9 +152,9 @@ class _SecurityAlertsScreenState extends State<SecurityAlertsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final batteryLevel = status['battery_level'] ?? 0;
-    final studentName = status['student_name'] ?? 'Lucas Bernard';
-    final studentClass = status['student_class'] ?? 'CM2 - Groupe B';
-    final studentAvatar = status['student_avatar'] ?? 'https://i.pravatar.cc/150?u=Lucas';
+    final studentName = widget.student.name;
+    final studentClass = widget.student.className ?? '';
+    final studentAvatar = widget.student.avatarUrl ?? 'https://ui-avatars.com/api/?name=${widget.student.name}&background=random';
 
     return Container(
       padding: const EdgeInsets.all(24),

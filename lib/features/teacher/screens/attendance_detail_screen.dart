@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 
@@ -37,18 +36,9 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   }
 
   void _initTempStatus() {
-    // In a real app, we'd fetch actual statuses. For mock, we'll randomize or set defaults based on counts.
-    final students = MockData.teacherClasses[0].students;
-    for (var i = 0; i < students.length; i++) {
-        // Just a mock distribution
-        if (i < widget.sessionData['present']) {
-            _tempStatus[students[i].id] = 'present';
-        } else if (i < widget.sessionData['present'] + widget.sessionData['late']) {
-            _tempStatus[students[i].id] = 'late';
-        } else {
-            _tempStatus[students[i].id] = 'absent';
-        }
-    }
+    // In a real app, we'd fetch actual statuses from the API using sessionData['id'].
+    // For now, initializing empty to avoid mock logic artifacts.
+    _tempStatus.clear();
   }
 
   @override
@@ -56,7 +46,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final pt = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;
-    final students = MockData.teacherClasses[0].students;
+    final students = <dynamic>[];
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -148,7 +138,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
     );
   }
 
-  Widget _buildStudentCard(student, index, bool isDark, Color pt) {
+  Widget _buildStudentCard(dynamic student, int index, bool isDark, Color pt) {
     final status = _tempStatus[student.id];
     
     return Container(

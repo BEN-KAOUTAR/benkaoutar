@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -15,7 +15,7 @@ class GradeEntryScreen extends StatefulWidget {
 }
 
 class _GradeEntryScreenState extends State<GradeEntryScreen> {
-  final List<ClassModel> classes = MockData.teacherClasses;
+  final List<ClassModel> classes = <ClassModel>[];
   late ClassModel selectedClass;
   
   final List<String> subjects = ['subj_arabic', 'subj_french', 'subj_math', 'subj_hist_geo'];

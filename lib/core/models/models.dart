@@ -62,7 +62,7 @@ class UserModel {
       name: json['fullName'] ?? json['name'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] == 'teacher' ? UserRole.teacher : UserRole.parent,
-      avatarUrl: json['avatarUrl'],
+      avatarUrl: processImageUrl(json['avatarUrl']),
       avatarIndex: json['avatarIndex'],
       phone: json['phone'],
       childrenIds: List<String>.from(json['childrenIds'] ?? []),
@@ -157,6 +157,10 @@ class GradeModel {
   final String type; // 'exam', 'devoir', 'controle'
   final String? comment;
   final double? classAverage;
+  final String? semester;
+  final String? title;
+  final int? rank;
+  final int? classSize;
 
   GradeModel({
     required this.id,
@@ -168,6 +172,10 @@ class GradeModel {
     required this.type,
     this.comment,
     this.classAverage,
+    this.semester,
+    this.title,
+    this.rank,
+    this.classSize,
   });
 
   GradeModel copyWith({
@@ -180,6 +188,10 @@ class GradeModel {
     String? type,
     String? comment,
     double? classAverage,
+    String? semester,
+    String? title,
+    int? rank,
+    int? classSize,
   }) {
     return GradeModel(
       id: id ?? this.id,
@@ -191,27 +203,66 @@ class GradeModel {
       type: type ?? this.type,
       comment: comment ?? this.comment,
       classAverage: classAverage ?? this.classAverage,
+      semester: semester ?? this.semester,
+      title: title ?? this.title,
+      rank: rank ?? this.rank,
+      classSize: classSize ?? this.classSize,
     );
   }
 
   factory GradeModel.fromJson(Map<String, dynamic> json) {
+    // Extract subject name from various possible structures
     String subjectName = '';
     if (json['subject'] is Map) {
-      subjectName = json['subject']['name'] ?? '';
+      subjectName = json['subject']['name'] ?? json['subject']['title'] ?? '';
+    } else if (json['matiere'] is Map) {
+      subjectName = json['matiere']['name'] ?? json['matiere']['title'] ?? '';
     } else {
-      subjectName = json['subject'] ?? '';
+      subjectName = json['subject'] ?? json['subjectName'] ?? json['matiere'] ?? '';
+    }
+
+    // Infer semester from date if not provided
+    String semester = json['semester']?.toString() ?? '';
+    final rawDate = json['date'] ?? json['createdAt'] ?? json['passedAt'] ?? '';
+    if (semester.isEmpty && rawDate.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(rawDate);
+        semester = (dt.month >= 9 || dt.month <= 1) ? "1" : "2";
+      } catch (_) {}
+    }
+
+    // Try all possible grade field names
+    double gradeValue = 0.0;
+    for (final key in ['note', 'score', 'mark', 'grade', 'result', 'value', 'obtainedGrade', 'obtained']) {
+      if (json[key] != null) {
+        gradeValue = (json[key] as num).toDouble();
+        break;
+      }
+    }
+
+    // Try all possible title/name field names
+    String? title;
+    for (final key in ['title', 'name', 'label', 'examName', 'description', 'evaluationName']) {
+      if (json[key] != null && json[key].toString().isNotEmpty) {
+        title = json[key].toString();
+        break;
+      }
     }
 
     return GradeModel(
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       subject: subjectName,
-      grade: (json['grade'] ?? json['result'] as num?)?.toDouble() ?? 0.0,
-      maxGrade: (json['maxGrade'] as num?)?.toDouble() ?? 20.0,
+      grade: gradeValue,
+      maxGrade: (json['maxGrade'] ?? json['total'] ?? json['outOf'] ?? 20 as num).toDouble(),
       coefficient: (json['coefficient'] as num?)?.toDouble() ?? 1.0,
-      date: json['date'] ?? json['createdAt'] ?? '',
-      type: json['type'] ?? 'exam',
-      comment: json['comment'],
-      classAverage: (json['classAverage'] as num?)?.toDouble(),
+      date: rawDate,
+      type: json['type'] ?? json['evaluationType'] ?? 'exam',
+      comment: json['comment'] ?? json['appreciation'] ?? json['observation'],
+      classAverage: (json['classAverage'] ?? json['moyenne'] ?? json['average'] as num?)?.toDouble(),
+      semester: semester,
+      title: title,
+      rank: (json['rank'] ?? json['classement'] ?? json['position'] as num?)?.toInt(),
+      classSize: (json['classSize'] ?? json['totalStudents'] ?? json['effectif'] as num?)?.toInt(),
     );
   }
 
@@ -226,6 +277,10 @@ class GradeModel {
       'type': type,
       'comment': comment,
       'classAverage': classAverage,
+      'semester': semester,
+      'title': title,
+      'rank': rank,
+      'classSize': classSize,
     };
   }
 }
@@ -313,10 +368,10 @@ class PostModel {
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       authorName: authorName,
       authorRole: authorRole,
-      authorAvatar: authorAvatar,
+      authorAvatar: processImageUrl(authorAvatar),
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      imageUrl: json['imageUrl'] ?? json['image'] ?? '',
+      imageUrl: processImageUrl(json['imageUrl'] ?? json['image']),
       date: json['date'] ?? json['createdAt'] ?? '',
       likes: json['likesCount'] ?? (json['likes'] is List ? (json['likes'] as List).length : 0),
       comments: json['commentsCount'] ?? (json['comments'] is List ? (json['comments'] as List).length : 0),
@@ -395,6 +450,16 @@ class PostModel {
   }
 }
 
+String? processImageUrl(dynamic img) {
+  if (img == null || img.toString().trim().isEmpty) return null;
+  String url = img.toString();
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('/')) {
+    return 'https://api-demo.intranet.ikenas.com$url';
+  }
+  return 'https://api-demo.intranet.ikenas.com/$url';
+}
+
 class CommentModel {
   final String id;
   final String authorName;
@@ -423,7 +488,7 @@ class CommentModel {
     return CommentModel(
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       authorName: authorName,
-      authorAvatar: authorAvatar,
+      authorAvatar: processImageUrl(authorAvatar),
       content: json['content'] ?? '',
       date: json['date'] ?? json['createdAt'] ?? '',
     );
@@ -471,7 +536,7 @@ class ChatThreadModel {
       lastTime: json['lastTime'] ?? '',
       unreadCount: json['unreadCount'] ?? 0,
       onlyAdminsCanMessage: json['onlyAdminsCanMessage'] ?? false,
-      avatarUrl: json['avatarUrl'],
+      avatarUrl: processImageUrl(json['avatarUrl']),
     );
   }
 
@@ -800,6 +865,7 @@ class StudentModel {
   final int? age;
   final String? className;
   final String? group;
+  final String? avatarUrl;
 
   StudentModel({
     required this.id,
@@ -814,6 +880,7 @@ class StudentModel {
     this.age,
     this.className,
     this.group,
+    this.avatarUrl,
   });
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
@@ -840,6 +907,7 @@ class StudentModel {
       age: json['age'],
       className: className,
       group: json['group'],
+      avatarUrl: processImageUrl(json['avatarUrl'] ?? json['avatar']),
     );
   }
 
@@ -857,6 +925,7 @@ class StudentModel {
       'age': age,
       'className': className,
       'group': group,
+      'avatarUrl': avatarUrl,
     };
   }
 }

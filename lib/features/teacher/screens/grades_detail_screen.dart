@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/services/mock_data.dart';
+
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 
@@ -17,10 +17,8 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
   late List<String> components;
 
   final Map<String, List<String>> _subjectComponents = {
-    'Arabe': ['الإستماع والتحدث', 'النقل', 'الخط', 'الإملاء', 'القراءة', 'التعبير الكتابي'],
-    'Français': ['Lecture', 'Conjugaison', 'Grammaire', 'Orthographe', 'Dictée', 'Production Écrite'],
-    'Mathématiques': ['Calcul', 'Géométrie', 'Mesures', 'Résolution de P.'],
-    'Sciences': ['Histoire', 'Géographie', 'Education Civique'],
+    // These will eventually be fetched from the API based on the curriculum.
+    // For now, removing the hardcoded demo strings.
   };
 
   @override
@@ -35,7 +33,7 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final pt = isDark ? Colors.white : const Color(0xFF0F172A);
     final st = isDark ? Colors.white38 : Colors.black26;
-    final students = MockData.teacherClasses[0].students; // Simulating for the group
+    final students = widget.sessionData['students'] as List<dynamic>? ?? [];
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -170,7 +168,7 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
         style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 12),
         decoration: InputDecoration(
           border: InputBorder.none,
-          hintText: '16.5',
+          hintText: '--',
           hintStyle: TextStyle(color: st, fontSize: 12),
           contentPadding: const EdgeInsets.only(bottom: 14),
         ),

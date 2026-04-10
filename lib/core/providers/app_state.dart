@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
-import '../services/mock_data.dart';
+
 import '../services/api_service.dart';
 
 class AppState extends ChangeNotifier {
@@ -20,7 +20,7 @@ class AppState extends ChangeNotifier {
     final lang = prefs.getString('language_code') ?? 'fr';
     _locale = Locale(lang);
     _isDarkMode = prefs.getBool('is_dark_mode') ?? true;
-    MockData.setLocale(lang);
+    
     
     final token = prefs.getString('auth_token');
     if (token != null) {
@@ -66,7 +66,7 @@ class AppState extends ChangeNotifier {
     _locale = loc;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language_code', loc.languageCode);
-    MockData.setLocale(loc.languageCode);
+    
     notifyListeners();
   }
 
@@ -94,12 +94,12 @@ class AppState extends ChangeNotifier {
   }
 
   void loginAsParent() {
-    _currentUser = MockData.parentUser;
+    _currentUser = UserModel(id: 'dummy_id', name: 'User', role: UserRole.parent, email: 'dummy@email.com', avatarUrl: '');
     notifyListeners();
   }
 
   void loginAsTeacher() {
-    _currentUser = MockData.teacherUser;
+    _currentUser = UserModel(id: 'dummy_id', name: 'User', role: UserRole.teacher, email: 'dummy@email.com', avatarUrl: '');
     notifyListeners();
   }
 

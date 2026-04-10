@@ -506,6 +506,22 @@ class _FeedScreenState extends State<FeedScreen> {
                           color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
                           child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent)),
                         ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 240,
+                          width: double.infinity,
+                          color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.image_not_supported_rounded, size: 48, color: secondaryTextColor.withValues(alpha: 0.3)),
+                              const SizedBox(height: 12),
+                              Text(
+                                AppLocalizations.of(context)!.translate('image_not_available'),
+                                style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),

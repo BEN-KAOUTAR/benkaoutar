@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/services/mock_data.dart';
+
+import '../../../core/providers/app_state.dart';
+import 'package:provider/provider.dart';
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -18,7 +20,7 @@ class _TeacherFeedScreenState extends State<TeacherFeedScreen> {
   @override
   void initState() {
     super.initState();
-    _posts = List.from(MockData.posts);
+    _posts = <PostModel>[];
   }
 
 
@@ -79,8 +81,8 @@ class _TeacherFeedScreenState extends State<TeacherFeedScreen> {
                         setState(() {
                           _posts.insert(0, PostModel(
                             id: 'new_${_posts.length}',
-                            authorName: 'Mme. Lahlou',
-                            authorRole: AppLocalizations.of(context)!.translate('teacher_role'),
+                            authorName: context.read<AppState>().currentUser?.name ?? 'Teacher',
+                            authorRole: context.read<AppState>().currentUser?.role == UserRole.teacher ? AppLocalizations.of(context)!.translate('teacher_role') : '',
                             content: controller.text.trim(),
                             date: AppLocalizations.of(context)!.translate('just_now'),
                             isEvent: isEvent,
