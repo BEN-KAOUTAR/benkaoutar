@@ -18,8 +18,6 @@ class _TeacherTimetableScreenState extends State<TeacherTimetableScreen> {
   @override
   Widget build(BuildContext context) {
     final scheduleMap = <String, List<dynamic>>{};
-    // Map internal key to display name for mock data access if necessary, or just translate the key if mock data matches
-    // But mock data seems to use 'Lundi', etc.
     final displayDay = _getDisplayDay(_selectedDay);
     final schedule = scheduleMap[displayDay] ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;

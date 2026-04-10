@@ -171,6 +171,20 @@ class ApiService {
     }
   }
 
+  /// Submit a PDF or image justification for an absence
+  Future<bool> submitJustification(String attendanceId, String filePath, String fileName) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: fileName),
+        'attendanceId': attendanceId,
+      });
+      final response = await _dio.post('/attendances/$attendanceId/justify', data: formData);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<HomeworkModel>> getHomework(String studentId) async {
     try {
       // Swagger: /assignments is the correct route for student assignments

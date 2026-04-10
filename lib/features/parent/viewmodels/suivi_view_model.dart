@@ -29,28 +29,69 @@ class SuiviViewModel extends ChangeNotifier {
     return grouped;
   }
 
+  List<Map<String, dynamic>> _schedule = [];
+  List<Map<String, dynamic>> get schedule => _schedule;
+
   Future<void> fetchSuiviData(String studentId) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      debugPrint('Fetching suivi data for student: $studentId');
       final results = await Future.wait([
         _apiService.getGrades(studentId),
         _apiService.getAbsences(studentId),
+        _apiService.getTimetable(studentId).catchError((_) => <Map<String, dynamic>>[]),
       ]);
 
       _grades = results[0] as List<GradeModel>;
       _absences = results[1] as List<AttendanceRecord>;
+      _schedule = results[2] as List<Map<String, dynamic>>;
       
+      debugPrint('Parsed ${_grades.length} grades, ${_absences.length} absences, ${_schedule.length} schedule slots');
+      if (_absences.isNotEmpty) {
+        debugPrint('Sample Absence Status: ${_absences.first.status} (Raw: ${_absences.first.rawStatus})');
+      }
+
       // Generate evolution data from local grades chronologically
       _processEvolutionDataFromGrades();
     } catch (e) {
+      debugPrint('Error fetching suivi data: $e');
       _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Find a matching schedule slot for a given attendance record
+  /// Matches by day of week and subject name
+  Map<String, dynamic>? getScheduleForAttendance(AttendanceRecord a) {
+    try {
+      final dt = DateTime.parse(a.date);
+      // weekday: 1=Monday, 2=Tuesday,...,7=Sunday
+      final dayOfWeek = dt.weekday;
+      final dayNames = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+      final dayName = dayNames[dayOfWeek].toLowerCase();
+
+      for (final slot in _schedule) {
+        final slotDay = (slot['day'] ?? slot['dayOfWeek'] ?? '').toString().toLowerCase();
+        if (!slotDay.contains(dayName) && slotDay != dayOfWeek.toString()) continue;
+
+        // Try to match by subject name
+        if (a.subjectName != null) {
+          final slotSubject = (slot['subject'] ?? '').toString().toLowerCase();
+          if (slotSubject.contains(a.subjectName!.toLowerCase()) || a.subjectName!.toLowerCase().contains(slotSubject)) {
+            return slot;
+          }
+        } else {
+          // Return first slot for that day
+          return slot;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   Map<String, Map<String, List<Map<String, double>>>> _evolutionDataBySemester = {};
@@ -108,19 +149,29 @@ class SuiviViewModel extends ChangeNotifier {
     return sum / grouped.length;
   }
 
-  void setMockEvolution() {
-    _evolutionData = {
-      'math': [{'x': 0.0, 'y': 12.0}, {'x': 1.0, 'y': 14.5}, {'x': 2.0, 'y': 13.0}, {'x': 3.0, 'y': 16.0}, {'x': 4.0, 'y': 15.5}],
-      'french_sub': [{'x': 0.0, 'y': 10.0}, {'x': 1.0, 'y': 11.0}, {'x': 2.0, 'y': 12.5}, {'x': 3.0, 'y': 11.5}, {'x': 4.0, 'y': 13.0}],
-      'science': [{'x': 0.0, 'y': 15.0}, {'x': 1.0, 'y': 14.0}, {'x': 2.0, 'y': 16.5}, {'x': 3.0, 'y': 17.0}, {'x': 4.0, 'y': 16.0}],
-      'history_geo': [{'x': 0.0, 'y': 11.0}, {'x': 1.0, 'y': 13.0}, {'x': 2.0, 'y': 12.0}, {'x': 3.0, 'y': 14.0}, {'x': 4.0, 'y': 15.0}],
-    };
-    notifyListeners();
-  }
 
   int get totalAttendanceDays => _absences.length;
-  int get unjustifiedAbsences => _absences.where((a) => a.status == 'absent' && (a.motif == null || a.motif!.isEmpty)).length;
-  int get justifiedAbsences => _absences.where((a) => a.status == 'absent' && a.motif != null && a.motif!.isNotEmpty).length;
+
+  int get unjustifiedAbsences {
+    return _absences.where((a) {
+      if (a.status != 'absent') return false;
+      // If raw status explicitly says non-justified
+      if (a.rawStatus != null && a.rawStatus!.contains('non_justifie')) return true;
+      // If it's absent and has no motif AND not explicitly marked as justified in rawStatus
+      return (a.motif == null || a.motif!.isEmpty) && (a.rawStatus == null || !a.rawStatus!.contains('justifie'));
+    }).length;
+  }
+
+  int get justifiedAbsences {
+    return _absences.where((a) {
+      if (a.status != 'absent') return false;
+      // If raw status says justified
+      if (a.rawStatus != null && a.rawStatus!.contains('justifie') && !a.rawStatus!.contains('non_justifie')) return true;
+      // Standard check
+      return a.motif != null && a.motif!.isNotEmpty;
+    }).length;
+  }
+
   int get delays => _absences.where((a) => a.status == 'late').length;
   int get presentDays => _absences.where((a) => a.status == 'present').length;
 
@@ -153,5 +204,48 @@ class SuiviViewModel extends ChangeNotifier {
     final subjectGrades = _grades.where((g) => g.subject == subjectId && g.classSize != null);
     if (subjectGrades.isEmpty) return null;
     return subjectGrades.first.classSize;
+  }
+
+  // Helper to find attendance record for a specific date
+  AttendanceRecord? getAttendanceForDate(DateTime dt) {
+    for (var a in _absences) {
+      try {
+        final attendanceDate = DateTime.parse(a.date);
+        if (attendanceDate.year == dt.year && 
+            attendanceDate.month == dt.month && 
+            attendanceDate.day == dt.day) {
+          return a;
+        }
+      } catch (e) {
+        // Fallback for non-standard formats if possible
+        if (a.date.contains('${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')) {
+          return a;
+        }
+      }
+    }
+    return null;
+  }
+
+  Future<bool> submitJustification(String attendanceId, String filePath, String fileName) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final success = await _apiService.submitJustification(attendanceId, filePath, fileName);
+      if (success) {
+        // Refresh data to show new justification status if possible, 
+        // or just update local state if we had the studentId.
+        // For simplicity, we assume the caller will handle refresh or we can try to find studentId from current context if needed.
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

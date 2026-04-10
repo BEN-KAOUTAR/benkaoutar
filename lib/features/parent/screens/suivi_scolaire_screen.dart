@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -18,7 +19,7 @@ class SuiviScolaireScreen extends StatefulWidget {
 
 class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
   int _activeTab = 0;
-  int _currentMonthIndex = 6;
+  int _currentMonthIndex = 0; // Will be set in initState
   int _selectedSubjectIndex = 0;
   late String _selectedYear;
 
@@ -28,6 +29,14 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     final now = DateTime.now();
     final startYear = now.month >= 9 ? now.year : now.year - 1;
     _selectedYear = '$startYear - ${startYear + 1}';
+
+    // Set current month index based on now
+    final schoolMonths = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
+    _currentMonthIndex = schoolMonths.indexOf(now.month);
+    if (_currentMonthIndex == -1) {
+      // If outside school months, default to first (Sep) or last (Jun)
+      _currentMonthIndex = now.month < 9 && now.month > 6 ? 0 : 9;
+    }
 
     // Fetch data on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -52,49 +61,98 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
         ),
         title: Row(
           children: [
-            Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5), width: 2),
-                image: widget.student.name.isNotEmpty 
-                  ? DecorationImage(
-                      image: NetworkImage('https://ui-avatars.com/api/?name=${widget.student.name}&background=0D8ABC&color=fff'),
-                      fit: BoxFit.cover,
-                    )
+            Hero(
+              tag: 'student_avatar_${widget.student.id}',
+              child: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Colors.blueAccent, Colors.indigoAccent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+                  ],
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+                  image: widget.student.name.isNotEmpty 
+                    ? DecorationImage(
+                        image: NetworkImage('https://ui-avatars.com/api/?name=${widget.student.name}&background=transparent&color=fff'),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                ),
+                child: widget.student.name.isEmpty 
+                  ? const Icon(Icons.person_rounded, color: Colors.white, size: 22)
                   : null,
               ),
-              child: widget.student.name.isEmpty 
-                ? const Icon(Icons.person_rounded, color: Colors.blueAccent, size: 20)
-                : null,
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Performance Académique', 
-              style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: -0.5)
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text(
+                    'Performance', 
+                    style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: -0.5)
+                  ),
+                  Text(
+                    AppLocalizations.of(context)!.translate('academic_summary'),
+                    style: TextStyle(color: primaryTextColor.withValues(alpha: 0.5), fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.2),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
+          preferredSize: const Size.fromHeight(80),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(28),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
+                    color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
                   ),
-                  child: Row(
+                  child: Stack(
                     children: [
-                      _buildTab(AppLocalizations.of(context)!.translate('evaluations'), 0, isDark),
-                      _buildTab(AppLocalizations.of(context)!.translate('evolution'), 1, isDark),
-                      _buildTab(AppLocalizations.of(context)!.translate('absences_tab'), 2, isDark),
+                      // Sliding background indicator
+                      AnimatedAlign(
+                        duration: 400.ms,
+                        curve: Curves.easeOutCirc,
+                        alignment: Alignment(_activeTab == 0 ? -1 : (_activeTab == 1 ? 0 : 1), 0),
+                        child: FractionallySizedBox(
+                          widthFactor: 1/3,
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Colors.blueAccent, Color(0xFF4F46E5)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: [
+                                BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          _buildTabItem(AppLocalizations.of(context)!.translate('evaluations'), 0, isDark),
+                          _buildTabItem(AppLocalizations.of(context)!.translate('evolution'), 1, isDark),
+                          _buildTabItem(AppLocalizations.of(context)!.translate('absences_tab'), 2, isDark),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -158,35 +216,23 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     }
   }
 
-  Widget _buildTab(String label, int index, bool isDark) {
+  Widget _buildTabItem(String label, int index, bool isDark) {
     bool isActive = _activeTab == index;
-    final activeText = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final inactiveText = isDark ? Colors.white54 : Colors.black54;
-
+    
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _activeTab = index),
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: 300.ms,
-          curve: Curves.easeOutCubic,
+        child: Container(
+          height: 48,
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            gradient: isActive 
-              ? const LinearGradient(colors: [Colors.blueAccent, Colors.indigoAccent], begin: Alignment.topLeft, end: Alignment.bottomRight)
-              : null,
-            color: isActive ? null : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: isActive ? [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))] : [],
-          ),
           child: Text(
             label,
             style: TextStyle(
-              color: isActive ? activeText : inactiveText,
+              color: isActive ? Colors.white : (isDark ? Colors.white38 : Colors.black38),
               fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
               fontSize: 10,
-              letterSpacing: 1,
+              letterSpacing: 1.2,
             ),
           ),
         ),
@@ -217,139 +263,149 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
       itemCount: subjects.length,
       itemBuilder: (context, index) {
         final subjectId = subjects[index];
         final subjectAvg = vm.calculateSubjectAverage(subjectId);
-
         final subjectName = AppLocalizations.of(context)!.translate(subjectId);
         final color = (index % 4 == 0 ? Colors.blueAccent : index % 4 == 1 ? Colors.orangeAccent : index % 4 == 2 ? Colors.purpleAccent : const Color(0xFF10B981));
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.only(bottom: 20),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1B2336) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04), width: 1.5),
+            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white, width: 1.5),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04), blurRadius: 20, offset: const Offset(0, 8)),
+              if (!isDark) BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 8)),
+              if (isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 5)),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                // Pop Icon badge
-                Container(
-                  width: 54, height: 54,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [color.withValues(alpha: 0.75), color],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 4))],
-                  ),
-                  child: Icon(
-                    index % 4 == 0 ? Icons.calculate_rounded
-                      : index % 4 == 1 ? Icons.menu_book_rounded
-                      : index % 4 == 2 ? Icons.science_rounded
-                      : Icons.history_edu_rounded,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Subject info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(subjectName,
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: primaryTextColor, letterSpacing: -0.3),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    // Modern Icon Badge
+                    Container(
+                      width: 60, height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [color.withValues(alpha: 0.8), color],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      // Soft Classement pill
-                      Builder(builder: (ctx) {
-                        final rank = vm.getSubjectRank(subjectId);
-                        final classSize = vm.getSubjectClassSize(subjectId);
-                        
-                        String label = "Classement: --";
-                        if (rank != null) {
-                          final suffix = rank == 1 ? 'er' : 'e';
-                          label = classSize != null ? '$rank$suffix / $classSize' : '$rank$suffix';
-                        }
-                        
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(8),
+                      child: Icon(
+                        index % 4 == 0 ? Icons.functions_rounded
+                          : index % 4 == 1 ? Icons.auto_stories_rounded
+                          : index % 4 == 2 ? Icons.biotech_rounded
+                          : Icons.translate_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    // Subject info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            subjectName,
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: primaryTextColor, letterSpacing: -0.5),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          const SizedBox(height: 6),
+                          // Stats row
+                          Row(
                             children: [
-                              Icon(Icons.military_tech_rounded, size: 14, color: isDark ? Colors.white54 : Colors.black54),
+                              Icon(Icons.military_tech_rounded, size: 14, color: color.withValues(alpha: 0.6)),
                               const SizedBox(width: 4),
-                              Text(label, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                              Builder(builder: (ctx) {
+                                final rank = vm.getSubjectRank(subjectId);
+                                final classSize = vm.getSubjectClassSize(subjectId);
+                                String label = rank != null ? (classSize != null ? '$rank/$classSize' : '$rank') : '--';
+                                return Text(
+                                  'Classement: $label', 
+                                  style: TextStyle(color: primaryTextColor.withValues(alpha: 0.45), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.2)
+                                );
+                              }),
                             ],
                           ),
-                        );
-                      }),
-                      const SizedBox(height: 12),
-                      // Soft History link button
-                      GestureDetector(
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            backgroundColor: Colors.transparent,
-                            isScrollControlled: true,
-                            builder: (context) => _buildAcademicHistorySheet(context, isDark, subjectId, color, vm),
-                          );
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.history_rounded, size: 15, color: color.withValues(alpha: 0.8)),
-                            const SizedBox(width: 4),
-                            Text(
-                              AppLocalizations.of(context)!.translate('academic_history'),
-                              style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.2),
+                          const SizedBox(height: 12),
+                          // Premium History Link
+                          InkWell(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                isScrollControlled: true,
+                                builder: (context) => _buildAcademicHistorySheet(context, isDark, subjectId, color, vm),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('academic_history').toUpperCase(),
+                                    style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.8),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.arrow_forward_ios_rounded, size: 8, color: color),
+                                ],
+                              ),
                             ),
-                            Icon(Icons.chevron_right_rounded, size: 16, color: color.withValues(alpha: 0.7)),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Soft Score pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        subjectAvg.toStringAsFixed(1),
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: color, height: 1.1, letterSpacing: -0.5),
+                    ),
+                    const SizedBox(width: 12),
+                    // Value Display
+                    Container(
+                      height: 70,
+                      width: 70,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : color.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: color.withValues(alpha: 0.15), width: 2),
                       ),
-                      Text('/20', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: color.withValues(alpha: 0.65))),
-                    ],
-                  ),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            subjectAvg.toStringAsFixed(1),
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: color, height: 1),
+                          ),
+                          Text(
+                            '/20', 
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: color.withValues(alpha: 0.5)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ).animate().fadeIn(delay: (index * 80).ms).slideY(begin: 0.04);
+        ).animate().fadeIn(delay: (index * 100).ms, duration: 600.ms).slideX(begin: 0.1, curve: Curves.easeOutCubic);
       },
     );
   }
@@ -478,10 +534,6 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     
     // If empty, use a default list to avoid UI crash, or show empty state
     if (subjectKeys.isEmpty) {
-      if (!vm.isLoading) {
-        // Option: call setMockEvolution if you want to show SOMETHING during demo
-        // vm.setMockEvolution(); 
-      }
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -518,37 +570,53 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          _buildSummaryCard(isDark, vm).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+          _buildSummaryCard(isDark, vm).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
           const SizedBox(height: 48),
           
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: schoolSubjects.asMap().entries.map((entry) {
-                final index = entry.key;
-                final subject = entry.value;
-                final isSelected = _selectedSubjectIndex == index;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedSubjectIndex = index),
-                    child: AnimatedContainer(
-                      duration: 300.ms,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.blueAccent : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isSelected ? Colors.blueAccent : (isDark ? Colors.white10 : Colors.white)),
+          SizedBox(
+            height: 46,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: schoolSubjects.length,
+              itemBuilder: (context, index) {
+                final subject = schoolSubjects[index];
+                final isSelected = index == _selectedSubjectIndex;
+                
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedSubjectIndex = index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: isSelected 
+                          ? const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)]) 
+                          : null,
+                      color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isSelected ? Colors.white.withValues(alpha: 0.2) : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+                        width: 1.5
                       ),
-                      child: Text(
-                        subject, 
-                        style: TextStyle(color: isSelected ? Colors.white : (isDark ? Colors.white38 : Colors.black45), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 0.5)
-                      ),
+                      boxShadow: [
+                        if (isSelected) BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8)),
+                        if (!isSelected && !isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      subject, 
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : (isDark ? Colors.white54 : Colors.black54), 
+                        fontWeight: FontWeight.w900, 
+                        fontSize: 12, 
+                        letterSpacing: 0.2
+                      )
                     ),
                   ),
                 );
-              }).toList(),
+              },
             ),
           ).animate().fadeIn(delay: 300.ms),
           
@@ -574,51 +642,78 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
   Widget _buildSummaryCard(bool isDark, SuiviViewModel vm) {
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white54 : Colors.black54;
+    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
-        boxShadow: [if (!isDark) BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 40, offset: const Offset(0, 10))],
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white),
+        boxShadow: [
+          if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 40, offset: const Offset(0, 15)),
+          if (isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 30, offset: const Offset(0, 10)),
+        ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(AppLocalizations.of(context)!.translate('global_average').toUpperCase(), style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(vm.generalAverage.toStringAsFixed(2), style: TextStyle(color: primaryTextColor, fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -1.5)),
-                   const SizedBox(width: 8),
-                   Text('/20', style: TextStyle(color: secondaryTextColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                  Text(AppLocalizations.of(context)!.translate('general_average').toUpperCase(), style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2.5)),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                       Text(vm.generalAverage.toStringAsFixed(2), style: TextStyle(color: primaryTextColor, fontSize: 42, fontWeight: FontWeight.w900, letterSpacing: -2)),
+                       const SizedBox(width: 8),
+                       Text('/20', style: TextStyle(color: secondaryTextColor, fontSize: 18, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
                 ],
+              ),
+              Container(
+                 padding: const EdgeInsets.all(16),
+                 decoration: BoxDecoration(
+                   color: Colors.blueAccent.withValues(alpha: 0.1),
+                   shape: BoxShape.circle,
+                   border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.1)),
+                 ),
+                 child: const Icon(Icons.analytics_rounded, color: Colors.blueAccent, size: 28),
               ),
             ],
           ),
+          const SizedBox(height: 32),
           Container(
-             width: 1.5, height: 60,
-             color: secondaryTextColor.withValues(alpha: 0.1),
+             height: 1.5, width: double.infinity,
+             color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(AppLocalizations.of(context)!.translate('rank').toUpperCase(), style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
-              const SizedBox(height: 12),
-              Text('--/--', style: TextStyle(color: Colors.blueAccent, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1)),
+              _buildSimpleStat(AppLocalizations.of(context)!.translate('rank'), '--/--', Colors.orangeAccent, isDark),
+              _buildSimpleStat('Tendance', '+0.5', Colors.greenAccent, isDark),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSimpleStat(String label, String value, Color color, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        const SizedBox(height: 8),
+        Text(value, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+      ],
     );
   }
 
@@ -639,9 +734,9 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     int s1Count = s1Spots.length;
 
     return Container(
-      height: 240,
+      height: 260,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 20, right: 20, left: 10),
+      padding: const EdgeInsets.only(top: 20, right: 30, left: 10),
       child: LineChart(
         LineChartData(
           gridData: FlGridData(
@@ -649,9 +744,8 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
             drawVerticalLine: false, 
             horizontalInterval: 5, 
             getDrawingHorizontalLine: (v) => FlLine(
-              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05), 
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03), 
               strokeWidth: 1,
-              dashArray: [8, 8] // Premium dashed grid
             )
           ),
           titlesData: FlTitlesData(
@@ -668,7 +762,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                     final dIndex = index >= s1Count ? (index - s1Count + 1) : (index + 1);
                     return Padding(
                       padding: const EdgeInsets.only(top: 10), 
-                      child: Text('D$dIndex', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontWeight: FontWeight.w900, fontSize: 10))
+                      child: Text('D$dIndex', style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.w900, fontSize: 10))
                     );
                   }
                   return const SizedBox.shrink();
@@ -679,7 +773,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                getTitlesWidget: (v, meta) => Text(v.toInt().toString(), style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.w900, fontSize: 10)),
+                getTitlesWidget: (v, meta) => Text(v.toInt().toString(), style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.w900, fontSize: 10)),
                 interval: 5,
                 reservedSize: 32,
               ),
@@ -809,7 +903,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
           const SizedBox(height: 48),
           _buildAttendanceDistribution(isDark, vm).animate().fadeIn(delay: 300.ms),
           const SizedBox(height: 48),
-          _buildAttendanceCalendar(isDark).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
+          _buildAttendanceCalendar(isDark, vm).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
           const SizedBox(height: 48),
           Text(
             AppLocalizations.of(context)!.translate('recent_history').toUpperCase(), 
@@ -826,17 +920,17 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
   Widget _buildAbsenceStat(String value, String label, Color color, bool isDark) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsets.symmetric(vertical: 28),
         decoration: BoxDecoration(
-          color: isDark ? color.withValues(alpha: 0.05) : color.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: color.withValues(alpha: 0.1), width: 1.5),
+          color: isDark ? color.withValues(alpha: 0.05) : color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 32)),
+            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 36, letterSpacing: -1)),
             const SizedBox(height: 8),
-            Text(label.toUpperCase(), style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            Text(label.toUpperCase(), style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
           ],
         ),
       ),
@@ -851,9 +945,12 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white),
+        boxShadow: [
+           if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 40, offset: const Offset(0, 10)),
+        ],
       ),
       child: Row(
         children: [
@@ -861,12 +958,10 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
             alignment: Alignment.center,
             children: [
               Container(
-                width: 130, height: 130,
+                width: 140, height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.15), blurRadius: 40, spreadRadius: -5),
-                  ],
+                  border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.05), width: 2),
                 ),
               ),
               SizedBox(
@@ -874,10 +969,17 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                 child: PieChart(
                   PieChartData(
                     sectionsSpace: 0,
-                    centerSpaceRadius: 48,
+                    centerSpaceRadius: 50,
+                    startDegreeOffset: -90,
                     sections: [
-                      PieChartSectionData(color: Colors.greenAccent, value: rate, radius: 14, showTitle: false, badgeWidget: null),
-                      PieChartSectionData(color: Colors.redAccent.withValues(alpha: 0.2), value: 100 - rate, radius: 14, showTitle: false),
+                      PieChartSectionData(
+                         color: Colors.greenAccent, 
+                         value: rate, 
+                         radius: 12, 
+                         showTitle: false,
+                         gradient: const LinearGradient(colors: [Colors.greenAccent, Color(0xFF10B981)]),
+                      ),
+                      PieChartSectionData(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05), value: 100 - rate, radius: 10, showTitle: false),
                     ],
                   ),
                 ).animate().rotate(duration: 1200.ms, curve: Curves.easeOutBack),
@@ -885,44 +987,44 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('${rate.toInt()}%', style: TextStyle(color: primaryTextColor, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -1)),
+                  Text('${rate.toInt()}%', style: TextStyle(color: primaryTextColor, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1.5)),
                 ],
               ),
             ],
           ),
-          const SizedBox(width: 40),
+          const SizedBox(width: 32),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppLocalizations.of(context)!.translate('attendance_short').toUpperCase(), style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                const SizedBox(height: 8),
+                Text(AppLocalizations.of(context)!.translate('attendance_short').toUpperCase(), style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2.5)),
+                const SizedBox(height: 12),
                 Text(
                   rate >= 90 ? AppLocalizations.of(context)!.translate('excellent') : AppLocalizations.of(context)!.translate('good_status'), 
                   style: TextStyle(
                     color: Colors.greenAccent, 
-                    fontSize: 22, 
+                    fontSize: 24, 
                     fontWeight: FontWeight.w900, 
-                    letterSpacing: -0.5,
-                    shadows: [Shadow(color: Colors.greenAccent.withValues(alpha: 0.3), blurRadius: 20)]
+                    letterSpacing: -1,
+                    shadows: [Shadow(color: Colors.greenAccent.withValues(alpha: 0.2), blurRadius: 20)]
                   )
                 ).animate().fadeIn(delay: 500.ms),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.greenAccent.withValues(alpha: 0.1), 
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.2))
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.15))
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 14),
-                      const SizedBox(width: 8),
+                      const Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 16),
+                      const SizedBox(width: 10),
                       Text(
                         AppLocalizations.of(context)!.translate('verified').toUpperCase(), 
-                        style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)
+                        style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)
                       ),
                     ],
                   ),
@@ -935,9 +1037,10 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     );
   }
 
-  Widget _buildAttendanceCalendar(bool isDark) {
+  Widget _buildAttendanceCalendar(bool isDark, SuiviViewModel vm) {
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textColor = isDark ? Colors.white54 : Colors.black45;
+    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
+    
     final schoolMonths = [
       {'key': 'september', 'month': 9}, {'key': 'october', 'month': 10}, 
       {'key': 'november', 'month': 11}, {'key': 'december', 'month': 12}, 
@@ -956,80 +1059,142 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     final firstDay = DateTime(realYear, realMonth, 1);
     final offset = firstDay.weekday - 1;
 
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
-        boxShadow: [if (!isDark) BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 40, offset: const Offset(0, 10))],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Stack(
+      children: [
+        // Background decorative glass glow
+        Positioned(
+          top: -20, right: -20,
+          child: Container(
+            width: 150, height: 150,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.blueAccent.withValues(alpha: isDark ? 0.05 : 0.03),
+            ),
+          ).animate().fadeIn(duration: 1200.ms).scale(begin: const Offset(0.8, 0.8)),
+        ),
+        
+        Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white),
+            boxShadow: [
+              if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 40, offset: const Offset(0, 10)),
+            ],
+          ),
+          child: Column(
             children: [
-              Text('$currentMonthLabel $realYear', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: primaryTextColor)),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () => setState(() => _currentMonthIndex = (_currentMonthIndex > 0) ? _currentMonthIndex - 1 : 9),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8), shape: BoxShape.circle),
-                      child: Icon(Icons.chevron_left_rounded, color: primaryTextColor.withValues(alpha: 0.5), size: 20),
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(realYear.toString(), style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                      const SizedBox(height: 4),
+                      Text(currentMonthLabel, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: primaryTextColor, letterSpacing: -0.5)),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () => setState(() => _currentMonthIndex = (_currentMonthIndex < 9) ? _currentMonthIndex + 1 : 0),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8), shape: BoxShape.circle),
-                      child: Icon(Icons.chevron_right_rounded, color: primaryTextColor.withValues(alpha: 0.5), size: 20),
-                    ),
+                  Row(
+                    children: [
+                      _buildCalendarNav(Icons.chevron_left_rounded, () => setState(() => _currentMonthIndex = (_currentMonthIndex > 0) ? _currentMonthIndex - 1 : 9), isDark),
+                      const SizedBox(width: 8),
+                      _buildCalendarNav(Icons.chevron_right_rounded, () => setState(() => _currentMonthIndex = (_currentMonthIndex < 9) ? _currentMonthIndex + 1 : 0), isDark),
+                    ],
                   ),
                 ],
               ),
+              const SizedBox(height: 40),
+              // Weekdays header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => SizedBox(
+                  width: 38,
+                  child: Text(d, textAlign: TextAlign.center, style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5))
+                )).toList(),
+              ),
+              const SizedBox(height: 16),
+              GridView.builder(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 12, crossAxisSpacing: 12),
+                itemCount: 35,
+                itemBuilder: (context, index) {
+                  final dayNum = index - offset + 1;
+                  if (dayNum < 1 || dayNum > daysInMonth) return const SizedBox.shrink();
+                  
+                  final currentDayDate = DateTime(realYear, realMonth, dayNum);
+                  final attendance = vm.getAttendanceForDate(currentDayDate);
+                  
+                  final isAbsent = attendance?.status == 'absent'; 
+                  final isLate = attendance?.status == 'late';
+                  final isToday = dayNum == DateTime.now().day && realMonth == DateTime.now().month && realYear == DateTime.now().year;
+
+                  Color? dotColor;
+                  if (isAbsent) dotColor = Colors.redAccent;
+                  if (isLate) dotColor = Colors.orangeAccent;
+
+                  return Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isToday 
+                          ? Colors.blueAccent 
+                          : (dotColor != null ? dotColor.withValues(alpha: 0.15) : Colors.transparent),
+                      borderRadius: BorderRadius.circular(16),
+                      border: isToday 
+                        ? Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5)
+                        : (dotColor != null ? Border.all(color: dotColor.withValues(alpha: 0.2)) : null),
+                      boxShadow: [
+                        if (isToday) BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Text(
+                          dayNum.toString(), 
+                          style: TextStyle(
+                            color: isToday ? Colors.white : (dotColor ?? primaryTextColor), 
+                            fontWeight: isToday || dotColor != null ? FontWeight.w900 : FontWeight.w600, 
+                            fontSize: 13
+                          )
+                        ),
+                        if (dotColor != null && !isToday)
+                          Positioned(
+                            bottom: 6,
+                            child: Container(
+                              width: 3, height: 3,
+                              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: (index * 10).ms).scale(begin: const Offset(0.9, 0.9));
+                },
+              ),
             ],
           ),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              'L', 'M', 'M', 'J', 'V', 'S', 'D'
-            ].map((d) => SizedBox(
-              width: 32,
-              child: Text(d, textAlign: TextAlign.center, style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1))
-            )).toList(),
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 8, crossAxisSpacing: 8),
-            itemCount: 42,
-            itemBuilder: (context, index) {
-              final dayNum = index - offset + 1;
-              if (dayNum < 1 || dayNum > daysInMonth) return const SizedBox.shrink();
-              
-              // Simplified mock attendance check
-              final isAbsent = [3, 14, 22].contains(dayNum); 
-              final isLate = [7, 25].contains(dayNum);
-              final isToday = dayNum == DateTime.now().day && realMonth == DateTime.now().month;
+        ),
+      ],
+    );
+  }
 
-              return Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isAbsent ? Colors.redAccent.withValues(alpha: 0.1) : (isLate ? Colors.orangeAccent.withValues(alpha: 0.1) : (isToday ? Colors.blueAccent : Colors.transparent)),
-                  borderRadius: BorderRadius.circular(10),
-                  border: isAbsent ? Border.all(color: Colors.redAccent.withValues(alpha: 0.2)) : (isLate ? Border.all(color: Colors.orangeAccent.withValues(alpha: 0.2)) : null),
-                ),
-                child: Text(dayNum.toString(), style: TextStyle(color: isAbsent ? Colors.redAccent : (isLate ? Colors.orangeAccent : (isToday ? Colors.white : primaryTextColor)), fontWeight: FontWeight.w900, fontSize: 11)),
-              );
-            },
-          ),
-        ],
+  Widget _buildCalendarNav(IconData icon, VoidCallback onTap, bool isDark) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+          boxShadow: [
+            if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Icon(icon, color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.8), size: 20),
       ),
     );
   }
@@ -1037,12 +1202,25 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
   Widget _buildRecentHistory(bool isDark, SuiviViewModel vm) {
     if (vm.absences.isEmpty) {
         return Center(
-          child: Text(AppLocalizations.of(context)!.translate('no_history'), style: const TextStyle(color: Colors.white54))
+          child: Column(
+            children: [
+              Icon(Icons.history_rounded, size: 48, color: isDark ? Colors.white12 : Colors.black12),
+              const SizedBox(height: 16),
+              Text(AppLocalizations.of(context)!.translate('no_history'), style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.bold)),
+            ],
+          )
         );
     }
 
-    return Column(
-      children: vm.absences.map((a) {
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: vm.absences.length,
+      itemBuilder: (context, index) {
+        final a = vm.absences[index];
         Color color;
         IconData icon;
         switch (a.status) {
@@ -1059,39 +1237,224 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
             icon = Icons.check_circle_rounded;
         }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(24),
+        // Format Date
+        String formattedDate = a.date;
+        String formattedDateLong = a.date;
+        try {
+          final dt = DateTime.parse(a.date);
+          formattedDate = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode).format(dt);
+          formattedDateLong = DateFormat('EEEE dd MMMM yyyy', Localizations.localeOf(context).languageCode).format(dt);
+        } catch (e) { /* Fallback */ }
+
+        // Resolve timing from record or schedule cross-reference
+        final slot = vm.getScheduleForAttendance(a);
+        final startTime = a.startTime ?? slot?['time'] ?? slot?['startTime'] ?? slot?['start'];
+        final endTime   = a.endTime   ?? slot?['endTime']   ?? slot?['end'];
+        final timing    = (startTime != null && endTime != null) ? '$startTime - $endTime' : (startTime ?? '');
+        final sessionTitle = a.subjectName ?? a.sessionName ?? slot?['subject']?.toString() ?? AppLocalizations.of(context)!.translate('session');
+        final teacher = slot?['teacher']?.toString();
+        final room = slot?['room']?.toString() ?? slot?['classroom']?.toString();
+
+        void showDetailSheet() {
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            isScrollControlled: true,
+            builder: (_) => Container(
+              padding: const EdgeInsets.fromLTRB(28, 12, 28, 40),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF121828) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      margin: const EdgeInsets.only(bottom: 28),
+                      decoration: BoxDecoration(color: isDark ? Colors.white12 : Colors.black12, borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.05)]),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: color.withValues(alpha: 0.15)),
+                        ),
+                        child: Icon(icon, color: color, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withValues(alpha: 0.2))),
+                              child: Text(AppLocalizations.of(context)!.translate('${a.status}_label').toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1)),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(sessionTitle, style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: -0.5), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+                  Container(height: 1, color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                  const SizedBox(height: 24),
+                  _sheetDetailRow(Icons.calendar_today_rounded, formattedDateLong, isDark, primaryTextColor, secondaryTextColor),
+                  if (timing.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _sheetDetailRow(Icons.schedule_rounded, timing, isDark, primaryTextColor, secondaryTextColor),
+                  ],
+                  if (teacher != null && teacher.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _sheetDetailRow(Icons.person_rounded, teacher, isDark, primaryTextColor, secondaryTextColor),
+                  ],
+                  if (room != null && room.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _sheetDetailRow(Icons.room_rounded, 'Salle $room', isDark, primaryTextColor, secondaryTextColor),
+                  ],
+                  if (a.motif != null && a.motif!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _sheetDetailRow(Icons.info_outline_rounded, a.motif!, isDark, primaryTextColor, secondaryTextColor),
+                  ],
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return GestureDetector(
+          onTap: showDetailSheet,
+          child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
             color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppLocalizations.of(context)!.translate(a.status), style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 16)),
-                    if (a.motif != null) ...[
-                       const SizedBox(height: 4),
-                       Text(a.motif!, style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
-                    ],
-                  ],
-                ),
-              ),
-              Text(a.date, style: TextStyle(color: isDark ? Colors.white54 : Colors.black45, fontSize: 11, fontWeight: FontWeight.w900)),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02)),
+            boxShadow: [
+              if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 40, offset: const Offset(0, 8)),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Status Tag Sidebar
+                  Container(
+                    width: 6,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color, color.withValues(alpha: 0.5)],
+                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                  
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Status Pill
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: color.withValues(alpha: 0.15)),
+                                ),
+                                child: Text(
+                                  AppLocalizations.of(context)!.translate('${a.status}_label').toUpperCase(),
+                                  style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.8),
+                                ),
+                              ),
+                              // Timing Indicator
+                              Row(
+                                children: [
+                                  Icon(Icons.schedule_rounded, color: secondaryTextColor.withValues(alpha: 0.4), size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(timing, style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: -0.2)),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Subject & Session Name
+                          Text(
+                            sessionTitle,
+                            style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 17, letterSpacing: -0.5),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          // Date and Motif (if any)
+                          Row(
+                            children: [
+                              Text(formattedDate, style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w700)),
+                              if (a.motif != null) ...[
+                                const SizedBox(width: 8),
+                                Text('•', style: TextStyle(color: secondaryTextColor.withValues(alpha: 0.3))),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(a.motif!, style: TextStyle(color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.3), fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  // Chevron / Action
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Center(
+                      child: Icon(Icons.chevron_right_rounded, color: secondaryTextColor.withValues(alpha: 0.3), size: 24),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ).animate().fadeIn(delay: (index * 60).ms).slideY(begin: 0.1, curve: Curves.easeOutCubic),
         );
-      }).toList(),
+      },
+    );
+  }
+
+  Widget _sheetDetailRow(IconData icon, String text, bool isDark, Color primary, Color secondary) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: secondary, size: 18),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(text, style: TextStyle(color: primary, fontWeight: FontWeight.w700, fontSize: 15)),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -289,18 +289,78 @@ class AttendanceRecord {
   final String date;
   final String status; // 'present', 'absent', 'late', 'sick'
   final String? motif;
+  final String? rawStatus;
+  final String? startTime;
+  final String? endTime;
+  final String? subjectName;
+  final String? sessionName;
 
   AttendanceRecord({
     required this.date,
     required this.status,
     this.motif,
+    this.rawStatus,
+    this.startTime,
+    this.endTime,
+    this.subjectName,
+    this.sessionName,
   });
 
   factory AttendanceRecord.fromJson(Map<String, dynamic> json) {
+    // Standardize status: absent_justifie, absent_non_justifie, retard, present
+    String rawStatus = (json['status'] ?? json['attendanceStatus'] ?? json['type'] ?? 'present').toString().toLowerCase();
+    
+    // Normalize status strings
+    String finalStatus = 'present';
+    if (rawStatus.contains('absent')) {
+      finalStatus = 'absent';
+    } else if (rawStatus.contains('retard') || rawStatus.contains('late')) {
+      finalStatus = 'late';
+    } else if (rawStatus.contains('sick') || rawStatus.contains('malade')) {
+      finalStatus = 'sick';
+    }
+
+    // Extract subject/session info
+    String? subjectName;
+    String? sessionName;
+    if (json['session'] is Map) {
+      final session = json['session'];
+      sessionName = session['name'] ?? session['title'];
+      if (session['subject'] is Map) {
+        subjectName = session['subject']['name'] ?? session['subject']['title'];
+      }
+    } else if (json['matiere'] is Map) {
+      subjectName = json['matiere']['name'] ?? json['matiere']['title'];
+    }
+    
+    // Fallback subject mapping - handle Map or String
+    if (subjectName == null) {
+      final rawSubject = json['subjectName'] ?? json['subject'] ?? json['matiere'];
+      if (rawSubject is Map) {
+        subjectName = rawSubject['name'] ?? rawSubject['title'] ?? rawSubject['nom'];
+      } else if (rawSubject is String && rawSubject.isNotEmpty) {
+        subjectName = rawSubject;
+      }
+    }
+
+    // Also extract timing from session if available
+    String? startTime = json['startTime'] ?? json['hourStart'] ?? json['start'];
+    String? endTime = json['endTime'] ?? json['hourEnd'] ?? json['end'];
+    if (json['session'] is Map) {
+      final session = json['session'];
+      startTime ??= session['startTime'] ?? session['hourStart'] ?? session['start'];
+      endTime ??= session['endTime'] ?? session['hourEnd'] ?? session['end'];
+    }
+
     return AttendanceRecord(
-      date: json['date'] ?? '',
-      status: json['status'] ?? 'present',
-      motif: json['motif'],
+      date: json['date'] ?? json['createdAt'] ?? json['passedAt'] ?? '',
+      status: finalStatus,
+      motif: json['motif'] ?? json['justification'] ?? json['reason'],
+      rawStatus: rawStatus,
+      startTime: startTime,
+      endTime: endTime,
+      subjectName: subjectName,
+      sessionName: sessionName,
     );
   }
 

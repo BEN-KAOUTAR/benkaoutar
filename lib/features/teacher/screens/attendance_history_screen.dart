@@ -13,48 +13,7 @@ class AttendanceHistoryScreen extends StatelessWidget {
     final pt = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;
 
-    final List<Map<String, dynamic>> history = [
-      {
-        'date': '06 Avril 2026', // Today
-        'datetime': DateTime(2026, 4, 6),
-        'class': '4ème Année A',
-        'subject': 'Français',
-        'present': 32,
-        'absent': 0,
-        'late': 0,
-        'isValidatedByAdmin': false,
-      },
-      {
-        'date': '05 Avril 2026', // Yesterday
-        'datetime': DateTime(2026, 4, 5),
-        'class': '4ème Année A',
-        'subject': 'Mathématiques',
-        'present': 30,
-        'absent': 2,
-        'late': 1,
-        'isValidatedByAdmin': false,
-      },
-      {
-        'date': '04 Avril 2026',
-        'datetime': DateTime(2026, 4, 4),
-        'class': '3ème Année B',
-        'subject': 'Arabe',
-        'present': 28,
-        'absent': 1,
-        'late': 0,
-        'isValidatedByAdmin': true,
-      },
-      {
-        'date': '03 Avril 2026',
-        'datetime': DateTime(2026, 4, 3),
-        'class': '4ème Année A',
-        'subject': 'Sciences',
-        'present': 31,
-        'absent': 1,
-        'late': 2,
-        'isValidatedByAdmin': true,
-      },
-    ];
+    final List<Map<String, dynamic>> history = []; // To be fetched from API
 
     return Scaffold(
       extendBodyBehindAppBar: true,

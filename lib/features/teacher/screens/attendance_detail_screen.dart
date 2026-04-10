@@ -36,8 +36,6 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   }
 
   void _initTempStatus() {
-    // In a real app, we'd fetch actual statuses from the API using sessionData['id'].
-    // For now, initializing empty to avoid mock logic artifacts.
     _tempStatus.clear();
   }
 

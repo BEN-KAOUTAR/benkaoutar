@@ -93,15 +93,6 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void loginAsParent() {
-    _currentUser = UserModel(id: 'dummy_id', name: 'User', role: UserRole.parent, email: 'dummy@email.com', avatarUrl: '');
-    notifyListeners();
-  }
-
-  void loginAsTeacher() {
-    _currentUser = UserModel(id: 'dummy_id', name: 'User', role: UserRole.teacher, email: 'dummy@email.com', avatarUrl: '');
-    notifyListeners();
-  }
 
   void logout() async {
     _currentUser = null;

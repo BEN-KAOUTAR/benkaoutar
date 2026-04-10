@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import '../../../core/providers/app_state.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/models.dart';
@@ -222,7 +223,8 @@ class _FeedScreenState extends State<FeedScreen> {
                         onTap: () {
                           if (commentController.text.trim().isNotEmpty) {
                             final text = commentController.text.trim();
-                            viewModel.addComment(currentPost.id, "Ahmed Benani", text);
+                            final userName = Provider.of<AppState>(context, listen: false).currentUser?.name ?? "Utilisateur";
+                            viewModel.addComment(currentPost.id, userName, text);
                             commentController.clear();
                             _showPlatinumSnackBar(AppLocalizations.of(context)!.translate('comment_added'), Icons.chat_bubble_rounded, Colors.greenAccent);
                           }
