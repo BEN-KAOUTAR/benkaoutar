@@ -6,7 +6,7 @@ import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../viewmodels/homework_view_model.dart';
-
+//devoir
 class HomeworkScreen extends StatefulWidget {
   final String studentId;
   const HomeworkScreen({super.key, required this.studentId});
