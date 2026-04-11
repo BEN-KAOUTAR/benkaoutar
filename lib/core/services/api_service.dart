@@ -219,9 +219,121 @@ class ApiService {
     try {
       final response = await _dio.get('/payments/student/me/space');
       if (response.statusCode == 200) {
-        final Map<String, dynamic> dataMap = _handleResponseData(response);
-        final List history = dataMap['history'] ?? [];
-        return history.map((json) => PaymentModel.fromJson(json)).toList();
+        final dynamic data = _handleResponseData(response);
+        List history = [];
+        String? globalStudentName;
+        String? globalClassName;
+
+        if (data is List) {
+          history = data;
+        } else if (data is Map) {
+          // Debug: log top-level keys to understand API structure
+          print('[PaymentAPI] Top-level keys: ${data.keys.toList()}');
+
+          // Extract student name and class from the top-level response
+          // Could be at data['student'], data['user'], or data['space']['student']
+          if (data.containsKey('student') && data['student'] is Map) {
+            final s = data['student'];
+            if (s['user'] is Map) {
+              globalStudentName = s['user']['fullName']?.toString() ?? s['user']['name']?.toString();
+            }
+            globalStudentName ??= s['fullName']?.toString() ?? s['name']?.toString();
+            // Class might be nested in student
+            if (s['class'] is Map) {
+              globalClassName = (s['class'] as Map)['name']?.toString() ?? (s['class'] as Map)['label']?.toString();
+            } else if (s['classe'] is Map) {
+              globalClassName = (s['classe'] as Map)['name']?.toString() ?? (s['classe'] as Map)['label']?.toString();
+            } else if (s['group'] is Map) {
+              globalClassName = (s['group'] as Map)['name']?.toString() ?? (s['group'] as Map)['label']?.toString();
+            } else if (s['affectation'] is Map) {
+              final aff = s['affectation'];
+              if (aff['class'] is Map) globalClassName = aff['class']['name']?.toString();
+              else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
+              else if (aff['group'] is Map) globalClassName = aff['group']['name']?.toString();
+            }
+            globalClassName ??= s['className']?.toString() ?? s['level']?.toString();
+            if (globalClassName == null && s['classe'] is String) globalClassName = s['classe'].toString();
+            if (globalClassName == null && s['class'] is String) globalClassName = s['class'].toString();
+          }
+          // Also check data['user']
+          if (globalStudentName == null && data.containsKey('user') && data['user'] is Map) {
+            globalStudentName = data['user']['fullName']?.toString() ?? data['user']['name']?.toString();
+          }
+          if (globalClassName == null) {
+            if (data['class'] is Map) {
+              globalClassName = (data['class'] as Map)['name']?.toString() ?? (data['class'] as Map)['label']?.toString();
+            } else if (data['classe'] is Map) {
+              globalClassName = (data['classe'] as Map)['name']?.toString() ?? (data['classe'] as Map)['label']?.toString();
+            } else if (data['group'] is Map) {
+              globalClassName = (data['group'] as Map)['name']?.toString() ?? (data['group'] as Map)['label']?.toString();
+            } else if (data['affectation'] is Map) {
+              final aff = data['affectation'];
+              if (aff['class'] is Map) globalClassName = aff['class']['name']?.toString();
+              else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
+              else if (aff['group'] is Map) globalClassName = aff['group']['name']?.toString();
+            }
+            globalClassName ??= data['className']?.toString() ?? data['level']?.toString() ?? data['groupName']?.toString();
+            if (globalClassName == null && data['classe'] is String) globalClassName = data['classe'].toString();
+            if (globalClassName == null && data['class'] is String) globalClassName = data['class'].toString();
+          }
+
+          // Check nested structures (e.g. data['space']['payments'])
+          if (data.containsKey('space') && data['space'] is Map) {
+            final space = data['space'];
+            print('[PaymentAPI] Space keys: ${(space as Map).keys.toList()}');
+            history = space['history'] ?? space['payments'] ?? space['invoices'] ?? space['dues'] ?? space['scolarity'] ?? [];
+            
+            // Student info may also be in space
+            if (globalStudentName == null && space.containsKey('student') && space['student'] is Map) {
+              final s = space['student'];
+              if (s['user'] is Map) {
+                globalStudentName = s['user']['fullName']?.toString() ?? s['user']['name']?.toString();
+              }
+              globalStudentName ??= s['fullName']?.toString() ?? s['name']?.toString();
+              if (globalClassName == null) {
+                if (s['class'] is Map) globalClassName = (s['class'] as Map)['name']?.toString();
+                if (s['group'] is Map) globalClassName ??= (s['group'] as Map)['name']?.toString();
+                globalClassName ??= s['className']?.toString();
+              }
+            }
+          }
+          if (history.isEmpty) {
+            history = data['history'] ?? data['payments'] ?? data['invoices'] ?? data['scolarity'] ?? data['dues'] ?? [];
+          }
+          if (history.isEmpty && data.containsKey('data') && data['data'] is List) {
+            history = data['data'];
+          }
+        }
+
+        if (history.isNotEmpty) {
+          print('[PaymentAPI] First item keys: ${(history[0] as Map).keys.toList()}');
+          print('[PaymentAPI] Global studentName=$globalStudentName, className=$globalClassName');
+        }
+        
+        return history.map((json) {
+          try {
+            final payment = PaymentModel.fromJson(json);
+            // Inject global student/class if missing from individual item
+            return PaymentModel(
+              id: payment.id,
+              month: payment.month,
+              amount: payment.amount,
+              status: payment.status,
+              date: payment.date,
+              invoiceUrl: payment.invoiceUrl,
+              childIds: payment.childIds,
+              invoiceNumber: payment.invoiceNumber,
+              studentName: payment.studentName ?? globalStudentName,
+              className: payment.className ?? globalClassName,
+              paymentMethod: payment.paymentMethod,
+              year: payment.year,
+              paymentType: payment.paymentType,
+            );
+          } catch (e) {
+            print('Error parsing payment item: $e');
+            return null;
+          }
+        }).whereType<PaymentModel>().toList();
       }
       throw Exception('Failed to load payments');
     } catch (e) {
@@ -231,11 +343,35 @@ class ApiService {
 
   Future<String> downloadReceipt(String paymentId, String type) async {
     try {
-      final response = await _dio.get('/payments/$paymentId/receipt', queryParameters: {'type': type});
-      if (response.statusCode == 200) {
-        return response.data['url'] ?? '';
+      // type can be 'invoice', 'receipt', 'scolarity', 'transport'
+      // Map them to the correct endpoints from Swagger documentation
+      String normalizedType = type.toLowerCase();
+      String category = 'receipts';
+      
+      if (normalizedType.contains('invoice') || normalizedType.contains('scolarit')) {
+        category = 'invoices';
+      } else if (normalizedType.contains('receipt') || normalizedType.contains('transport')) {
+        category = 'receipts';
       }
-      throw Exception('Failed to get receipt URL');
+      
+      final String endpoint = '/payments/student/me/$category/$paymentId/download';
+          
+      final response = await _dio.get(endpoint);
+      if (response.statusCode == 200) {
+        // Return URL if returned, otherwise return the full download URL
+        dynamic downloadUrl = response.data['url'] ?? response.data['link'] ?? response.data['data']?['url'];
+        if (downloadUrl != null) return downloadUrl.toString();
+        
+        // If the API serves the file directly, we might need a direct link with the token
+        final String baseUrl = _dio.options.baseUrl;
+        final String token = _dio.options.headers['Authorization'] ?? '';
+        
+        if (token.isNotEmpty) {
+           return '$baseUrl$endpoint?token=${token.replaceFirst('Bearer ', '')}';
+        }
+        return '$baseUrl$endpoint';
+      }
+      throw Exception('Failed to get download URL');
     } catch (e) {
       rethrow;
     }
@@ -357,6 +493,18 @@ class ApiService {
 
   // --- PROFILE ---
 
+  Future<UserModel> getProfile() async {
+    try {
+      final response = await _dio.get('/auth/me');
+      if (response.statusCode == 200) {
+        return UserModel.fromJson(response.data);
+      }
+      throw Exception('Failed to load profile');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<UserModel> updateProfile(Map<String, dynamic> data) async {
     try {
       final response = await _dio.patch('/profile', data: data);
@@ -390,15 +538,62 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getDashboardStats() async {
+    try {
+      final response = await _dio.get('/dashboard/stats');
+      if (response.statusCode == 200) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getDashboardActivities() async {
     try {
-      final response = await _dio.get('/dashboard/activities');
-      if (response.statusCode == 200) {
-        return List<Map<String, dynamic>>.from(response.data);
+      // Aggregate from multiple sources for a rich dashboard
+      final results = await Future.wait([
+        getPosts().catchError((_) => <PostModel>[]),
+        getAbsences('me').catchError((_) => <AttendanceRecord>[]),
+        // We can't easily call getGrades('me') here without returning List<GradeModel>
+        // so we just fetch posts and absences for now as primary activities
+      ]);
+
+      final List<Map<String, dynamic>> activities = [];
+      
+      // Map Posts (News)
+      final posts = results[0] as List<PostModel>;
+      for (var post in posts.take(3)) {
+        activities.add({
+          'id': post.id,
+          'type': 'news',
+          'title': post.title.isNotEmpty ? post.title : 'Nouveauté',
+          'content': post.content,
+          'date': post.date,
+          'icon': 'post',
+        });
       }
-      return []; // Return empty on non-200
+
+      // Map Absences
+      final absences = results[1] as List<AttendanceRecord>;
+      for (var abs in absences.take(3)) {
+        activities.add({
+          'id': abs.id,
+          'type': 'absence',
+          'title': 'Absence / Retard',
+          'content': '${abs.subjectName ?? "Session"} - ${abs.status}',
+          'date': abs.date,
+          'icon': 'absence',
+        });
+      }
+
+      // Sort by date descending
+      activities.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
+      
+      return activities.take(5).toList();
     } catch (e) {
-      return []; // Silently fail for dashboard widgets
+      return []; 
     }
   }
 

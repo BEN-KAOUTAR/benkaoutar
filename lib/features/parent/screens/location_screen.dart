@@ -1,10 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'trip_history_screen.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/models/models.dart';
 import '../../../core/localization/app_localizations.dart';

@@ -239,9 +239,11 @@
   "late_status": "متأخر",
   "late_label": "تأخر",
   "level_label": "المستوى الدراسي",
-  "like_btn": "أعجبني",
+  "btn_like": "أعجبني",
   "liked_post": "تم الإعجاب بهذا المنشور",
   "likes_count": "الإعجابات",
+  "likes_title": "قائمة الإعجابات",
+  "no_likes_yet": "لا توجد إعجابات بعد",
   "link_child": "ربط",
   "link_label": "ربط طالب جديد",
   "link_new_student": "تسجيل طالب جديد",
@@ -557,5 +559,8 @@
   "yes_link_button": "نعم، قم بربط الطالب",
   "yesterday_section": "يوم أمس",
   "your_children": "أبناؤك المتمدرسون",
-  "your_home": "موقع المنزل المسجل"
+  "your_home": "موقع المنزل المسجل",
+  "submit_justification": "إرسال تبرير",
+  "justification_sent": "تم إرسال التبرير بنجاح",
+  "sending": "جاري الإرسال..."
 }

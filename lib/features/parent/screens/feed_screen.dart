@@ -7,6 +7,7 @@ import '../../../core/providers/app_state.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/models.dart';
+import 'package:intl/intl.dart';
 import '../viewmodels/feed_view_model.dart';
 import 'news_detail_screen.dart';
 
@@ -168,10 +169,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                         Row(
                                           children: [
                                             Text(comment.authorName, style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 14)),
-                                            const SizedBox(width: 8),
-                                            Text(comment.date, style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w700)),
                                           ],
                                         ),
+                                        const SizedBox(height: 2),
+                                        Text(_formatPostDate(comment.date), style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w700)),
                                         const SizedBox(height: 6),
                                         Container(
                                           padding: const EdgeInsets.all(16),
@@ -246,6 +247,121 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  String _formatPostDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr).toLocal();
+      final now = DateTime.now();
+      final diff = now.difference(date);
+
+      if (diff.inMinutes < 1) return 'À l\'instant';
+      
+      return DateFormat("dd MMMM yyyy 'à' HH:mm", 'fr').format(date);
+    } catch (e) {
+      if (dateStr.toLowerCase() == "à l\'instant") return dateStr;
+      return dateStr;
+    }
+  }
+
+  void _showLikesBottomSheet(PostModel post) {
+    if (!mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(44)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 40, offset: const Offset(0, -10))],
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: secondaryTextColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 24, 28, 16),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(AppLocalizations.of(context)!.translate('likes_title'), 
+                        style: TextStyle(color: primaryTextColor, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                      Text("${post.likes} ${AppLocalizations.of(context)!.translate('likes_count')}", 
+                        style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context), 
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: secondaryTextColor.withValues(alpha: 0.05), shape: BoxShape.circle),
+                      child: Icon(Icons.close_rounded, color: secondaryTextColor, size: 20)
+                    )
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: post.likedBy.isEmpty
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.favorite_border_rounded, size: 48, color: secondaryTextColor.withValues(alpha: 0.3)),
+                        const SizedBox(height: 16),
+                        Text(AppLocalizations.of(context)!.translate('no_likes_yet'), 
+                          style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900)),
+                      ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+                      itemCount: post.likedBy.length,
+                      itemBuilder: (context, index) {
+                        final like = post.likedBy[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                                backgroundImage: like.userAvatar != null ? CachedNetworkImageProvider(like.userAvatar!) : null,
+                                child: like.userAvatar == null 
+                                  ? Text(like.userName[0], style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900))
+                                  : null,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(like.userName, 
+                                  style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 16)),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueAccent.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.favorite_rounded, color: Colors.blueAccent, size: 14),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -395,9 +511,7 @@ class _FeedScreenState extends State<FeedScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildPostCard({
+  }  Widget _buildPostCard({
     required BuildContext context,
     required PostModel post,
     required FeedViewModel vm,
@@ -423,15 +537,13 @@ class _FeedScreenState extends State<FeedScreen> {
             padding: const EdgeInsets.all(24),
             child: Row(
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.blueAccent.withValues(alpha: 0.2), Colors.purpleAccent.withValues(alpha: 0.1)]),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.2)),
-                  ),
-                  child: const Icon(Icons.verified_user_rounded, color: Colors.blueAccent, size: 28),
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                  backgroundImage: post.authorAvatar != null ? CachedNetworkImageProvider(post.authorAvatar!) : null,
+                  child: post.authorAvatar == null 
+                    ? Text(post.authorName.isNotEmpty ? post.authorName[0] : "?", style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 18))
+                    : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -444,7 +556,7 @@ class _FeedScreenState extends State<FeedScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        post.date,
+                        _formatPostDate(post.date),
                         style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.2),
                       ),
                     ],
@@ -473,10 +585,10 @@ class _FeedScreenState extends State<FeedScreen> {
             onTap: () => Navigator.push(
               context, 
               MaterialPageRoute(builder: (_) => NewsDetailScreen(news: {
-                'title': post.authorName, // Using author as title fallback or add title to model
+                'title': post.authorName,
                 'content': post.content,
                 'image': post.imageUrl,
-                'time': post.date,
+                'time': _formatPostDate(post.date),
                 'likes': post.likes,
                 'comments_count': post.comments,
                 'category': 'Actualité',
@@ -500,7 +612,6 @@ class _FeedScreenState extends State<FeedScreen> {
                       borderRadius: BorderRadius.circular(28),
                       child: CachedNetworkImage(
                         imageUrl: post.imageUrl!,
-                        height: 240,
                         width: double.infinity,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
@@ -532,25 +643,82 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           ),
 
+          // Interaction Stats Row
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (post.likes > 0)
+                  GestureDetector(
+                    onTap: () => _showLikesBottomSheet(post),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.favorite, color: Colors.white, size: 10),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${post.likes}',
+                          style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
+
+                if (post.comments > 0)
+                  Text(
+                    '${post.comments} ${AppLocalizations.of(context)!.translate('comment_btn')}',
+                    style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                  )
+                else
+                  const SizedBox.shrink(),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Divider(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), height: 1),
+          ),
+
+          // Action Buttons
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Row(
               children: [
-                _buildActionChip(
-                  context,
-                  post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  AppLocalizations.of(context)!.translate('like_btn'),
-                  count: post.likes,
-                  color: post.isLiked ? Colors.redAccent : null,
-                  onTap: () => vm.toggleLike(post),
+                Expanded(
+                  child: _buildFBActionBtn(
+                    context: context,
+                    icon: post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    label: AppLocalizations.of(context)!.translate('btn_like'),
+                    color: post.isLiked ? Colors.redAccent : secondaryTextColor,
+                    onTap: () {
+                      final appState = context.read<AppState>();
+                      vm.toggleLike(
+                        post, 
+                        userName: appState.currentUser?.name,
+                        userAvatar: appState.currentUser?.avatarUrl,
+                      );
+                    },
+                  ),
                 ),
-                const SizedBox(width: 12),
-                _buildActionChip(
-                  context,
-                  Icons.chat_bubble_outline_rounded,
-                  AppLocalizations.of(context)!.translate('comment_btn'),
-                  count: post.comments,
-                  onTap: () => _showCommentsBottomSheet(post),
+                Expanded(
+                  child: _buildFBActionBtn(
+                    context: context,
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: AppLocalizations.of(context)!.translate('comment_btn'),
+                    color: secondaryTextColor,
+                    onTap: () => _showCommentsBottomSheet(post),
+                  ),
                 ),
               ],
             ),
@@ -560,37 +728,38 @@ class _FeedScreenState extends State<FeedScreen> {
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05);
   }
 
-  Widget _buildActionChip(BuildContext context, IconData icon, String label, {int? count, Color? color, VoidCallback? onTap}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final contentColor = color ?? (isDark ? Colors.white70 : const Color(0xFF64748B));
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: contentColor.withValues(alpha: 0.1)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 20, color: contentColor),
-                const SizedBox(width: 10),
-                Text(
-                   count != null ? '$count $label' : label,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: contentColor, letterSpacing: 0.2),
+  Widget _buildFBActionBtn({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 22, color: color),
+              const SizedBox(width: 8),
+              Text(
+                label, 
+                style: TextStyle(
+                  color: color, 
+                  fontWeight: FontWeight.w700, 
+                  fontSize: 14,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
 }
