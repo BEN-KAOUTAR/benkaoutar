@@ -902,9 +902,15 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
   Widget _buildAttendanceDistribution(bool isDark, SuiviViewModel vm) {
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
+    
     final rate = vm.attendanceRate;
+    final total = vm.totalAttendanceDays;
+    final absRate = total > 0 ? ((vm.unjustifiedAbsences + vm.justifiedAbsences) / total * 100) : 0.0;
+    final lateRate = total > 0 ? (vm.delays / total * 100) : 0.0;
+    final presentRate = total > 0 ? (vm.presentDays / total * 100) : 100.0;
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
@@ -914,88 +920,176 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
            if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 40, offset: const Offset(0, 10)),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Stack(
-            alignment: Alignment.center,
+          Row(
             children: [
-              Container(
-                width: 140, height: 140,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.05), width: 2),
-                ),
-              ),
-              SizedBox(
-                width: 120, height: 120,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 0,
-                    centerSpaceRadius: 50,
-                    startDegreeOffset: -90,
-                    sections: [
-                      PieChartSectionData(
-                         color: Colors.greenAccent, 
-                         value: rate, 
-                         radius: 12, 
-                         showTitle: false,
-                         gradient: const LinearGradient(colors: [Colors.greenAccent, Color(0xFF10B981)]),
-                      ),
-                      PieChartSectionData(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05), value: 100 - rate, radius: 10, showTitle: false),
-                    ],
-                  ),
-                ).animate().rotate(duration: 1200.ms, curve: Curves.easeOutBack),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
+              // Circular Indicator with Glow & Depth
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  Text('${rate.toInt()}%', style: TextStyle(color: primaryTextColor, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1.5)),
+                   // Glow effect
+                  Container(
+                    width: 160, height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFF00F2FE).withValues(alpha: 0.15),
+                          const Color(0xFF00F2FE).withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                    .scale(begin: const Offset(0.8, 0.8), end: const Offset(1.1, 1.1), duration: 3.seconds, curve: Curves.easeInOut),
+                  
+                  Container(
+                    width: 140, height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05), width: 10),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 140, height: 140,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 0,
+                        centerSpaceRadius: 56,
+                        startDegreeOffset: -90,
+                        sections: [
+                          PieChartSectionData(
+                             color: Colors.greenAccent, 
+                             value: rate, 
+                             radius: 14, 
+                             showTitle: false,
+                             gradient: const LinearGradient(
+                               colors: [Color(0xFF00F2FE), Color(0xFF4FACFE), Color(0xFF4F46E5)],
+                               begin: Alignment.bottomLeft, end: Alignment.topRight,
+                             ),
+                          ),
+                          PieChartSectionData(color: Colors.transparent, value: 100 - rate, radius: 10, showTitle: false),
+                        ],
+                      ),
+                    ).animate().rotate(duration: 1500.ms, curve: Curves.easeOutQuart),
+                  ),
+                  _CountUpText(
+                    value: rate, 
+                    suffix: '%',
+                    style: TextStyle(color: primaryTextColor, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -2)
+                  ),
                 ],
+              ),
+              const SizedBox(width: 32),
+              // Status Text & Badge
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "PRÉS.",
+                      style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2.5)
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      rate >= 90 ? "Excellent" : (rate >= 75 ? "Bon État" : "À Surveiller"), 
+                      style: TextStyle(
+                        color: rate >= 75 ? (rate >= 90 ? Colors.greenAccent : const Color(0xFF00F2FE)) : Colors.orangeAccent, 
+                        fontSize: 28, 
+                        fontWeight: FontWeight.w900, 
+                        letterSpacing: -0.5,
+                        shadows: [
+                            Shadow(color: (rate >= 75 ? const Color(0xFF00F2FE) : Colors.orangeAccent).withValues(alpha: 0.3), blurRadius: 15)
+                        ]
+                      )
+                    ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.1),
+                    const SizedBox(height: 20),
+                    // Glass Badge with Shimmer
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05), 
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+                        boxShadow: [
+                            BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.05), blurRadius: 10)
+                        ]
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            "VÉRIFIÉ", 
+                            style: TextStyle(color: primaryTextColor.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2)
+                          ),
+                        ],
+                      ),
+                    ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 3.seconds, delay: 2.seconds),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(width: 32),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(AppLocalizations.of(context)!.translate('attendance_short').toUpperCase(), style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2.5)),
-                const SizedBox(height: 12),
-                Text(
-                  rate >= 90 ? AppLocalizations.of(context)!.translate('excellent') : AppLocalizations.of(context)!.translate('good_status'), 
-                  style: TextStyle(
-                    color: Colors.greenAccent, 
-                    fontSize: 24, 
-                    fontWeight: FontWeight.w900, 
-                    letterSpacing: -1,
-                    shadows: [Shadow(color: Colors.greenAccent.withValues(alpha: 0.2), blurRadius: 20)]
-                  )
-                ).animate().fadeIn(delay: 500.ms),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.greenAccent.withValues(alpha: 0.1), 
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.15))
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 16),
-                      const SizedBox(width: 10),
-                      Text(
-                        AppLocalizations.of(context)!.translate('verified').toUpperCase(), 
-                        style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          
+          const SizedBox(height: 40),
+          Container(height: 1, color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
+          const SizedBox(height: 32),
+          // Enhanced Stats Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildDistributionDetail("Présent", presentRate, Colors.greenAccent, Icons.check_circle_rounded, isDark),
+              _buildDistributionDetail("Retard", lateRate, Colors.orangeAccent, Icons.access_time_filled_rounded, isDark),
+              _buildDistributionDetail("Absent", absRate, Colors.redAccent, Icons.error_outline_rounded, isDark),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDistributionDetail(String label, double percentage, Color color, IconData icon, bool isDark) {
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color.withValues(alpha: 0.6), size: 12),
+            const SizedBox(width: 8),
+            _CountUpText(
+                value: percentage, 
+                suffix: '%',
+                style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.5)
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label.toUpperCase(), 
+          style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5)
+        ),
+        const SizedBox(height: 12),
+        // Mini Progress Bar
+        Container(
+            width: 60, height: 4,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: (percentage / 100).clamp(0, 1),
+                child: Container(
+                    decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(2),
+                    ),
+                ),
+            ),
+        ).animate().scaleX(begin: 0, duration: 1.seconds, curve: Curves.easeOutBack),
+      ],
     );
   }
 
@@ -1162,13 +1256,42 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
   }
 
   Widget _buildRecentHistory(bool isDark, SuiviViewModel vm) {
-    if (vm.absences.isEmpty) {
+    final schoolMonths = [
+      {'key': 'september', 'month': 9}, {'key': 'october', 'month': 10}, 
+      {'key': 'november', 'month': 11}, {'key': 'december', 'month': 12}, 
+      {'key': 'january', 'month': 1}, {'key': 'february', 'month': 2}, 
+      {'key': 'march', 'month': 3}, {'key': 'april', 'month': 4}, 
+      {'key': 'may', 'month': 5}, {'key': 'june', 'month': 6}
+    ];
+
+    // Get current selected month/year from calendar state
+    final currentMonthData = schoolMonths[_currentMonthIndex];
+    final realMonth = currentMonthData['month'] as int;
+    final yearParts = _selectedYear.split(' - ');
+    final realYear = int.parse(realMonth >= 9 ? yearParts[0] : yearParts[1]);
+
+    // Filter absences and delays for the SELECTED month
+    final filteredHistory = vm.absences.where((a) {
+        try {
+            final dt = DateTime.parse(a.date);
+            return dt.month == realMonth && dt.year == realYear;
+        } catch (e) {
+            return false;
+        }
+    }).toList();
+
+    if (filteredHistory.isEmpty) {
         return Center(
           child: Column(
             children: [
+              const SizedBox(height: 32),
               Icon(Icons.history_rounded, size: 48, color: isDark ? Colors.white12 : Colors.black12),
               const SizedBox(height: 16),
-              Text(AppLocalizations.of(context)!.translate('no_history'), style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.bold)),
+              Text(
+                AppLocalizations.of(context)!.translate('no_history'), 
+                style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.bold)
+              ),
+              const SizedBox(height: 32),
             ],
           )
         );
@@ -1180,9 +1303,10 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: vm.absences.length,
+      itemCount: filteredHistory.length,
       itemBuilder: (context, index) {
-        final a = vm.absences[index];
+        final a = filteredHistory[index];
+
         Color color;
         IconData icon;
         switch (a.status) {
@@ -1638,6 +1762,24 @@ class _HistoryRowItemState extends State<_HistoryRowItem> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _CountUpText extends StatelessWidget {
+  final double value;
+  final String suffix;
+  final TextStyle style;
+  const _CountUpText({required this.value, this.suffix = '', required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: value),
+      duration: 1500.ms,
+      builder: (context, val, child) {
+        return Text('${val.toInt()}$suffix', style: style);
+      },
     );
   }
 }

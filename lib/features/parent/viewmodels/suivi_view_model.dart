@@ -226,17 +226,14 @@ class SuiviViewModel extends ChangeNotifier {
     return null;
   }
 
-  Future<bool> submitJustification(String attendanceId, String filePath, String fileName) async {
+  Future<bool> submitJustification(String attendanceId, String filePath, String fileName, {String reason = ''}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final success = await _apiService.submitJustification(attendanceId, filePath, fileName);
+      final success = await _apiService.submitJustification(attendanceId, filePath, fileName, reason: reason);
       if (success) {
-        // Refresh data to show new justification status if possible, 
-        // or just update local state if we had the studentId.
-        // For simplicity, we assume the caller will handle refresh or we can try to find studentId from current context if needed.
         return true;
       }
       return false;
