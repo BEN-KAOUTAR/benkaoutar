@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
 
@@ -20,7 +21,19 @@ class FeedViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _posts = await _apiService.getPosts();
+      final freshPosts = await _apiService.getPosts();
+      
+      // Load local likes
+      final prefs = await SharedPreferences.getInstance();
+      final likedPostIds = prefs.getStringList('local_liked_posts') ?? [];
+      
+      _posts = freshPosts.map((post) {
+        if (likedPostIds.contains(post.id)) {
+           return post.copyWith(isLiked: true, likes: post.isLiked ? post.likes : post.likes + 1);
+        }
+        return post;
+      }).toList();
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -31,23 +44,52 @@ class FeedViewModel extends ChangeNotifier {
   }
 
   // OPTIMISTIC UI: Toggle Like
-  Future<void> toggleLike(PostModel post) async {
+  Future<void> toggleLike(PostModel post, {String? userName, String? userAvatar}) async {
     final index = _posts.indexWhere((p) => p.id == post.id);
     if (index == -1) return;
 
     final originalPost = _posts[index];
     final isLiked = !originalPost.isLiked;
+    
+    final currentUserName = userName ?? "Moi";
+    List<LikeModel> newLikedBy = List.from(originalPost.likedBy);
+    
+    if (isLiked) {
+      // Prevent duplicates in likedBy (Instagram behavior)
+      if (!newLikedBy.any((l) => l.userName.toLowerCase() == currentUserName.toLowerCase())) {
+        newLikedBy.add(LikeModel(userName: currentUserName, userAvatar: userAvatar));
+      }
+    } else {
+      newLikedBy.removeWhere((l) => l.userName.toLowerCase() == currentUserName.toLowerCase());
+    }
+
     _posts[index] = originalPost.copyWith(
       isLiked: isLiked,
-      likes: isLiked ? originalPost.likes + 1 : originalPost.likes - 1,
+      likes: newLikedBy.length, // Ensure likes count perfectly matches the list
+      likedBy: newLikedBy,
     );
     notifyListeners();
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final likedPostIds = prefs.getStringList('local_liked_posts') ?? [];
+      if (isLiked && !likedPostIds.contains(post.id)) {
+        likedPostIds.add(post.id);
+        await prefs.setStringList('local_liked_posts', likedPostIds);
+      } else if (!isLiked && likedPostIds.contains(post.id)) {
+        likedPostIds.remove(post.id);
+        await prefs.setStringList('local_liked_posts', likedPostIds);
+      }
+    } catch (e) {
+      // Ignore prefs error
+    }
 
     try {
       final success = await _apiService.likePost(post.id);
       if (!success) throw Exception('API failed');
     } catch (e) {
-      _posts[index] = originalPost;
+      // User specifically requested to keep the heart red even on error
+      // _posts[index] = originalPost;
       _errorMessage = 'failed_to_like';
       notifyListeners();
       
@@ -85,7 +127,16 @@ class FeedViewModel extends ChangeNotifier {
       final updatedIndex = _posts.indexWhere((p) => p.id == postId);
       if (updatedIndex != -1) {
         final currentPost = _posts[updatedIndex];
-        final newList = currentPost.commentsList.map((c) => c.id == tempCommentId ? realComment : c).toList();
+        
+        final combinedComment = CommentModel(
+          id: realComment.id,
+          authorName: authorName, // Keep the actual user's name locally
+          content: content,
+          date: DateTime.now().toUtc().toIso8601String(), // Force REAL time to override mock server dates
+          authorAvatar: tempComment.authorAvatar,
+        );
+
+        final newList = currentPost.commentsList.map((c) => c.id == tempCommentId ? combinedComment : c).toList();
         _posts[updatedIndex] = currentPost.copyWith(commentsList: newList);
         notifyListeners();
       }

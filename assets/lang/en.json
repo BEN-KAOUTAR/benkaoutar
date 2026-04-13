@@ -239,7 +239,7 @@
   "late_status": "Late",
   "late_label": "Late",
   "level_label": "Level",
-  "like_btn": "Like",
+  "btn_like": "Like",
   "liked_post": "You liked this post",
   "likes_count": "Likes",
   "link_child": "Link",

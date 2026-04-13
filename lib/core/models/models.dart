@@ -161,6 +161,7 @@ class GradeModel {
   final String? title;
   final int? rank;
   final int? classSize;
+  final List<GradeComponentModel>? components;
 
   GradeModel({
     required this.id,
@@ -176,6 +177,7 @@ class GradeModel {
     this.title,
     this.rank,
     this.classSize,
+    this.components,
   });
 
   GradeModel copyWith({
@@ -192,6 +194,7 @@ class GradeModel {
     String? title,
     int? rank,
     int? classSize,
+    List<GradeComponentModel>? components,
   }) {
     return GradeModel(
       id: id ?? this.id,
@@ -207,6 +210,7 @@ class GradeModel {
       title: title ?? this.title,
       rank: rank ?? this.rank,
       classSize: classSize ?? this.classSize,
+      components: components ?? this.components,
     );
   }
 
@@ -249,6 +253,14 @@ class GradeModel {
       }
     }
 
+    List<GradeComponentModel>? parsedComponents;
+    for (final key in ['components', 'subGrades', 'details', 'children', 'elements', 'criterias', 'competences', 'mokawinat']) {
+      if (json[key] is List && (json[key] as List).isNotEmpty) {
+         parsedComponents = (json[key] as List).map((x) => GradeComponentModel.fromJson(x as Map<String, dynamic>)).toList();
+         break;
+      }
+    }
+
     return GradeModel(
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       subject: subjectName,
@@ -263,6 +275,7 @@ class GradeModel {
       title: title,
       rank: (json['rank'] ?? json['classement'] ?? json['position'] as num?)?.toInt(),
       classSize: (json['classSize'] ?? json['totalStudents'] ?? json['effectif'] as num?)?.toInt(),
+      components: parsedComponents,
     );
   }
 
@@ -281,11 +294,41 @@ class GradeModel {
       'title': title,
       'rank': rank,
       'classSize': classSize,
+      'components': components?.map((c) => c.toJson()).toList(),
+    };
+  }
+}
+
+class GradeComponentModel {
+  final String title;
+  final double grade;
+  final double maxGrade;
+
+  GradeComponentModel({
+    required this.title,
+    required this.grade,
+    required this.maxGrade,
+  });
+
+  factory GradeComponentModel.fromJson(Map<String, dynamic> json) {
+    return GradeComponentModel(
+      title: json['title'] ?? json['name'] ?? json['label'] ?? json['mokawin'] ?? '',
+      grade: ((json['grade'] ?? json['note'] ?? json['score'] ?? json['value'] ?? 0) as num).toDouble(),
+      maxGrade: ((json['maxGrade'] ?? json['total'] ?? json['outOf'] ?? 20) as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'grade': grade,
+      'maxGrade': maxGrade,
     };
   }
 }
 
 class AttendanceRecord {
+  final String id;
   final String date;
   final String status; // 'present', 'absent', 'late', 'sick'
   final String? motif;
@@ -296,6 +339,7 @@ class AttendanceRecord {
   final String? sessionName;
 
   AttendanceRecord({
+    required this.id,
     required this.date,
     required this.status,
     this.motif,
@@ -353,6 +397,7 @@ class AttendanceRecord {
     }
 
     return AttendanceRecord(
+      id: (json['id'] ?? json['_id'])?.toString() ?? '',
       date: json['date'] ?? json['createdAt'] ?? json['passedAt'] ?? '',
       status: finalStatus,
       motif: json['motif'] ?? json['justification'] ?? json['reason'],
@@ -366,6 +411,7 @@ class AttendanceRecord {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'date': date,
       'status': status,
       'motif': motif,
@@ -391,6 +437,7 @@ class PostModel {
   final bool? isCompleted; // Added for homework
   final String? eventDate;
   final List<CommentModel> commentsList;
+  final List<LikeModel> likedBy;
 
   PostModel({
     required this.id,
@@ -410,6 +457,7 @@ class PostModel {
     this.isCompleted = false,
     this.eventDate,
     this.commentsList = const [],
+    this.likedBy = const [],
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
@@ -424,6 +472,20 @@ class PostModel {
       authorAvatar = author['avatar'] ?? authorAvatar;
     }
 
+    String? extractFileUrl(dynamic fileOrFiles) {
+      if (fileOrFiles == null) return null;
+      if (fileOrFiles is Map) {
+         return fileOrFiles['url'] ?? fileOrFiles['path'] ?? fileOrFiles['filename'] ?? fileOrFiles['file'];
+      }
+      if (fileOrFiles is List && fileOrFiles.isNotEmpty) {
+        final first = fileOrFiles.first;
+        if (first is Map) return first['url'] ?? first['path'] ?? first['filename'] ?? first['file'];
+        return first?.toString();
+      }
+      if (fileOrFiles is String && fileOrFiles.isNotEmpty) return fileOrFiles;
+      return null;
+    }
+
     return PostModel(
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       authorName: authorName,
@@ -431,7 +493,7 @@ class PostModel {
       authorAvatar: processImageUrl(authorAvatar),
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      imageUrl: processImageUrl(json['imageUrl'] ?? json['image']),
+      imageUrl: processImageUrl(extractFileUrl(json['imageUrl']) ?? extractFileUrl(json['image']) ?? extractFileUrl(json['media']) ?? extractFileUrl(json['photo']) ?? extractFileUrl(json['files']) ?? extractFileUrl(json['attachments']) ?? extractFileUrl(json['documents'])),
       date: json['date'] ?? json['createdAt'] ?? '',
       likes: json['likesCount'] ?? (json['likes'] is List ? (json['likes'] as List).length : 0),
       comments: json['commentsCount'] ?? (json['comments'] is List ? (json['comments'] as List).length : 0),
@@ -443,6 +505,9 @@ class PostModel {
       eventDate: json['eventDate'],
       commentsList: (json['comments'] is List && json['comments'].isNotEmpty && json['comments'][0] is Map)
               ? (json['comments'] as List).map((c) => CommentModel.fromJson(c)).toList()
+              : const [],
+      likedBy: (json['likes'] is List && json['likes'].isNotEmpty && json['likes'][0] is Map)
+              ? (json['likes'] as List).map((l) => LikeModel.fromJson(l)).toList()
               : const [],
     );
   }
@@ -466,6 +531,7 @@ class PostModel {
       'isCompleted': isCompleted,
       'eventDate': eventDate,
       'commentsList': commentsList.map((c) => c.toJson()).toList(),
+      'likedBy': likedBy.map((l) => l.toJson()).toList(),
     };
   }
 
@@ -487,6 +553,7 @@ class PostModel {
     bool? isCompleted,
     String? eventDate,
     List<CommentModel>? commentsList,
+    List<LikeModel>? likedBy,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -506,7 +573,40 @@ class PostModel {
       isCompleted: isCompleted ?? this.isCompleted,
       eventDate: eventDate ?? this.eventDate,
       commentsList: commentsList ?? this.commentsList,
+      likedBy: likedBy ?? this.likedBy,
     );
+  }
+}
+
+class LikeModel {
+  final String userName;
+  final String? userAvatar;
+
+  LikeModel({required this.userName, this.userAvatar});
+
+  factory LikeModel.fromJson(Map<String, dynamic> json) {
+    String name = json['fullName'] ?? json['name'] ?? 'Utilisateur';
+    String? avatar = processImageUrl(json['avatar'] ?? json['avatarUrl']);
+    
+    // Handle nested author/user structures
+    if (json['user'] is Map) {
+      final user = json['user'];
+      name = user['fullName'] ?? user['name'] ?? name;
+      avatar = processImageUrl(user['avatar'] ?? user['avatarUrl']) ?? avatar;
+    } else if (json['author'] is Map) {
+      final author = json['author'];
+      name = author['fullName'] ?? author['name'] ?? name;
+      avatar = processImageUrl(author['avatar'] ?? author['avatarUrl']) ?? avatar;
+    }
+
+    return LikeModel(userName: name, userAvatar: avatar);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userName': userName,
+      'userAvatar': userAvatar,
+    };
   }
 }
 
@@ -514,10 +614,11 @@ String? processImageUrl(dynamic img) {
   if (img == null || img.toString().trim().isEmpty) return null;
   String url = img.toString();
   if (url.startsWith('http')) return url;
+  const String baseUrl = 'https://api-demo.intranet.ikenas.com';
   if (url.startsWith('/')) {
-    return 'https://api-demo.intranet.ikenas.com$url';
+    return '$baseUrl$url';
   }
-  return 'https://api-demo.intranet.ikenas.com/$url';
+  return '$baseUrl/$url';
 }
 
 class CommentModel {
@@ -1226,6 +1327,11 @@ enum PaymentStatus {
   overdue,
 }
 
+enum PaymentType {
+  scolarity,
+  transport,
+}
+
 class PaymentModel {
   final String id;
   final String month;
@@ -1234,6 +1340,13 @@ class PaymentModel {
   final String date;
   final String? invoiceUrl;
   final List<String> childIds;
+  // Receipt display fields
+  final String? invoiceNumber;
+  final String? studentName;
+  final String? className;
+  final String? paymentMethod;
+  final int? year;
+  final PaymentType paymentType;
 
   PaymentModel({
     required this.id,
@@ -1243,20 +1356,120 @@ class PaymentModel {
     required this.date,
     this.invoiceUrl,
     required this.childIds,
+    this.invoiceNumber,
+    this.studentName,
+    this.className,
+    this.paymentMethod,
+    this.year,
+    this.paymentType = PaymentType.scolarity,
   });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
+    String rawMonth = json['month']?.toString() ?? json['periodMonth']?.toString() ?? json['label']?.toString() ?? '';
+    
+    String normalizeMonth(String mStr) {
+      if (mStr.isEmpty) return '';
+      String m = mStr.toLowerCase().trim();
+      
+      // Handle "Scolarité • Avril" format
+      if (m.contains('•')) {
+        m = m.split('•').last.trim();
+      }
+      
+      int? num = int.tryParse(m);
+      if (num != null) {
+        if (num == 9) return 'september';
+        if (num == 10) return 'october';
+        if (num == 11) return 'november';
+        if (num == 12) return 'december';
+        if (num == 1) return 'january';
+        if (num == 2) return 'february';
+        if (num == 3) return 'march';
+        if (num == 4) return 'april';
+        if (num == 5) return 'may';
+        if (num == 6) return 'june';
+      }
+      if (m.startsWith('sep') || m.startsWith('sép')) return 'september';
+      if (m.startsWith('oct')) return 'october';
+      if (m.startsWith('nov')) return 'november';
+      if (m.startsWith('dec') || m.startsWith('déc')) return 'december';
+      if (m.startsWith('jan')) return 'january';
+      if (m.startsWith('feb') || m.startsWith('fév')) return 'february';
+      if (m.startsWith('mar')) return 'march';
+      if (m.startsWith('apr') || m.startsWith('avr')) return 'april';
+      if (m.startsWith('may') || m.startsWith('mai')) return 'may';
+      if (m.startsWith('jun') || m.startsWith('jui')) return 'june';
+      return mStr;
+    }
+
+    // Extract date robustly
+    String dateValue = json['date']?.toString() ?? json['paidAt']?.toString() ?? json['createdAt']?.toString() ?? '';
+
+    // Extract student name from nested student/user object or direct field
+    String? studentName;
+    if (json['student'] is Map) {
+      final s = json['student'] as Map;
+      final user = s['user'];
+      if (user is Map) {
+        studentName = user['fullName']?.toString() ?? user['name']?.toString();
+      }
+      studentName ??= s['fullName']?.toString() ?? s['name']?.toString();
+    }
+    studentName ??= json['studentName']?.toString() ?? json['student']?.toString();
+
+    // Extract class name
+    String? className;
+    if (json['class'] is Map) {
+      className = (json['class'] as Map)['name']?.toString() ?? (json['class'] as Map)['label']?.toString();
+    } else if (json['classe'] is Map) {
+      className = (json['classe'] as Map)['name']?.toString() ?? (json['classe'] as Map)['label']?.toString();
+    } else if (json['group'] is Map) {
+      className = (json['group'] as Map)['name']?.toString() ?? (json['group'] as Map)['label']?.toString();
+    } else if (json['affectation'] is Map) {
+      final aff = json['affectation'];
+      if (aff['class'] is Map) className = aff['class']['name']?.toString();
+      else if (aff['classe'] is Map) className = aff['classe']['name']?.toString();
+      else if (aff['group'] is Map) className = aff['group']['name']?.toString();
+    }
+    className ??= json['className']?.toString() ?? json['level']?.toString() ?? json['groupName']?.toString();
+    if (className == null && json['classe'] is String) className = json['classe'].toString();
+    if (className == null && json['class'] is String) className = json['class'].toString();
+
+    // Extract year from paidAt date or periodYear
+    int? year = json['periodYear'] is int ? json['periodYear'] as int 
+        : int.tryParse(json['periodYear']?.toString() ?? '');
+    if (year == null && dateValue.length >= 4) {
+      year = int.tryParse(dateValue.substring(0, 4));
+    }
+
+    // Detect payment type from invoiceNumber prefix or label
+    final invoiceNum = json['invoiceNumber']?.toString() ?? json['reference']?.toString() ?? json['invoiceRef']?.toString() ?? json['ref']?.toString() ?? '';
+    final label = json['label']?.toString().toLowerCase() ?? '';
+    PaymentType pType = PaymentType.scolarity;
+    if (invoiceNum.toUpperCase().startsWith('INV-TRA') || label.contains('transport')) {
+      pType = PaymentType.transport;
+    }
+
     return PaymentModel(
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
-      month: json['month']?.toString() ?? '',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      month: normalizeMonth(rawMonth),
+      amount: (json['amount'] ?? json['totalAmount'] ?? json['fee'] ?? json['total'] as num?)?.toDouble() ?? 0.0,
       status: PaymentStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
-        orElse: () => PaymentStatus.pending,
+        (e) => e.toString().split('.').last.toLowerCase() == json['status']?.toString().toLowerCase(),
+        orElse: () => (json['isPaid'] == true || 
+                       json['status']?.toString().toLowerCase() == 'paid' || 
+                       json['paidAt'] != null ||
+                       (json['paidAmount'] != null && json['paidAmount'] != 0)) ? PaymentStatus.paid : PaymentStatus.pending,
       ),
-      date: json['date']?.toString() ?? '',
-      invoiceUrl: json['invoiceUrl'],
-      childIds: List<String>.from(json['childIds'] ?? []),
+      date: dateValue,
+      invoiceUrl: json['invoiceUrl'] ?? json['receiptUrl'] ?? json['downloadUrl'],
+      childIds: json['childIds'] is List ? List<String>.from(json['childIds']) : (json['studentId'] != null ? [json['studentId'].toString()] : []),
+      invoiceNumber: invoiceNum.isNotEmpty ? invoiceNum : null,
+      studentName: studentName,
+      className: className,
+      paymentMethod: json['paymentMethod']?.toString() ?? json['paymentMode']?.toString() ?? json['method']?.toString() ?? json['mode']?.toString(),
+      year: year,
+      paymentType: pType,
     );
   }
 
@@ -1269,10 +1482,17 @@ class PaymentModel {
       'date': date,
       'invoiceUrl': invoiceUrl,
       'childIds': childIds,
+      'invoiceNumber': invoiceNumber,
+      'studentName': studentName,
+      'className': className,
+      'paymentMethod': paymentMethod,
+      'periodYear': year,
+      'paymentType': paymentType.toString().split('.').last,
     };
   }
 }
 
+<<<<<<< HEAD
 class TimetableSessionModel {
   final int dayIndex;
   final String time;
@@ -1291,4 +1511,28 @@ class TimetableSessionModel {
     this.isCanceled = false,
     this.isLive = false,
   });
+=======
+/// Groups scolarité and transport payments for a single month
+class MonthPaymentGroup {
+  final String month;
+  final PaymentModel? scolarity;
+  final PaymentModel? transport;
+
+  MonthPaymentGroup({
+    required this.month,
+    this.scolarity,
+    this.transport,
+  });
+
+  bool get scolarityPaid => scolarity?.status == PaymentStatus.paid;
+  bool get transportPaid => transport?.status == PaymentStatus.paid;
+  bool get allPaid => scolarityPaid && transportPaid;
+  bool get anyPaid => scolarityPaid || transportPaid;
+
+  PaymentStatus get overallStatus {
+    if (allPaid) return PaymentStatus.paid;
+    if (scolarity?.status == PaymentStatus.overdue || transport?.status == PaymentStatus.overdue) return PaymentStatus.overdue;
+    return PaymentStatus.pending;
+  }
+>>>>>>> 7a8449f93c85bcd072a0fba9045d89c6affa94df
 }

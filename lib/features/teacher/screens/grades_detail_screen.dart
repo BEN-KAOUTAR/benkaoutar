@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../core/widgets/deep_space_background.dart';
-import '../../../core/localization/app_localizations.dart';
 
 class GradesDetailScreen extends StatefulWidget {
   final Map<String, dynamic> sessionData;

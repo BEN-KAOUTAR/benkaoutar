@@ -20,6 +20,7 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> init() async {
     await Future.wait([
       fetchChildren(),
+      fetchStats(),
       fetchActivities(),
     ]);
   }
@@ -39,12 +40,22 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchStats() async {
+    try {
+      await _apiService.getDashboardStats();
+      // Stats are fetched to populate any server-side cache or aggregated data
+      notifyListeners();
+    } catch (e) {
+      // Handle silently
+    }
+  }
+
   Future<void> fetchActivities() async {
     try {
       _activities = await _apiService.getDashboardActivities();
       notifyListeners();
     } catch (e) {
-      // Background fetch, handle silently or update error
+      // Background fetch, handle silently
     }
   }
 

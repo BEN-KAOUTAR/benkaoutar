@@ -19,9 +19,12 @@ import 'features/parent/viewmodels/timetable_view_model.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/localization/app_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('fr', null);
+  await initializeDateFormatting('ar', null);
 
   runApp(
     MultiProvider(

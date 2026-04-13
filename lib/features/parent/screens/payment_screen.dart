@@ -31,7 +31,7 @@ class _PaymentScreenState extends State<PaymentScreen>
   // ── Yearly Summary Card ─────────────────────────────────────────────────────
   Widget _buildYearlySummary(PaymentViewModel vm) {
     final paid = vm.paidCount;
-    final total = vm.payments.length;
+    final total = vm.monthGroups.length;
     final progress = vm.progressionRate;
 
     return Container(
@@ -163,44 +163,45 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
-  // ── Month Grid ──────────────────────────────────────────────────────────────
-  Widget _buildMonthCard(PaymentModel payment, int index, bool isDark, PaymentViewModel vm) {
-    // Find the first unpaid month (for "Pay Now" logic)
+  // ── Month Card ──────────────────────────────────────────────────────────────
+  Widget _buildMonthCard(MonthPaymentGroup group, int index, bool isDark, PaymentViewModel vm) {
+    final loc = AppLocalizations.of(context)!;
+    final overallStatus = group.overallStatus;
     bool isFirstPending = false;
-    final pendingMonths = vm.payments.where((p) => p.status == PaymentStatus.pending).toList();
-    if (payment.status == PaymentStatus.pending && pendingMonths.isNotEmpty && pendingMonths.first.id == payment.id) {
-       isFirstPending = true;
+    final pendingGroups = vm.monthGroups.where((g) => g.overallStatus == PaymentStatus.pending).toList();
+    if (overallStatus == PaymentStatus.pending && pendingGroups.isNotEmpty && pendingGroups.first.month == group.month) {
+      isFirstPending = true;
     }
 
-    // Colors
+    // Colors based on overall status
     Color glowColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.7);
     Color borderColor = isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.9);
     Color labelColor = isDark ? Colors.white60 : Colors.black54;
-    IconData? icon;
 
-    if (payment.status == PaymentStatus.paid) {
-      glowColor = isDark ? Colors.greenAccent.withValues(alpha: 0.08) : Colors.greenAccent.withValues(alpha: 0.15);
-      borderColor = isDark ? Colors.greenAccent.withValues(alpha: 0.25) : Colors.greenAccent.withValues(alpha: 0.3);
-      labelColor = isDark ? Colors.greenAccent : Colors.green;
-      icon = Icons.check_circle_rounded;
-    } else if (payment.status == PaymentStatus.overdue) {
-      glowColor = isDark ? Colors.redAccent.withValues(alpha: 0.08) : Colors.redAccent.withValues(alpha: 0.1);
-      borderColor = isDark ? Colors.redAccent.withValues(alpha: 0.25) : Colors.redAccent.withValues(alpha: 0.3);
-      labelColor = isDark ? Colors.redAccent : Colors.red;
-      icon = Icons.warning_amber_rounded;
+    if (group.allPaid) {
+      glowColor = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFD1FAE5);
+      borderColor = isDark ? const Color(0xFF10B981).withValues(alpha: 0.4) : const Color(0xFF10B981).withValues(alpha: 0.3);
+      labelColor = isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
+    } else if (overallStatus == PaymentStatus.overdue) {
+      glowColor = isDark ? const Color(0xFF450A0A).withValues(alpha: 0.3) : const Color(0xFFFEE2E2);
+      borderColor = isDark ? const Color(0xFFEF4444).withValues(alpha: 0.4) : const Color(0xFFEF4444).withValues(alpha: 0.3);
+      labelColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+    } else if (group.anyPaid) {
+      // Partial: some paid, some not
+      glowColor = isDark ? const Color(0xFF1E3A5F).withValues(alpha: 0.3) : const Color(0xFFFFF7ED);
+      borderColor = isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.4) : const Color(0xFFF59E0B).withValues(alpha: 0.3);
+      labelColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
     } else if (isFirstPending) {
-      glowColor = isDark ? Colors.blueAccent.withValues(alpha: 0.1) : Colors.blueAccent.withValues(alpha: 0.15);
-      borderColor = isDark ? Colors.blueAccent.withValues(alpha: 0.4) : Colors.blueAccent.withValues(alpha: 0.3);
-      labelColor = isDark ? Colors.blueAccent : Colors.blue;
+      glowColor = isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.3) : const Color(0xFFDBEAFE);
+      borderColor = isDark ? const Color(0xFF3B82F6).withValues(alpha: 0.4) : const Color(0xFF3B82F6).withValues(alpha: 0.3);
+      labelColor = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
     }
 
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        if (payment.status == PaymentStatus.paid) {
-          _showReceiptTypeSelection(payment, vm);
-        } else {
-          _openPaymentWizard(payment);
+        if (group.anyPaid) {
+          _showReceiptTypeSelection(group, vm);
         }
       },
       child: AnimatedContainer(
@@ -210,65 +211,152 @@ class _PaymentScreenState extends State<PaymentScreen>
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: borderColor),
         ),
-        child: Stack(
-          children: [
-            // Glow dot top-right
-            if (payment.status == PaymentStatus.paid || payment.status == PaymentStatus.overdue)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Icon(icon, color: labelColor, size: 14),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                loc.translate(group.month).substring(0, 3).toUpperCase(),
+                style: TextStyle(
+                  color: labelColor.withValues(alpha: 0.6),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 4),
+              // Type status indicators
+              Row(
                 children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate(payment.month).substring(0, 3).toUpperCase(),
-                    style: TextStyle(
-                      color: labelColor.withValues(alpha: 0.6),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                    ),
+                  _typeStatusDot(
+                    Icons.school_rounded,
+                    group.scolarityPaid,
+                    group.scolarity != null,
+                    isDark,
                   ),
-                  const Spacer(),
-                  Text(
-                    AppLocalizations.of(context)!.translate(payment.month),
-                    style: TextStyle(
-                      color: payment.status != PaymentStatus.pending || isFirstPending
-                          ? labelColor
-                          : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4)),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  const SizedBox(width: 8),
+                  _typeStatusDot(
+                    Icons.directions_bus_rounded,
+                    group.transportPaid,
+                    group.transport != null,
+                    isDark,
                   ),
-                  if (payment.status == PaymentStatus.pending)
-                    Text(
-                      isFirstPending ? '${AppLocalizations.of(context)!.translate('pay_now')} →' : AppLocalizations.of(context)!.translate('pending'),
-                      style: TextStyle(
-                        color: isFirstPending ? (isDark ? Colors.blueAccent : Colors.blue) : (isDark ? Colors.white24 : Colors.black26),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
                 ],
               ),
-            ),
-          ],
+              const Spacer(),
+              Text(
+                loc.translate(group.month),
+                style: TextStyle(
+                  color: group.allPaid || group.anyPaid || overallStatus == PaymentStatus.overdue || isFirstPending
+                      ? labelColor
+                      : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4)),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (!group.anyPaid && overallStatus == PaymentStatus.pending)
+                Text(
+                  isFirstPending ? '${loc.translate('pay_now')} →' : loc.translate('pending'),
+                  style: TextStyle(
+                    color: isFirstPending ? (isDark ? Colors.blueAccent : Colors.blue) : (isDark ? Colors.white24 : Colors.black26),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              if (group.anyPaid && !group.allPaid && overallStatus != PaymentStatus.overdue)
+                Text(
+                  'Partiel',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              if (group.anyPaid && !group.allPaid && overallStatus == PaymentStatus.overdue)
+                Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: const Color(0xFFF87171), size: 12),
+                    const SizedBox(width: 3),
+                    Text(
+                      'Partiel ⚠',
+                      style: TextStyle(color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626), fontSize: 9, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+              if (group.allPaid)
+                Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: labelColor, size: 12),
+                    const SizedBox(width: 3),
+                    Text(
+                      loc.translate('paid'),
+                      style: TextStyle(color: labelColor, fontSize: 9, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+              if (overallStatus == PaymentStatus.overdue && !group.anyPaid)
+                Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: labelColor, size: 12),
+                    const SizedBox(width: 3),
+                    Text(
+                      loc.translate('overdue'),
+                      style: TextStyle(color: labelColor, fontSize: 9, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     ).animate().fadeIn(delay: (30 * index).ms).scale(begin: const Offset(0.93, 0.93));
   }
 
-  // ── Receipt Bottom Sheet ────────────────────────────────────────────────────
-  void _showReceiptTypeSelection(PaymentModel payment, PaymentViewModel vm) {
+  Widget _typeStatusDot(IconData icon, bool isPaid, bool exists, bool isDark) {
+    if (!exists) {
+      return Container(
+        width: 32, height: 32,
+        decoration: BoxDecoration(
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 16, color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15)),
+      );
+    }
+    final Color bg = isPaid
+        ? const Color(0xFF10B981).withValues(alpha: 0.2)
+        : const Color(0xFFEF4444).withValues(alpha: 0.2);
+    final Color border = isPaid
+        ? const Color(0xFF10B981).withValues(alpha: 0.6)
+        : const Color(0xFFEF4444).withValues(alpha: 0.6);
+    final Color iconColor = isPaid
+        ? const Color(0xFF34D399)
+        : const Color(0xFFF87171);
+
+    return Container(
+      width: 32, height: 32,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.25),
+            blurRadius: 6,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Icon(icon, size: 16, color: iconColor),
+    );
+  }
+
+  // ── Receipt Type Selection ──────────────────────────────────────────────────
+  void _showReceiptTypeSelection(MonthPaymentGroup group, PaymentViewModel vm) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final bgColor = isDark ? const Color(0xFF1E3A5F) : Colors.white;
-    final bgColor2 = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFF1F5F9);
-    final handleColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1);
+    final bgColor = isDark ? const Color(0xFF0F1D2E) : Colors.white;
 
     showModalBottomSheet(
       context: context,
@@ -276,24 +364,19 @@ class _PaymentScreenState extends State<PaymentScreen>
       builder: (context) {
         return Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [bgColor, bgColor2],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
+            color: bgColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.transparent),
           ),
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 4,
+                width: 40, height: 4,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: handleColor,
+                  color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -307,25 +390,32 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              _buildTypeOption(
-                title: AppLocalizations.of(context)!.translate('scolarity_receipt'),
-                icon: Icons.school_rounded,
-                color: Colors.blueAccent,
-                onTap: () {
-                  Navigator.pop(context);
-                  _showReceiptSheet(payment, vm, isTransport: false);
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildTypeOption(
-                title: AppLocalizations.of(context)!.translate('transport_receipt'),
-                icon: Icons.directions_bus_rounded,
-                color: Colors.orangeAccent,
-                onTap: () {
-                  Navigator.pop(context);
-                  _showReceiptSheet(payment, vm, isTransport: true);
-                },
-              ),
+              // Scolarité option
+              if (group.scolarity != null)
+                _buildTypeOption(
+                  title: AppLocalizations.of(context)!.translate('scolarity_receipt'),
+                  icon: Icons.school_rounded,
+                  color: Colors.blueAccent,
+                  isPaid: group.scolarityPaid,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showReceiptSheet(group.scolarity!, vm, isTransport: false);
+                  },
+                ),
+              if (group.scolarity != null && group.transport != null)
+                const SizedBox(height: 16),
+              // Transport option
+              if (group.transport != null)
+                _buildTypeOption(
+                  title: AppLocalizations.of(context)!.translate('transport_receipt'),
+                  icon: Icons.directions_bus_rounded,
+                  color: Colors.orangeAccent,
+                  isPaid: group.transportPaid,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showReceiptSheet(group.transport!, vm, isTransport: true);
+                  },
+                ),
             ],
           ),
         );
@@ -337,6 +427,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     required String title,
     required IconData icon,
     required Color color,
+    required bool isPaid,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -362,15 +453,30 @@ class _PaymentScreenState extends State<PaymentScreen>
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 16),
-            Text(
-              title,
-              style: TextStyle(
-                color: primaryTextColor,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: primaryTextColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isPaid ? 'Payé ✓' : 'Non payé',
+                    style: TextStyle(
+                      color: isPaid ? Colors.greenAccent : Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const Spacer(),
             Icon(Icons.chevron_right_rounded, color: primaryTextColor.withValues(alpha: 0.3)),
           ],
         ),
@@ -378,15 +484,60 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
+  // ── Receipt Bottom Sheet ──────────────────────────────────────────────────────
   void _showReceiptSheet(PaymentModel payment, PaymentViewModel vm, {bool isTransport = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white.withValues(alpha: 0.4) : const Color(0xFF0F172A).withValues(alpha: 0.6);
-    final bgColor = isDark ? const Color(0xFF1A2D47) : Colors.white;
-    final bgColor2 = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFF1F5F9);
-    final handleColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1);
+    final secondaryTextColor = isDark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF64748B);
+    final bgColor = isDark ? const Color(0xFF0F1D2E) : Colors.white;
+    final dividerColor = isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0);
 
-    final invoiceId = '#2026-${payment.id.padLeft(2, '0')}';
+    // Format payment date
+    String formattedDate = payment.date;
+    try {
+      if (payment.date.isNotEmpty) {
+        final dt = DateTime.parse(payment.date);
+        formattedDate = '${dt.day.toString().padLeft(2,'0')}/${dt.month.toString().padLeft(2,'0')}/${dt.year}';
+      }
+    } catch (_) {}
+
+    // Month + Year label
+    final loc = AppLocalizations.of(context)!;
+    final monthLabel = payment.month.isNotEmpty ? loc.translate(payment.month) : '--';
+    final yearLabel = payment.year?.toString() ?? '';
+    final monthYearLabel = '$monthLabel${yearLabel.isNotEmpty ? ' $yearLabel' : ''}';
+
+    // Invoice number
+    final invoiceNum = payment.invoiceNumber ?? '--';
+
+    // Payment method
+    String methodLabel = '--';
+    if (payment.paymentMethod != null) {
+      final m = payment.paymentMethod!.toLowerCase();
+      if (m.contains('espece') || m.contains('cash') || m.contains('espèce')) {
+        methodLabel = 'Espèces';
+      } else if (m.contains('virement') || m.contains('bank') || m.contains('transfer')) {
+        methodLabel = 'Virement bancaire';
+      } else if (m.contains('cheque') || m.contains('chèque')) {
+        methodLabel = 'Chèque';
+      } else if (m.contains('carte') || m.contains('card')) {
+        methodLabel = 'Carte bancaire';
+      } else {
+        methodLabel = payment.paymentMethod!;
+      }
+    }
+
+    // Receipt type from invoice number prefix
+    String receiptType = isTransport ? 'Transport' : 'Scolarité';
+    if (invoiceNum != '--') {
+      if (invoiceNum.toUpperCase().startsWith('INV-TRA')) {
+        receiptType = 'Transport';
+      } else if (invoiceNum.toUpperCase().startsWith('INV-SCO')) {
+        receiptType = 'Scolarité';
+      } else if (invoiceNum.toUpperCase().startsWith('INV-INS')) {
+        receiptType = 'Inscription';
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -396,239 +547,151 @@ class _PaymentScreenState extends State<PaymentScreen>
         return ListenableBuilder(
           listenable: vm,
           builder: (context, child) {
-             bool isDownloading = vm.isDownloading;
-             bool isDone = false; // We can manage local done state or use vm state
+            bool isDownloading = vm.isDownloading;
 
             return Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [bgColor, bgColor2],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
+                color: bgColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.transparent),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 24),
-                      decoration: BoxDecoration(
-                        color: handleColor,
-                        borderRadius: BorderRadius.circular(2),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Handle
+                      Container(
+                        width: 40, height: 4,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isTransport ? 'REÇU DE TRANSPORT' : 'REÇU DE SCOLARITÉ',
-                              style: TextStyle(
-                                color: secondaryTextColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Invoice $invoiceId',
+
+                      // Header Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Facture du mois',
                               style: TextStyle(
                                 color: primaryTextColor,
-                                fontSize: 22,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.5,
                               ),
                             ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.greenAccent.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.4)),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.translate('paid').toUpperCase(),
-                                style: TextStyle(
-                                  color: Colors.greenAccent.shade200,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1,
-                                ),
+                          // Download Button
+                          GestureDetector(
+                            onTap: () async {
+                              if (isDownloading) return;
+                              HapticFeedback.mediumImpact();
+                              String? url = payment.invoiceUrl;
+                              if (url == null || url.isEmpty) {
+                                url = await vm.getReceiptUrl(payment.id, isTransport ? 'transport' : 'scolarity');
+                              }
+                              if (url != null && url.isNotEmpty) {
+                                HapticFeedback.heavyImpact();
+                                await vm.launchURL(url);
+                                if (context.mounted) Navigator.pop(context);
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Reçu non disponible.'), backgroundColor: Colors.orangeAccent),
+                                  );
+                                }
+                              }
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF6366F1)]),
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
                               ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.check_rounded, color: Colors.greenAccent.shade200, size: 14),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-                    _receiptInfoRow(AppLocalizations.of(context)!.translate('date_label'), payment.date),
-                    const SizedBox(height: 14),
-                    _receiptInfoRow(isTransport ? 'Service' : 'École', isTransport ? 'Transport Scolaire' : 'École Al Irfane'),
-                    const SizedBox(height: 14),
-                    _receiptInfoRow(AppLocalizations.of(context)!.translate('month_label'), AppLocalizations.of(context)!.translate(payment.month)),
-                    const SizedBox(height: 28),
-                    Container(
-                      height: 1,
-                      color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
-                    ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'DÉTAIL',
-                        style: TextStyle(
-                          color: isDark ? Colors.white.withValues(alpha: 0.3) : const Color(0xFF0F172A).withValues(alpha: 0.4),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                     // Simplified for now: assuming 1 child or generic description
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "Scolarité ${AppLocalizations.of(context)!.translate(payment.month)}",
-                            style: TextStyle(
-                              color: primaryTextColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isDownloading)
+                                    const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+                                  else
+                                    const Icon(Icons.download_rounded, color: Colors.white, size: 15),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    isDownloading ? 'Chargement...' : 'Télécharger',
+                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          Text(
-                            '${payment.amount.toInt()} DH',
-                            style: TextStyle(
-                              color: isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF0F172A).withValues(alpha: 0.8),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                          const SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0)),
+                              ),
+                              child: Text('Fermer', style: TextStyle(color: primaryTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.15)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'TOTAL PAYÉ',
-                            style: TextStyle(
-                              color: isDark ? Colors.blueAccent.shade100 : Colors.blueAccent.shade700,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          Text(
-                            '${payment.amount.toInt()} DH',
-                            style: TextStyle(
-                              color: primaryTextColor,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    GestureDetector(
-                      onTap: () async {
-                        if (isDownloading) return;
-                        HapticFeedback.mediumImpact();
-                        
-                        final url = await vm.getReceiptUrl(payment.id, isTransport ? 'transport' : 'scolarity');
-                        
-                        if (url != null) {
-                           HapticFeedback.heavyImpact();
-                           if (context.mounted) {
-                             ScaffoldMessenger.of(context).showSnackBar(
-                               SnackBar(content: Text(AppLocalizations.of(context)!.translate('download_success')))
-                             );
-                             Navigator.pop(context);
-                           }
-                        }
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
+
+                      const SizedBox(height: 24),
+                      Divider(color: dividerColor, height: 1),
+                      const SizedBox(height: 20),
+
+                      // Receipt fields
+                      _receiptGrid([
+                        _ReceiptField('N° Facture', invoiceNum),
+                        _ReceiptField('Type', receiptType),
+                        _ReceiptField('Nom et prénom de l\'élève', payment.studentName ?? '--'),
+                        _ReceiptField('Classe', payment.className ?? '--'),
+                        _ReceiptField('Mois', monthYearLabel),
+                        _ReceiptField('Statut', payment.status == PaymentStatus.paid ? 'Payé' : (payment.status == PaymentStatus.overdue ? 'En retard' : 'En attente'), isGreen: payment.status == PaymentStatus.paid),
+                        _ReceiptField('Date de paiement', formattedDate.isNotEmpty ? formattedDate : '--'),
+                        _ReceiptField('Mode de paiement', methodLabel),
+                      ], isDark, primaryTextColor, secondaryTextColor),
+
+                      const SizedBox(height: 20),
+
+                      // Total
+                      Container(
                         width: double.infinity,
-                        height: 54,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF3B82F6), Color(0xFF6366F1)],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF3B82F6).withValues(alpha: 0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                          color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.15)),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            if (isDownloading)
-                              const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            else
-                              const Icon(Icons.download_rounded, color: Colors.white, size: 18),
-                              
-                            const SizedBox(width: 10),
-                            Text(
-                              isDownloading 
-                                ? AppLocalizations.of(context)!.translate('downloading')
-                                : AppLocalizations.of(context)!.translate('download_receipt'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1,
+                            Text('TOTAL PAYÉ',
+                              style: TextStyle(
+                                color: isDark ? Colors.blueAccent.shade100 : Colors.blueAccent.shade700,
+                                fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5,
                               ),
+                            ),
+                            Text(
+                              payment.amount > 0 ? '${payment.amount.toStringAsFixed(payment.amount == payment.amount.roundToDouble() ? 0 : 2)} DH' : '--',
+                              style: TextStyle(color: primaryTextColor, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -638,37 +701,27 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
-  Widget _receiptInfoRow(String label, String value) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white.withValues(alpha: 0.4) : const Color(0xFF0F172A).withValues(alpha: 0.6);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: secondaryTextColor,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+  Widget _receiptGrid(List<_ReceiptField> fields, bool isDark, Color primaryTextColor, Color secondaryTextColor) {
+    return Column(
+      children: fields.map((f) {
+        final valueColor = f.isGreen ? Colors.greenAccent.shade400 : primaryTextColor;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 170,
+                child: Text(f.label, style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              Expanded(
+                child: Text(f.value, style: TextStyle(color: valueColor, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
+              ),
+            ],
           ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            color: primaryTextColor,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
+        );
+      }).toList(),
     );
-  }
-
-  void _openPaymentWizard(PaymentModel payment) {
-    HapticFeedback.selectionClick();
-    // Future: implement payment flow
   }
 
   @override
@@ -713,11 +766,11 @@ class _PaymentScreenState extends State<PaymentScreen>
         showOrbs: true,
         child: Consumer<PaymentViewModel>(
           builder: (context, vm, child) {
-            if (vm.isLoading && vm.payments.isEmpty) {
+            if (vm.isLoading && vm.monthGroups.isEmpty) {
               return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
             }
 
-            if (vm.errorMessage != null && vm.payments.isEmpty) {
+            if (vm.errorMessage != null && vm.monthGroups.isEmpty) {
                return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -766,12 +819,12 @@ class _PaymentScreenState extends State<PaymentScreen>
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
-                        childAspectRatio: 0.88,
+                        childAspectRatio: 0.82,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
                       ),
-                      itemCount: vm.payments.length,
-                      itemBuilder: (ctx, i) => _buildMonthCard(vm.payments[i], i, isDark, vm),
+                      itemCount: vm.monthGroups.length,
+                      itemBuilder: (ctx, i) => _buildMonthCard(vm.monthGroups[i], i, isDark, vm),
                     ),
                   ),
                   const SizedBox(height: 120),
@@ -783,4 +836,14 @@ class _PaymentScreenState extends State<PaymentScreen>
       ),
     );
   }
+}
+
+// ─── Helper model for receipt fields ──────────────────────────────────────────
+class _ReceiptField {
+  final String label;
+  final String value;
+  final bool fullWidth;
+  final bool isGreen;
+
+  const _ReceiptField(this.label, this.value, {this.fullWidth = false, this.isGreen = false});
 }

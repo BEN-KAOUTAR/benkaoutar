@@ -238,9 +238,11 @@
   "late_status": "En retard",
   "late_label": "Retard",
   "level_label": "Niveau",
-  "like_btn": "J'aime",
+  "btn_like": "J'aime",
   "liked_post": "Vous avez aimé ce post",
   "likes_count": "Mentions J'aime",
+  "likes_title": "Mentions J'aime",
+  "no_likes_yet": "Aucune mention j'aime pour le moment",
   "link_child": "Lier",
   "link_label": "Lier un élève",
   "link_new_student": "Inscrire un nouvel élève",
@@ -557,5 +559,8 @@
   "yes_link_button": "Oui, Lier l'Élève",
   "yesterday_section": "Hier",
   "your_children": "Vos Enfants",
-  "your_home": "Adresse Domicile"
+  "your_home": "Adresse Domicile",
+  "submit_justification": "Soumettre Justification",
+  "justification_sent": "Justification envoyée avec succès",
+  "sending": "Envoi en cours..."
 }
