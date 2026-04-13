@@ -15,9 +15,11 @@ import 'homework_screen.dart';
 import 'timetable_grid_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/widgets/deep_space_background.dart';
+import '../../../core/widgets/sprite_avatar.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../viewmodels/dashboard_view_model.dart';
 import '../viewmodels/feed_view_model.dart';
+import '../viewmodels/homework_view_model.dart';
 import '../../common/viewmodels/notification_view_model.dart';
 
 class ParentDashboard extends StatefulWidget {
@@ -189,9 +191,12 @@ class _ParentHomeState extends State<_ParentHome> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboardVM = context.read<DashboardViewModel>();
       dashboardVM.init().then((_) {
-        // Fetch initial evolution for the first child if available
+        if (!mounted) return;
+        // Fetch initial evolution and homework for the first child if available
         if (dashboardVM.children.isNotEmpty) {
-          dashboardVM.fetchEvolution(dashboardVM.children[0].id, _selectedYear, _selectedSemester);
+          final studentId = dashboardVM.children[0].id;
+          dashboardVM.fetchEvolution(studentId, _selectedYear, _selectedSemester);
+          context.read<HomeworkViewModel>().fetchHomework(studentId);
         }
       });
       context.read<FeedViewModel>().fetchPosts();
@@ -543,11 +548,37 @@ class _ParentHomeState extends State<_ParentHome> {
           const SizedBox(width: 12),
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
-            child: CircleAvatar(
-              radius: 22,
-              backgroundImage: NetworkImage(
-                  user?.avatarUrl ?? 'https://ui-avatars.com/api/?name=${user?.name ?? 'User'}&background=random'),
-              backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blueAccent.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                ),
+                child: user?.avatarIndex != null
+                    ? SpriteAvatar(index: user!.avatarIndex!, size: 40)
+                    : CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                        child: Icon(Icons.person_rounded, color: isDark ? Colors.white38 : Colors.black26, size: 20),
+                      ),
+              ),
             ),
           ),
         ],
@@ -699,19 +730,22 @@ class _ParentHomeState extends State<_ParentHome> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => TimetableGridScreen(student: children[0])));
                   }
                 }),
-            _buildActionIcon(
-                context,
-                AppLocalizations.of(context)!.translate('homework'),
-                Icons.assignment_rounded,
-                Colors.orangeAccent,
-                null,
-                isDark,
-                onTap: () {
-                  final dashVM = context.read<DashboardViewModel>();
-                  if (dashVM.children.isNotEmpty) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => HomeworkScreen(studentId: dashVM.children[0].id)));
-                  }
-                }),
+            Consumer<HomeworkViewModel>(
+              builder: (context, homeworkVM, child) => _buildActionIcon(
+                  context,
+                  'Devoir/Examen',
+                  Icons.assignment_rounded,
+                  Colors.orangeAccent,
+                  null,
+                  isDark,
+                  showBadge: homeworkVM.hasNewAssignments,
+                  onTap: () {
+                    final dashVM = context.read<DashboardViewModel>();
+                    if (dashVM.children.isNotEmpty) {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => HomeworkScreen(studentId: dashVM.children[0].id)));
+                    }
+                  }),
+            ),
             _buildActionIcon(
                 context,
                 AppLocalizations.of(context)!.translate('trip'),
@@ -752,7 +786,7 @@ class _ParentHomeState extends State<_ParentHome> {
   }
 
   Widget _buildActionIcon(BuildContext context, String label, IconData icon,
-      Color color, Widget? screen, bool isDark, {VoidCallback? onTap}) {
+      Color color, Widget? screen, bool isDark, {VoidCallback? onTap, bool showBadge = false}) {
     return GestureDetector(
       onTap: onTap ?? () {
         if (screen != null)
@@ -760,20 +794,48 @@ class _ParentHomeState extends State<_ParentHome> {
       },
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                    color: color.withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    spreadRadius: 2)
-              ],
-              border: Border.all(color: color.withValues(alpha: 0.2)),
-            ),
-            child: Icon(icon, color: color, size: 24),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                        color: color.withValues(alpha: 0.2),
+                        blurRadius: 20,
+                        spreadRadius: 2)
+                  ],
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              if (showBadge)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.redAccent.withValues(alpha: 0.4),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 2.seconds),
+            ],
           ),
           const SizedBox(height: 12),
           Text(label,

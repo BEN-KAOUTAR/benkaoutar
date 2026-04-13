@@ -10,15 +10,7 @@ class SpriteAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Safety check for 28 avatars (0-27)
     if (index < 0 || index > 27) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.grey.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.person_outline_rounded, color: Colors.grey),
-      );
+      return _buildFallback();
     }
 
     // Files are saved as avatar_1.png to avatar_28.png (1-indexed) in assets/images/avatars/
@@ -27,15 +19,46 @@ class SpriteAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFFF0EDE8), // Match the avatar background tint
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: size * 0.12,
+            offset: Offset(0, size * 0.04),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
       child: Image.asset(
         assetPath,
+        width: size,
+        height: size,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: Colors.grey.withValues(alpha: 0.1),
-          child: const Icon(Icons.person_outline_rounded, color: Colors.grey),
+        // Use gapless playback to avoid flicker on rebuild
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) => _buildFallback(),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+      ),
+      child: Icon(
+        Icons.person_rounded,
+        color: Colors.white.withValues(alpha: 0.8),
+        size: size * 0.5,
       ),
     );
   }
