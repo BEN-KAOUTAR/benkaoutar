@@ -753,11 +753,13 @@ class EventModel {
 }
 
 class HomeworkModel {
-  final String id, subject, title, description, dueDate;
+  final String id, subject, title, description, dueDate, startDate;
+  final String? submissionId;
   final HomeworkStatus status;
   final String? attachment;
   final String? teacherComment;
   final String? teacherName;
+  final String type; // 'devoir' or 'exam'
 
   HomeworkModel({
     required this.id,
@@ -765,23 +767,87 @@ class HomeworkModel {
     required this.title,
     required this.description,
     required this.dueDate,
+    this.startDate = '',
+    this.submissionId,
     this.status = HomeworkStatus.notStarted,
     this.attachment,
     this.teacherComment,
     this.teacherName,
+    this.type = 'devoir',
   });
 
   factory HomeworkModel.fromJson(Map<String, dynamic> json) {
+    String subjectName = '';
+    if (json['subject'] is Map) {
+      subjectName = json['subject']['name'] ?? json['subject']['title'] ?? '';
+    } else {
+      subjectName = json['subject'] ?? json['subjectName'] ?? '';
+    }
+
+    String teacherName = '';
+    if (json['teacher'] is Map) {
+      teacherName = json['teacher']['name'] ?? json['teacher']['fullName'] ?? '';
+    } else {
+      teacherName = json['teacherName'] ?? json['teacher'] ?? '';
+    }
+
+    // Advanced status extraction
+    bool isDone = false;
+    String statusStr = (json['status'] ?? '').toString().toLowerCase();
+    if (json['isSubmitted'] == true || statusStr == 'done' || statusStr == 'completed' || statusStr == 'submitted') {
+      isDone = true;
+    }
+    
+    // Check nested submissions array
+    if (json['submissions'] is List && (json['submissions'] as List).isNotEmpty) {
+      isDone = true;
+    }
+    
+    // Check nested studentAssignments
+    String? nestedAttachment;
+    String? submissionId;
+    if (json['studentAssignments'] is List && (json['studentAssignments'] as List).isNotEmpty) {
+      final sa = (json['studentAssignments'] as List).first;
+      submissionId = (sa['id'] ?? sa['_id'])?.toString();
+      final saStatus = (sa['status'] ?? '').toString().toLowerCase();
+      if (saStatus == 'completed' || saStatus == 'done' || saStatus == 'submitted' || sa['isSubmitted'] == true) {
+        isDone = true;
+      }
+      nestedAttachment = sa['fileUrl'] ?? sa['attachment'];
+    }
+
+    if (isDone) statusStr = 'done';
+    
+    String? foundAttachment = json['attachment'] ?? json['fileUrl'] ?? json['document'] ?? nestedAttachment;
+    
+    // Aggressive media hunt
+    if (foundAttachment == null) {
+      for (final key in ['attachments', 'files', 'media', 'documents']) {
+        if (json[key] is List && (json[key] as List).isNotEmpty) {
+          final first = (json[key] as List).first;
+          if (first is String) {
+            foundAttachment = first;
+          } else if (first is Map) {
+            foundAttachment = first['original_url'] ?? first['url'] ?? first['fileUrl'] ?? first['path'] ?? first['link'] ?? first['file'];
+          }
+          if (foundAttachment != null && foundAttachment.isNotEmpty) break;
+        }
+      }
+    }
+
     return HomeworkModel(
-      id: json['id']?.toString() ?? '',
-      subject: json['subject'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      dueDate: json['dueDate'] ?? '',
-      status: _statusFromString(json['status']),
-      attachment: json['attachment'],
-      teacherComment: json['teacherComment'],
-      teacherName: json['teacherName'],
+      id: (json['id'] ?? json['_id'])?.toString() ?? '',
+      subject: subjectName,
+      title: json['title'] ?? json['name'] ?? '',
+      description: json['description'] ?? json['content'] ?? '',
+      dueDate: json['dueDate'] ?? json['due_date'] ?? json['deadline'] ?? '',
+      startDate: json['createdAt']?.toString().split('T')[0] ?? json['startDate']?.toString() ?? '',
+      submissionId: submissionId,
+      status: _statusFromString(statusStr),
+      attachment: foundAttachment,
+      teacherComment: json['teacherComment'] ?? json['feedback'],
+      teacherName: teacherName,
+      type: (json['type'] ?? json['assignmentType'] ?? 'devoir').toString().toLowerCase() == 'exam' ? 'exam' : 'devoir',
     );
   }
 
@@ -1205,4 +1271,24 @@ class PaymentModel {
       'childIds': childIds,
     };
   }
+}
+
+class TimetableSessionModel {
+  final int dayIndex;
+  final String time;
+  final String subject;
+  final String teacher;
+  final String room;
+  final bool isCanceled;
+  final bool isLive;
+
+  TimetableSessionModel({
+    required this.dayIndex,
+    required this.time,
+    required this.subject,
+    required this.teacher,
+    required this.room,
+    this.isCanceled = false,
+    this.isLive = false,
+  });
 }

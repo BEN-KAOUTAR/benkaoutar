@@ -188,7 +188,7 @@ class ApiService {
   Future<List<HomeworkModel>> getHomework(String studentId) async {
     try {
       // Swagger: /assignments is the correct route for student assignments
-      final response = await _dio.get('/assignments');
+      final response = await _dio.get('/assignments', queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         final List data = _handleResponseData(response);
         return data.map((json) => HomeworkModel.fromJson(json)).toList();
@@ -199,16 +199,48 @@ class ApiService {
     }
   }
 
-  Future<HomeworkModel> updateHomeworkStatus(String id, HomeworkStatus status) async {
+  Future<HomeworkModel> updateHomeworkStatus(String id, String studentId, HomeworkStatus status, {String? filePath}) async {
+    print('DEBUG: Updating homework $id to status $status for student $studentId');
     try {
-      final response = await _dio.patch('/homework/$id', data: {
-        'status': status.toString().split('.').last,
-      });
-      if (response.statusCode == 200) {
-        return HomeworkModel.fromJson(response.data);
+      if (status == HomeworkStatus.done) {
+        final formData = FormData();
+        formData.fields.add(const MapEntry('text', 'Terminé depuis l\'application'));
+        
+        if (filePath != null && filePath.isNotEmpty) {
+          final fileName = filePath.split('/').last;
+          print('DEBUG: Attaching file $fileName from $filePath');
+          formData.files.add(MapEntry('files', await MultipartFile.fromFile(filePath, filename: fileName)));
+        }
+        
+        print('DEBUG: Sending POST to /assignments/$id/submit');
+        final response = await _dio.post(
+          '/assignments/$id/submit', 
+          data: formData,
+        );
+        print('DEBUG: Response status: ${response.statusCode}');
+        print('DEBUG: Response body: ${response.data}');
+        
+        // Accept any 2xx success code
+        if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+          try {
+            return HomeworkModel.fromJson(response.data);
+          } catch (e) {
+            print('DEBUG: Error parsing response: $e');
+            return HomeworkModel(id: id, subject: '', title: '', description: '', dueDate: '', status: HomeworkStatus.done);
+          }
+        }
+      } else {
+        // If the status is 'inProgress', we don't call the API because there's no endpoint
+        // and we want to keep the local state without triggering a rollback.
+        print('DEBUG: Status $status is local-only, skipping API call');
+        return HomeworkModel(id: id, subject: '', title: '', description: '', dueDate: '', status: status);
       }
-      throw Exception('Failed to update homework');
+      throw Exception('Failed to update homework: status code ${status}');
     } catch (e) {
+      print('DEBUG: updateHomeworkStatus Error: $e');
+      if (e is DioException) {
+        print('DEBUG: Dio Error body: ${e.response?.data}');
+      }
       rethrow;
     }
   }
@@ -499,35 +531,60 @@ class ApiService {
 
   // --- TIMETABLE ---
 
-  Future<List<Map<String, dynamic>>> getTimetable(String studentId) async {
+  Future<List<TimetableSessionModel>> getTimetable(String studentId) async {
     try {
-      final response = await _dio.get('/schedules/my-schedule-student');
+      final response = await _dio.get('/schedules/my-schedule-student', queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         final List data = _handleResponseData(response);
         
-        // Map API objects to UI strings
         return data.map((item) {
           final Map<String, dynamic> mapped = Map<String, dynamic>.from(item as Map);
           
-          // Time mapping
-          mapped['time'] = mapped['startTime'] ?? '00:00';
-          
-          // Subject mapping
+          final dayRaw = (mapped['dayOfWeek'] ?? mapped['day'] ?? mapped['day_index'] ?? '').toString().toLowerCase();
+          int dayIndex = 0;
+          if (dayRaw == '1' || dayRaw.contains('mon') || dayRaw.contains('lun')) dayIndex = 0;
+          else if (dayRaw == '2' || dayRaw.contains('tue') || dayRaw.contains('mar')) dayIndex = 1;
+          else if (dayRaw == '3' || dayRaw.contains('wed') || dayRaw.contains('mer')) dayIndex = 2;
+          else if (dayRaw == '4' || dayRaw.contains('thu') || dayRaw.contains('jeu')) dayIndex = 3;
+          else if (dayRaw == '5' || dayRaw.contains('fri') || dayRaw.contains('ven')) dayIndex = 4;
+          else if (dayRaw == '6' || dayRaw.contains('sat') || dayRaw.contains('sam')) dayIndex = 5;
+          else if (dayRaw == '0' || dayRaw.contains('sun') || dayRaw.contains('dim')) dayIndex = 6;
+          else if (int.tryParse(dayRaw) != null) {
+            dayIndex = (int.parse(dayRaw) - 1).clamp(0, 5);
+          } else {
+            try {
+              final dt = DateTime.parse(dayRaw);
+              dayIndex = dt.weekday - 1; 
+            } catch (_) {}
+          }
+
+          String time = mapped['startTime'] ?? '00:00';
+          String subject = 'Subject';
           if (mapped['subject'] is Map) {
-            mapped['subject'] = mapped['subject']['name'] ?? 'Subject';
+            subject = mapped['subject']['name'] ?? 'Subject';
+          } else if (mapped['subject'] is String) {
+            subject = mapped['subject'];
           }
           
-          // Teacher mapping
+          String teacher = 'Teacher';
           if (mapped['teacher'] is Map) {
             final user = mapped['teacher']['user'];
             if (user is Map) {
-              mapped['teacher'] = user['fullName'] ?? user['name'] ?? 'Teacher';
+              teacher = user['fullName'] ?? user['name'] ?? 'Teacher';
             } else {
-              mapped['teacher'] = 'Teacher';
+              teacher = 'Teacher';
             }
           }
           
-          return mapped;
+          return TimetableSessionModel(
+            dayIndex: dayIndex,
+            time: time,
+            subject: subject,
+            teacher: teacher,
+            room: mapped['room']?.toString() ?? 'Room',
+            isCanceled: mapped['is_canceled'] ?? mapped['isCanceled'] ?? false,
+            isLive: mapped['is_live'] ?? mapped['isLive'] ?? false,
+          );
         }).toList();
       }
       throw Exception('Failed to load timetable');
@@ -545,6 +602,10 @@ class ApiService {
       }
       
       final status = error.response?.statusCode;
+      final data = error.response?.data;
+      if (data is Map && data.containsKey('message') && data['message'] != null) {
+        return data['message'].toString();
+      }
       switch (status) {
         case 401: return 'unauthorized';
         case 403: return 'forbidden';
