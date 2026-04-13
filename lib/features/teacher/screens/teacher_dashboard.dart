@@ -19,6 +19,7 @@ import '../../../core/models/models.dart';
 
 import '../../../core/providers/app_state.dart';
 import '../../../core/widgets/deep_space_background.dart';
+import '../../../core/widgets/sprite_avatar.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -211,14 +212,54 @@ class _TeacherHome extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text(AppLocalizations.of(context)!.translate('hello_upper'), style: TextStyle(color: secondaryColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
-              const SizedBox(height: 6),
-              Text(
-                user.name,
-                style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -0.5),
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blueAccent.withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                    ),
+                    child: user.avatarIndex != null
+                        ? SpriteAvatar(index: user.avatarIndex!, size: 40)
+                        : CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                            child: Icon(Icons.person_rounded, color: isDark ? Colors.white38 : Colors.black26, size: 20),
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(AppLocalizations.of(context)!.translate('hello_upper'), style: TextStyle(color: secondaryColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
+                  const SizedBox(height: 6),
+                  Text(
+                    user.name,
+                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -0.5),
+                  ),
+                ],
               ),
             ],
           ).animate().fadeIn().slideX(begin: -0.1),

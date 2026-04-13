@@ -22,6 +22,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -196,6 +197,7 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           children: [
           Row(
@@ -234,8 +236,21 @@ class _AuthScreenState extends State<AuthScreen> {
             context,
             Icons.key_rounded,
             AppLocalizations.of(context)!.translate('login_pwd_hint'),
-            obscure: true,
+            obscure: _obscurePassword,
             controller: _passwordController,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                color: isDark ? Colors.white54 : Colors.black45,
+                size: 20,
+              ),
+              splashRadius: 24,
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return AppLocalizations.of(context)!.translate('login_pwd_required');
@@ -430,7 +445,8 @@ class _AuthScreenState extends State<AuthScreen> {
       BuildContext context, IconData icon, String hint,
       {bool obscure = false,
       TextEditingController? controller,
-      String? Function(String?)? validator}) {
+      String? Function(String?)? validator,
+      Widget? suffixIcon}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final inputBg = isDark
@@ -496,6 +512,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   letterSpacing: 1),
                               decoration: InputDecoration(
                                   hintText: hint.toUpperCase(),
+                                  suffixIcon: suffixIcon,
                                   hintStyle: TextStyle(
                                       color: primaryTextColor.withValues(
                                           alpha: isDark ? 0.15 : 0.4),
