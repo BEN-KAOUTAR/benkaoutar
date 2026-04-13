@@ -9,6 +9,8 @@ import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../viewmodels/suivi_view_model.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:open_filex/open_filex.dart';
 //hello
 class SuiviScolaireScreen extends StatefulWidget {
   final StudentModel student;
@@ -853,16 +855,8 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
           Text(AppLocalizations.of(context)!.translate('academic_summary').toUpperCase(), style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2.5)).animate().fadeIn(delay: 100.ms),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              _buildAbsenceStat(vm.unjustifiedAbsences.toString().padLeft(2, '0'), AppLocalizations.of(context)!.translate('unjustified'), Colors.redAccent, isDark),
-              const SizedBox(width: 16),
-              _buildAbsenceStat(vm.justifiedAbsences.toString().padLeft(2, '0'), AppLocalizations.of(context)!.translate('justified'), Colors.greenAccent, isDark),
-              const SizedBox(width: 16),
-              _buildAbsenceStat(vm.delays.toString().padLeft(2, '0'), AppLocalizations.of(context)!.translate('delays'), Colors.orangeAccent, isDark),
-            ],
-          ).animate().fadeIn(delay: 200.ms),
-          const SizedBox(height: 48),
+          _buildSummaryAbsenceCards(isDark, vm).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+          const SizedBox(height: 32),
           _buildAttendanceDistribution(isDark, vm).animate().fadeIn(delay: 300.ms),
           const SizedBox(height: 48),
           _buildAttendanceCalendar(isDark, vm).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
@@ -875,26 +869,6 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
           _buildRecentHistory(isDark, vm).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1),
           const SizedBox(height: 80),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAbsenceStat(String value, String label, Color color, bool isDark) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 28),
-        decoration: BoxDecoration(
-          color: isDark ? color.withValues(alpha: 0.05) : color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
-        ),
-        child: Column(
-          children: [
-            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 36, letterSpacing: -1)),
-            const SizedBox(height: 8),
-            Text(label.toUpperCase(), style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-          ],
-        ),
       ),
     );
   }
@@ -1270,57 +1244,58 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     final yearParts = _selectedYear.split(' - ');
     final realYear = int.parse(realMonth >= 9 ? yearParts[0] : yearParts[1]);
 
-    // Filter absences and delays for the SELECTED month
+    // Filter absences and delays for the SELECTED month, excluding "present" records
     final filteredHistory = vm.absences.where((a) {
         try {
             final dt = DateTime.parse(a.date);
-            return dt.month == realMonth && dt.year == realYear;
+            final matchesMonth = dt.month == realMonth && dt.year == realYear;
+            final isNotPresent = a.status != 'present';
+            return matchesMonth && isNotPresent;
         } catch (e) {
             return false;
         }
     }).toList();
 
-    if (filteredHistory.isEmpty) {
-        return Center(
-          child: Column(
-            children: [
-              const SizedBox(height: 32),
-              Icon(Icons.history_rounded, size: 48, color: isDark ? Colors.white12 : Colors.black12),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context)!.translate('no_history'), 
-                style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.bold)
-              ),
-              const SizedBox(height: 32),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12), // Placeholder for removed pills spacing if needed, but the heading spacing is already handled
+
+        if (filteredHistory.isEmpty)
+          Center(
+            child: Column(
+              children: [
+                const SizedBox(height: 32),
+                Icon(Icons.history_rounded, size: 48, color: isDark ? Colors.white12 : Colors.black12),
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.translate('no_history'),
+                  style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
           )
-        );
-    }
-
-    final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: filteredHistory.length,
-      itemBuilder: (context, index) {
-        final a = filteredHistory[index];
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredHistory.length,
+            itemBuilder: (context, index) {
+              final a = filteredHistory[index];
 
         Color color;
-        IconData icon;
-        switch (a.status) {
-          case 'absent': 
+        
+        if (a.status == 'absent') {
+          if (a.isJustified) {
+            color = const Color(0xFF10B981); // Teal for justified
+          } else {
             color = Colors.redAccent;
-            icon = Icons.cancel_rounded;
-            break;
-          case 'late':
-            color = Colors.orangeAccent;
-            icon = Icons.watch_later_rounded;
-            break;
-          default:
-            color = Colors.greenAccent;
-            icon = Icons.check_circle_rounded;
+          }
+        } else if (a.status == 'late') {
+          color = Colors.orangeAccent;
+        } else {
+          color = Colors.greenAccent;
         }
 
         // Format Date
@@ -1342,154 +1317,415 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
         final room = slot?['room']?.toString() ?? slot?['classroom']?.toString();
 
         void showDetailSheet() {
+          bool isUploading = false;
+          bool isEditing = !a.isJustified;
+          
+          // Try to extract previously selected reason if editing
+          String selectedReason = 'Maladie';
+          if (a.motif != null && a.motif!.contains(':')) {
+            final parts = a.motif!.split(':');
+            selectedReason = parts[0].trim();
+          } else if (a.motif != null && a.motif!.isNotEmpty) {
+             final reasons = ['Maladie', 'Médical', 'Famille', 'Voyage', 'Autre'];
+             for (var r in reasons) {
+               if (a.motif!.contains(r)) {
+                 selectedReason = r;
+                 break;
+               }
+             }
+          }
+
+          final TextEditingController commentController = TextEditingController(
+            text: a.motif != null && a.motif!.contains(':') 
+              ? a.motif!.split(':').sublist(1).join(':').trim() 
+              : (a.motif ?? '')
+          );
+          PlatformFile? selectedFile;
+          int uploadCountdown = 30;
+
           showModalBottomSheet(
             context: context,
             backgroundColor: Colors.transparent,
             isScrollControlled: true,
-            builder: (_) => StatefulBuilder(
-              builder: (context, setStateSheet) {
-                bool isUploading = false;
-                
-                Future<void> pickAndUpload() async {
-                  try {
-                    FilePickerResult? result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['jpg', 'png', 'pdf', 'doc', 'docx'],
-                    );
-                    
-                    if (result != null && result.files.single.path != null) {
-                      setStateSheet(() => isUploading = true);
-                      
-                      final success = await vm.submitJustification(
-                        a.id,
-                        filePath: result.files.single.path!,
-                        fileName: result.files.single.name,
-                      );
-                      
-                      setStateSheet(() => isUploading = false);
-                      
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(AppLocalizations.of(context)!.translate('justification_sent')),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        // Refresh data
-                        vm.fetchSuiviData(widget.student.id);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(vm.errorMessage ?? 'Error'),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    setStateSheet(() => isUploading = false);
-                  }
-                }
+            builder: (context) {
+              return StatefulBuilder(
+                builder: (context, setStateSheet) {
+                  final reasons = ['Maladie', 'Médical', 'Famille', 'Voyage', 'Autre'];
+                  final isJustified = a.isJustified && !isEditing;
 
-                return SingleChildScrollView(
-                  child: Container(
-                    padding: EdgeInsets.fromLTRB(28, 12, 28, 40 + MediaQuery.of(context).viewInsets.bottom),
+                  return Container(
+                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF121828) : Colors.white,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+                      color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 40, height: 4,
-                            margin: const EdgeInsets.only(bottom: 28),
-                            decoration: BoxDecoration(color: isDark ? Colors.white12 : Colors.black12, borderRadius: BorderRadius.circular(2)),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(28, 20, 28, 40),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Container(width: 40, height: 4, decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black12, borderRadius: BorderRadius.circular(2))),
                           ),
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.05)]),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: color.withValues(alpha: 0.15)),
-                              ),
-                              child: Icon(icon, color: color, size: 28),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withValues(alpha: 0.2))),
-                                    child: Text(AppLocalizations.of(context)!.translate('${a.status}_label').toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1)),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(sessionTitle, style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: -0.5), maxLines: 2, overflow: TextOverflow.ellipsis),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 28),
-                        Container(height: 1, color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
-                        const SizedBox(height: 24),
-                        _sheetDetailRow(Icons.calendar_today_rounded, formattedDateLong, isDark, primaryTextColor, secondaryTextColor),
-                        if (timing.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          _sheetDetailRow(Icons.schedule_rounded, timing, isDark, primaryTextColor, secondaryTextColor),
-                        ],
-                        if (teacher != null && teacher.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          _sheetDetailRow(Icons.person_rounded, teacher, isDark, primaryTextColor, secondaryTextColor),
-                        ],
-                        if (room != null && room.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          _sheetDetailRow(Icons.room_rounded, 'Salle $room', isDark, primaryTextColor, secondaryTextColor),
-                        ],
-                        if (a.motif != null && a.motif!.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          _sheetDetailRow(Icons.info_outline_rounded, a.motif!, isDark, primaryTextColor, secondaryTextColor),
-                        ],
-                        if (a.status == 'absent' && (a.motif == null || a.motif!.isEmpty)) ...[
                           const SizedBox(height: 32),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: isUploading ? null : pickAndUpload,
-                              icon: isUploading 
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.upload_file_rounded),
-                              label: Text(
-                                isUploading ? AppLocalizations.of(context)!.translate('sending') : AppLocalizations.of(context)!.translate('submit_justification'),
-                                style: const TextStyle(fontWeight: FontWeight.bold)
+                          
+                          // Header Section
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: (isJustified ? const Color(0xFF10B981) : Colors.redAccent).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Icon(
+                                  isJustified ? Icons.verified_rounded : Icons.cancel_rounded,
+                                  color: isJustified ? const Color(0xFF10B981) : Colors.redAccent,
+                                  size: 28,
+                                ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blueAccent,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                elevation: 0,
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: (isJustified ? const Color(0xFF10B981) : Colors.redAccent).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        (isJustified ? "ABSENCE JUSTIFIÉE" : "ABSENCE").toUpperCase(),
+                                        style: TextStyle(color: isJustified ? const Color(0xFF10B981) : Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.8),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(sessionTitle, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 24, letterSpacing: -0.5)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 40),
+                          
+                          // Info Rows
+                          _buildSheetInfoRow(Icons.calendar_today_rounded, formattedDateLong, isDark),
+                          const SizedBox(height: 16),
+                          _buildSheetInfoRow(Icons.schedule_rounded, timing, isDark),
+                          const SizedBox(height: 16),
+                          _buildSheetInfoRow(Icons.person_outline_rounded, teacher ?? 'Kaoutar Ben', isDark),
+                          const SizedBox(height: 16),
+                          _buildSheetInfoRow(Icons.location_on_outlined, room ?? 'Salle s2', isDark),
+                          
+                          const SizedBox(height: 48),
+
+                          if (!isEditing) ...[
+                            // View Mode (Details of existing justification)
+                            Text("Motif de l'absence", style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                            const SizedBox(height: 20),
+                            _buildSheetInfoRow(Icons.folder_outlined, selectedReason, isDark),
+                            
+                            if (a.attachment != null) ...[
+                              const SizedBox(height: 32),
+                              InkWell(
+                                onTap: () async {
+                                  if (a.attachment != null) {
+                                    final uri = Uri.parse(a.attachment!);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    }
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueAccent.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.1)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                                        child: const Icon(Icons.insert_drive_file_rounded, color: Colors.blueAccent, size: 24),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text("Visualiser le document actuel", style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 14)),
+                                            const SizedBox(height: 2),
+                                            Text("PDF / Image", style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11, fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(Icons.open_in_new_rounded, color: Colors.blueAccent, size: 20),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            
+                            const SizedBox(height: 48),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 60,
+                              child: ElevatedButton.icon(
+                                onPressed: () => setStateSheet(() => isEditing = true),
+                                icon: const Icon(Icons.edit_rounded, size: 20),
+                                label: const Text("Mettre à jour la justification", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.blueAccent,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.blueAccent, width: 2)),
+                                ),
                               ),
                             ),
-                          ),
+                          ] else ...[
+                            // Edit Mode
+                            Text("Motif de l'absence", style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                            const SizedBox(height: 20),
+                            
+                            // Reason chips
+                            SizedBox(
+                              height: 44,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: reasons.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                itemBuilder: (context, index) {
+                                  final r = reasons[index];
+                                  final isSelected = selectedReason == r;
+                                  return GestureDetector(
+                                    onTap: () => setStateSheet(() => selectedReason = r),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? Colors.blueAccent.withValues(alpha: 0.1) : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: isSelected ? Colors.blueAccent : (isDark ? Colors.white12 : Colors.black12), width: 1.5),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        r,
+                                        style: TextStyle(color: isSelected ? Colors.blueAccent : (isDark ? Colors.white38 : Colors.black38), fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold, fontSize: 13),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Comment field
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.02),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05)),
+                              ),
+                              child: TextField(
+                                controller: commentController,
+                                maxLines: 3,
+                                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 15),
+                                decoration: InputDecoration(
+                                  hintText: "Décrivez le motif...",
+                                  hintStyle: TextStyle(color: (isDark ? Colors.white38 : Colors.black38), fontSize: 14),
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 32),
+                            
+                            // File selection or preview
+                            if (selectedFile != null)
+                              InkWell(
+                                onTap: () {
+                                  if (selectedFile!.path != null) {
+                                    OpenFilex.open(selectedFile!.path!);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.2)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                                        child: Icon(
+                                          selectedFile!.extension == 'pdf' 
+                                            ? Icons.picture_as_pdf_rounded 
+                                            : (selectedFile!.extension?.contains('doc') ?? false)
+                                              ? Icons.description_rounded
+                                              : Icons.image_rounded,
+                                          color: const Color(0xFF10B981),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(selectedFile!.name, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                            const SizedBox(height: 2),
+                                            Text("Cliquer pour prévisualiser", style: TextStyle(color: const Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 11)),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.close, color: Colors.redAccent, size: 24),
+                                        onPressed: () => setStateSheet(() => selectedFile = null),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              GestureDetector(
+                                onTap: () async {
+                                  try {
+                                    FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                      type: FileType.custom,
+                                      allowedExtensions: ['jpg', 'png', 'pdf', 'doc', 'docx'],
+                                      withData: true,
+                                    );
+                                    if (result != null) {
+                                      setStateSheet(() => selectedFile = result.files.first);
+                                    }
+                                  } catch (e) {
+                                    debugPrint('File picker error: $e');
+                                  }
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 32),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.black.withValues(alpha: 0.02),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06), style: BorderStyle.solid),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(Icons.cloud_upload_outlined, color: Colors.blueAccent.withValues(alpha: 0.5), size: 32),
+                                      const SizedBox(height: 12),
+                                      Text("Joindre un fichier (Image, PDF, Word)", style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            
+                            const SizedBox(height: 48),
+                            
+                            // Action Buttons
+                            SizedBox(
+                              width: double.infinity,
+                              height: 64,
+                              child: ElevatedButton(
+                                onPressed: isUploading ? null : () async {
+                                  if (selectedFile == null && a.status == 'absent') {
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez sélectionner un fichier justification')));
+                                    return;
+                                  }
+
+                                  setStateSheet(() => isUploading = true);
+                                  final timer = Stream.periodic(const Duration(seconds: 1), (i) => 30 - i - 1).take(30).listen((val) => setStateSheet(() => uploadCountdown = val));
+
+                                  try {
+                                    final success = await vm.submitJustification(
+                                      a.id,
+                                      filePath: selectedFile?.path,
+                                      fileBytes: selectedFile?.bytes,
+                                      fileName: selectedFile?.name ?? 'document',
+                                      reason: '$selectedReason: ${commentController.text}',
+                                    );
+                                    
+                                    timer.cancel();
+                                    if (!context.mounted) return;
+                                    
+                                    if (success) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(AppLocalizations.of(context)!.translate('justification_sent')),
+                                          backgroundColor: const Color(0xFF10B981),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        ),
+                                      );
+                                      vm.fetchSuiviData(widget.student.id);
+                                    } else {
+                                      setStateSheet(() => isUploading = false);
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(vm.errorMessage ?? 'Erreur lors de l\'envoi')));
+                                    }
+                                  } catch (e) {
+                                    timer.cancel();
+                                    setStateSheet(() => isUploading = false);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3B82F6),
+                                  foregroundColor: Colors.white,
+                                  shadowColor: const Color(0xFF3B82F6).withValues(alpha: 0.4),
+                                  elevation: 8,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                ),
+                                child: isUploading 
+                                  ? Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            SizedBox(width: 24, height: 24, child: CircularProgressIndicator(value: 1 - (uploadCountdown / 30), strokeWidth: 3, color: Colors.white, backgroundColor: Colors.white24)),
+                                            Text(uploadCountdown.toString(), style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                        const SizedBox(width: 16),
+                                        const Text("Envoi en cours...", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                                      ],
+                                    )
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.send_rounded, size: 20),
+                                        const SizedBox(width: 12),
+                                        Text(a.isJustified ? "Mettre à jour la justification" : "Soumettre Justification", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -0.2)),
+                                      ],
+                                    ),
+                              ),
+                            ),
+                            
+                            if (a.isJustified) ...[
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: TextButton(
+                                  onPressed: () => setStateSheet(() => isEditing = false),
+                                  child: Text("Annuler la modification", style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.bold, fontSize: 15)),
+                                ),
+                              ),
+                            ],
+                          ]
                         ],
-                        const SizedBox(height: 32),
-                      ],
+                      ),
                     ),
-                  ),
-                );
-              }
-            ),
+                  );
+                },
+              );
+            },
           );
         }
 
@@ -1550,24 +1786,40 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                                 // Subject & Session Name
                                 Text(
                                   sessionTitle,
-                                  style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 17, letterSpacing: -0.5),
+                                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 17, letterSpacing: -0.5),
                                   maxLines: 1, overflow: TextOverflow.ellipsis,
                                 ),
                                 // Motif (if any) or Warning
-                                if (a.motif != null && a.motif!.isNotEmpty) ...[
+                                if (a.isJustified && a.motif != null && a.motif!.isNotEmpty) ...[
                                   const SizedBox(height: 6),
-                                  Text(a.motif!, style: TextStyle(color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.4), fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                ] else if (a.status == 'absent') ...[
+                                  Text(
+                                    a.motif!, 
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.4), 
+                                      fontSize: 11, 
+                                      fontWeight: FontWeight.bold
+                                    ), 
+                                    maxLines: 1, 
+                                    overflow: TextOverflow.ellipsis
+                                  ),
+                                ] else if (a.status == 'absent' && !a.isJustified) ...[
                                   const SizedBox(height: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                    decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3))),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent.withValues(alpha: 0.1), 
+                                      borderRadius: BorderRadius.circular(6), 
+                                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3))
+                                    ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(Icons.warning_rounded, color: Colors.redAccent, size: 10),
                                         const SizedBox(width: 4),
-                                        Text(AppLocalizations.of(context)!.translate('submit_justification').toUpperCase(), style: const TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.w900)),
+                                        Text(
+                                          AppLocalizations.of(context)!.translate('submit_justification').toUpperCase(), 
+                                          style: const TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.w900)
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -1584,18 +1836,18 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.calendar_today_rounded, color: secondaryTextColor.withValues(alpha: 0.4), size: 12),
+                                  Icon(Icons.calendar_today_rounded, color: (isDark ? Colors.white38 : Colors.black38).withValues(alpha: 0.4), size: 12),
                                   const SizedBox(width: 6),
-                                  Text(formattedDate, style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: -0.2)),
+                                  Text(formattedDate, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: -0.2)),
                                 ],
                               ),
                               const SizedBox(height: 8),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.schedule_rounded, color: secondaryTextColor.withValues(alpha: 0.4), size: 12),
+                                  Icon(Icons.schedule_rounded, color: (isDark ? Colors.white38 : Colors.black38).withValues(alpha: 0.4), size: 12),
                                   const SizedBox(width: 6),
-                                  Text(timing, style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: -0.2)),
+                                  Text(timing, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: -0.2)),
                                 ],
                               ),
                             ],
@@ -1609,7 +1861,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: Center(
-                      child: Icon(Icons.chevron_right_rounded, color: secondaryTextColor.withValues(alpha: 0.3), size: 24),
+                      child: Icon(Icons.chevron_right_rounded, color: (isDark ? Colors.white38 : Colors.black38).withValues(alpha: 0.3), size: 24),
                     ),
                   ),
                 ],
@@ -1617,34 +1869,129 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
             ),
           ),
           ).animate().fadeIn(delay: (index * 60).ms).slideY(begin: 0.1, curve: Curves.easeOutCubic),
-        );
-      },
+            );
+          },
+        ),
+      ],
     );
   }
 
-  Widget _sheetDetailRow(IconData icon, String text, bool isDark, Color primary, Color secondary) {
+  Widget _buildSummaryHeaderPill(String value, String label, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.12 : 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: -0.5),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(color: color.withValues(alpha: 0.7), fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 1.2),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryAbsenceCards(bool isDark, SuiviViewModel vm) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _buildSummaryCardItem(
+            vm.unjustifiedAbsences.toString().padLeft(2, '0'),
+            'NON JUSTIFIÉ',
+            Colors.redAccent,
+            isDark,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildSummaryCardItem(
+            vm.justifiedAbsences.toString().padLeft(2, '0'),
+            'JUSTIFIÉ',
+            const Color(0xFF10B981),
+            isDark,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildSummaryCardItem(
+            vm.delays.toString().padLeft(2, '0'),
+            'RETARDS',
+            Colors.orangeAccent,
+            isDark,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCardItem(String value, String label, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
+        boxShadow: [
+          if (!isDark) BoxShadow(color: color.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 8)),
+          if (isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 5)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 36, height: 1.1),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: color.withValues(alpha: 0.6), fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 1.2),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper widget for detail rows in sheet
+  Widget _buildSheetInfoRow(IconData icon, String text, bool isDark) {
+    return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(9),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+            color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: secondary, size: 18),
+          child: Icon(icon, color: isDark ? Colors.white38 : Colors.black38, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(text, style: TextStyle(color: primary, fontWeight: FontWeight.w700, fontSize: 15)),
+          child: Text(
+            text, 
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87, 
+              fontWeight: FontWeight.w900, 
+              fontSize: 16,
+              letterSpacing: -0.2,
+            )
           ),
         ),
       ],
     );
   }
 }
+
 
 class _HistoryRowItem extends StatefulWidget {
   final GradeModel h;

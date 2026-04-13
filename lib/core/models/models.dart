@@ -499,10 +499,17 @@ class AttendanceRecord {
     // 1) Explicit student/parent justification flag.
     if (justifiedByStudent) return true;
 
-    // 2) Approval status is only trusted when there is actual justification content.
-    final hasContent = (motif != null && motif!.trim().isNotEmpty) ||
-        (attachment != null && attachment!.trim().isNotEmpty);
+    // 2) Check for presence of motif or attachment as proxy for justification
+    final hasContent = (motif != null && motif!.trim().isNotEmpty && motif != 'null') ||
+        (attachment != null && attachment!.trim().isNotEmpty && attachment != 'null');
 
+    // 3) Trust specific raw statuses from API
+    if (rawStatus != null) {
+      final rs = rawStatus!.toLowerCase();
+      if (rs.contains('justifie') || rs.contains('justified')) return true;
+    }
+
+    // 4) Trust approval status if content exists
     if (approvalStatus != null) {
       final s = approvalStatus!.toLowerCase().trim().replaceAll('é', 'e');
       if (s == 'pending' || s == 'en_attente' || s == 'justified' ||
@@ -512,7 +519,7 @@ class AttendanceRecord {
       }
     }
 
-    return false;
+    return hasContent; // Fallback: if it has a motif/file, it's considered justified in the UI
   }
 
   Map<String, dynamic> toJson() {
