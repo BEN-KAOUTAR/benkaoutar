@@ -1,5 +1,7 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../models/models.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   static final ApiService instance = ApiService._internal();
@@ -9,8 +11,8 @@ class ApiService {
     _dio = Dio(
       BaseOptions(
         baseUrl: 'https://api-demo.intranet.ikenas.com/api',
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 45),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -172,15 +174,55 @@ class ApiService {
   }
 
   /// Submit a PDF or image justification for an absence
-  Future<bool> submitJustification(String attendanceId, String filePath, String fileName, {String reason = ''}) async {
+  Future<String?> submitJustification(String attendanceId, {String? filePath, Uint8List? fileBytes, required String fileName, String reason = '', void Function(int, int)? onProgress}) async {
     try {
+      final ext = fileName.split('.').last.toLowerCase();
+      MediaType? mediaType;
+      if (ext == 'pdf') {
+        mediaType = MediaType('application', 'pdf');
+      } else if (ext == 'jpg' || ext == 'jpeg') {
+        mediaType = MediaType('image', 'jpeg');
+      } else if (ext == 'png') {
+        mediaType = MediaType('image', 'png');
+      }
+
+      final attachment = (filePath != null && filePath.isNotEmpty)
+          ? await MultipartFile.fromFile(filePath, filename: fileName, contentType: mediaType)
+          : MultipartFile.fromBytes(fileBytes!, filename: fileName, contentType: mediaType);
+
       final formData = FormData.fromMap({
-        'attachment': await MultipartFile.fromFile(filePath, filename: fileName),
+        'attachment': attachment,
         'reason': reason,
       });
-      // The API specifies PUT for /attendances/{id}/justify
-      final response = await _dio.put('/attendances/$attendanceId/justify', data: formData);
-      return response.statusCode == 200 || response.statusCode == 201;
+
+      final response = await _dio.put(
+        '/attendances/$attendanceId/justify', 
+        data: formData,
+        onSendProgress: onProgress,
+        options: Options(
+          sendTimeout: const Duration(seconds: 45), // Kill stuck uploads
+          receiveTimeout: const Duration(seconds: 45),
+        )
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map) {
+          if (response.data['success'] == false) {
+             throw Exception(response.data['message'] ?? 'Erreur Serveur');
+          }
+          if (response.data['data'] != null) {
+            final dataMap = response.data['data'];
+            if (dataMap['justificationAttachment'] != null) {
+              String? url = dataMap['justificationAttachment']['url']?.toString();
+              if (url != null && !url.startsWith('http')) {
+                 url = 'https://api-demo.intranet.ikenas.com$url';
+              }
+              return url ?? 'success';
+            }
+          }
+        }
+        return 'success';
+      }
+      return null;
     } catch (e) {
       rethrow;
     }
@@ -374,12 +416,32 @@ class ApiService {
     }
   }
 
+  Future<String?> downloadInternalFile(String endpoint, String savePath) async {
+    try {
+      final response = await _dio.download(
+        endpoint,
+        savePath,
+        onReceiveProgress: (count, total) {
+          if (total != -1) {
+            print('[PaymentAPI] Download progress: ${(count / total * 100).toStringAsFixed(0)}%');
+          }
+        },
+      );
+      if (response.statusCode == 200) {
+        return savePath;
+      }
+      return null;
+    } catch (e) {
+      print('[PaymentAPI] Internal download error: $e');
+      rethrow;
+    }
+  }
+
   Future<String> downloadReceipt(String paymentId, String type) async {
     try {
-      // type can be 'invoice', 'receipt', 'scolarity', 'transport'
-      // Map them to the correct endpoints from Swagger documentation
+      // Return relative endpoint for internal download or direct absolute URL for external.
       String normalizedType = type.toLowerCase();
-      String category = 'receipts';
+      String category = 'receipts'; // Default
       
       if (normalizedType.contains('invoice') || normalizedType.contains('scolarit')) {
         category = 'invoices';
@@ -387,24 +449,7 @@ class ApiService {
         category = 'receipts';
       }
       
-      final String endpoint = '/payments/student/me/$category/$paymentId/download';
-          
-      final response = await _dio.get(endpoint);
-      if (response.statusCode == 200) {
-        // Return URL if returned, otherwise return the full download URL
-        dynamic downloadUrl = response.data['url'] ?? response.data['link'] ?? response.data['data']?['url'];
-        if (downloadUrl != null) return downloadUrl.toString();
-        
-        // If the API serves the file directly, we might need a direct link with the token
-        final String baseUrl = _dio.options.baseUrl;
-        final String token = _dio.options.headers['Authorization'] ?? '';
-        
-        if (token.isNotEmpty) {
-           return '$baseUrl$endpoint?token=${token.replaceFirst('Bearer ', '')}';
-        }
-        return '$baseUrl$endpoint';
-      }
-      throw Exception('Failed to get download URL');
+      return '/payments/student/me/$category/$paymentId/download';
     } catch (e) {
       rethrow;
     }

@@ -15,7 +15,7 @@ class FeedViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // Fetch posts from API
-  Future<void> fetchPosts() async {
+  Future<void> fetchPosts({String? currentUserName}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -27,11 +27,29 @@ class FeedViewModel extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final likedPostIds = prefs.getStringList('local_liked_posts') ?? [];
       
+      final userName = currentUserName?.toLowerCase() ?? 'moi';
+      
       _posts = freshPosts.map((post) {
-        if (likedPostIds.contains(post.id)) {
-           return post.copyWith(isLiked: true, likes: post.isLiked ? post.likes : post.likes + 1);
+        // ALWAYS check the likedBy list from server (survives app re-install)
+        bool alreadyInList = post.likedBy.any((l) => 
+          l.userName.toLowerCase() == userName || 
+          l.userName.toLowerCase() == 'moi' || 
+          l.userName.toLowerCase() == 'me'
+        );
+        
+        bool isLikedLocally = likedPostIds.contains(post.id);
+        
+        bool finalIsLiked = post.isLiked || alreadyInList || isLikedLocally;
+        int correctLikes = post.likes;
+
+        if (finalIsLiked) {
+           // If we know we liked it, ensure the count is at least 1
+           if (correctLikes == 0) correctLikes = 1;
+           // If we have a local like but API hasn't caught up, ensure we don't double count
+           // (already handled by trusting post.likes if it's > 0)
         }
-        return post;
+
+        return post.copyWith(isLiked: finalIsLiked, likes: correctLikes);
       }).toList();
 
       _isLoading = false;

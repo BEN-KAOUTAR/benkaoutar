@@ -332,22 +332,31 @@ class AttendanceRecord {
   final String date;
   final String status; // 'present', 'absent', 'late', 'sick'
   final String? motif;
+  final String? attachment;
   final String? rawStatus;
   final String? startTime;
   final String? endTime;
   final String? subjectName;
   final String? sessionName;
+  final bool justifiedByStudent;
+  final String? approvalStatus; // 'pending', 'approved', 'rejected'
+  final String? recordedBy;
+  
 
   AttendanceRecord({
     required this.id,
     required this.date,
     required this.status,
     this.motif,
+    this.attachment,
     this.rawStatus,
     this.startTime,
     this.endTime,
     this.subjectName,
     this.sessionName,
+    this.justifiedByStudent = false,
+    this.approvalStatus,
+    this.recordedBy,
   });
 
   factory AttendanceRecord.fromJson(Map<String, dynamic> json) {
@@ -356,12 +365,14 @@ class AttendanceRecord {
     
     // Normalize status strings
     String finalStatus = 'present';
-    if (rawStatus.contains('absent')) {
+    if (rawStatus.contains('absent') || 
+        rawStatus.contains('justifie') || 
+        rawStatus.contains('justified') ||
+        rawStatus.contains('sick') || 
+        rawStatus.contains('malade')) {
       finalStatus = 'absent';
     } else if (rawStatus.contains('retard') || rawStatus.contains('late')) {
       finalStatus = 'late';
-    } else if (rawStatus.contains('sick') || rawStatus.contains('malade')) {
-      finalStatus = 'sick';
     }
 
     // Extract subject/session info
@@ -396,17 +407,118 @@ class AttendanceRecord {
       endTime ??= session['endTime'] ?? session['hourEnd'] ?? session['end'];
     }
 
+    String? extractAttachment(dynamic data) {
+      if (data == null) return null;
+      if (data is Map) return data['url']?.toString() ?? data['path']?.toString() ?? data['file']?.toString() ?? data['filename']?.toString();
+      if (data is String && data.isNotEmpty && data != 'null' && data != '{}') return data;
+      return null;
+    }
+    
+    bool parseBool(dynamic val) {
+      if (val == null) return false;
+      if (val is bool) return val;
+      if (val.toString().toLowerCase() == 'true') return true;
+      return false;
+    }
+
+    String? motif = json['motif']?.toString() ?? json['justificationText']?.toString() ?? json['reason']?.toString() ?? json['justificationReason']?.toString();
+    String? attachment = extractAttachment(json['attachment']) ?? 
+                         extractAttachment(json['file']) ?? 
+                         extractAttachment(json['justification_file']) ?? 
+                         extractAttachment(json['proof']) ?? 
+                         extractAttachment(json['justificationAttachment']);
+    
+    bool justifiedByStudent = parseBool(json['justifiedByStudent']) || 
+                              parseBool(json['justified']) || 
+                              parseBool(json['isJustified']) || 
+                              parseBool(json['hasJustification']);
+                              
+    String? approvalStatus = json['approvalStatus']?.toString() ?? json['justificationStatus']?.toString();
+
+    // Check for nested justification object
+    if (json['justification'] != null) {
+      if (json['justification'] is Map) {
+        final j = json['justification'];
+        final jMotif = j['motif']?.toString() ?? j['reason']?.toString() ?? j['text']?.toString();
+        final jAttachment = extractAttachment(j['attachment']) ?? extractAttachment(j['file']) ?? extractAttachment(j['url']);
+        if (jMotif != null && jMotif.isNotEmpty) motif ??= jMotif;
+        if (jAttachment != null && jAttachment.isNotEmpty) attachment ??= jAttachment;
+        if (parseBool(j['justified']) || parseBool(j['isJustified'])) justifiedByStudent = true;
+        approvalStatus ??= j['status']?.toString() ?? j['approvalStatus']?.toString() ?? j['justificationStatus']?.toString();
+      } else if (json['justification'] is String && (json['justification'] as String).isNotEmpty && json['justification'] != 'null') {
+        final jStr = (json['justification'] as String).toLowerCase();
+        if (jStr == 'true') {
+           justifiedByStudent = true;
+        } else {
+           motif ??= json['justification'].toString();
+           justifiedByStudent = true;
+        }
+      } else if (json['justification'] is bool && json['justification'] == true) {
+         justifiedByStudent = true;
+      }
+    }
+    
+    // Check array of justifications
+    if (json['justifications'] != null && json['justifications'] is List && (json['justifications'] as List).isNotEmpty) {
+      final latest = (json['justifications'] as List).last;
+      if (latest is Map) {
+         final jMotif = latest['motif']?.toString() ?? latest['reason']?.toString() ?? latest['text']?.toString();
+         final jAttachment = extractAttachment(latest['attachment']) ?? extractAttachment(latest['file']) ?? extractAttachment(latest['url']);
+         if (jMotif != null && jMotif.isNotEmpty) motif ??= jMotif;
+         if (jAttachment != null && jAttachment.isNotEmpty) attachment ??= jAttachment;
+         justifiedByStudent = true;
+         approvalStatus ??= latest['status']?.toString() ?? latest['approvalStatus']?.toString();
+      }
+    }
+
+    if (attachment != null && attachment.isNotEmpty && attachment != 'null' && attachment != '{}') {
+      justifiedByStudent = true;
+    }
+
     return AttendanceRecord(
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       date: json['date'] ?? json['createdAt'] ?? json['passedAt'] ?? '',
       status: finalStatus,
-      motif: json['motif'] ?? json['justification'] ?? json['reason'],
+      motif: motif,
+      attachment: processImageUrl(attachment),
       rawStatus: rawStatus,
       startTime: startTime,
       endTime: endTime,
       subjectName: subjectName,
       sessionName: sessionName,
+      justifiedByStudent: justifiedByStudent,
+      approvalStatus: approvalStatus,
+      recordedBy: json['recordedBy'] is Map ? (json['recordedBy']['fullName'] ?? json['recordedBy']['name']) : json['recordedBy']?.toString(),
     );
+  }
+
+  bool get isJustified {
+    if (status != 'absent') return false;
+
+    // 1. Server explicitly set the flag
+    if (justifiedByStudent) return true;
+
+    // 2. Server returned an explicit approvalStatus
+    if (approvalStatus != null) {
+      final s = approvalStatus!.toLowerCase().trim().replaceAll('é', 'e');
+      if (s == 'pending' || s == 'en_attente' || s == 'justified' ||
+          s == 'justifie' || s == 'reviewed' || s == 'submitted' ||
+          s == 'approved' || s == 'valide') {
+        return true;
+      }
+    }
+
+    // 3. Raw status from server is an explicitly justified variant
+    if (rawStatus != null) {
+      final s = rawStatus!.toLowerCase().replaceAll('é', 'e').replaceAll('_', ' ');
+      if (s.contains('justifie') || s.contains('justified')) {
+        if (!s.contains('non') && !s.contains('not') && !s.contains('unjustified')) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   Map<String, dynamic> toJson() {
@@ -486,13 +598,25 @@ class PostModel {
       return null;
     }
 
+    // Extract ID robustly (handle nested _id.$oid or direct string)
+    String idValue = '';
+    final rawId = json['id'] ?? json['_id'] ?? json['postId'] ?? json['newsId'] ?? '';
+    if (rawId is Map && rawId.containsKey('\$oid')) {
+      idValue = rawId['\$oid']?.toString() ?? '';
+    } else {
+      idValue = rawId.toString();
+    }
+    if (idValue == 'null' || idValue == '{}') idValue = '';
+
     return PostModel(
-      id: (json['id'] ?? json['_id'])?.toString() ?? '',
+      id: idValue,
       authorName: authorName,
       authorRole: authorRole,
       authorAvatar: processImageUrl(authorAvatar),
       title: json['title'] ?? '',
-      content: json['content'] ?? '',
+      content: (json['content'] == null || json['content'] == 'string' || json['content'] == '') 
+          ? (json['description'] ?? json['message'] ?? json['body'] ?? '') 
+          : json['content'],
       imageUrl: processImageUrl(extractFileUrl(json['imageUrl']) ?? extractFileUrl(json['image']) ?? extractFileUrl(json['media']) ?? extractFileUrl(json['photo']) ?? extractFileUrl(json['files']) ?? extractFileUrl(json['attachments']) ?? extractFileUrl(json['documents'])),
       date: json['date'] ?? json['createdAt'] ?? '',
       likes: json['likesCount'] ?? (json['likes'] is List ? (json['likes'] as List).length : 0),
@@ -583,6 +707,7 @@ class LikeModel {
   final String? userAvatar;
 
   LikeModel({required this.userName, this.userAvatar});
+
 
   factory LikeModel.fromJson(Map<String, dynamic> json) {
     String name = json['fullName'] ?? json['name'] ?? 'Utilisateur';
@@ -1450,8 +1575,20 @@ class PaymentModel {
       pType = PaymentType.transport;
     }
 
+    // Extract ID robustly (handle nested _id.$oid or direct string)
+    String idValue = '';
+    final rawId = json['id'] ?? json['_id'] ?? json['paymentId'] ?? json['invoiceId'] ?? json['uid'] ?? json['key'] ?? '';
+    if (rawId is Map && rawId.containsKey('\$oid')) {
+      idValue = rawId['\$oid']?.toString() ?? '';
+    } else {
+      idValue = rawId.toString();
+    }
+    // Final fallback: if ID is still empty but we have an invoice number, 
+    // it's better than nothing, but let's stick to empty if it looks like a junk value.
+    if (idValue == 'null' || idValue == '{}') idValue = '';
+
     return PaymentModel(
-      id: (json['id'] ?? json['_id'])?.toString() ?? '',
+      id: idValue,
       month: normalizeMonth(rawMonth),
       amount: (json['amount'] ?? json['totalAmount'] ?? json['fee'] ?? json['total'] as num?)?.toDouble() ?? 0.0,
       status: PaymentStatus.values.firstWhere(
@@ -1526,7 +1663,9 @@ class MonthPaymentGroup {
 
   bool get scolarityPaid => scolarity?.status == PaymentStatus.paid;
   bool get transportPaid => transport?.status == PaymentStatus.paid;
-  bool get allPaid => scolarityPaid && transportPaid;
+  bool get scolarityOverdue => scolarity?.status == PaymentStatus.overdue;
+  bool get transportOverdue => transport?.status == PaymentStatus.overdue;
+  bool get allPaid => (scolarity == null || scolarityPaid) && (transport == null || transportPaid);
   bool get anyPaid => scolarityPaid || transportPaid;
 
   PaymentStatus get overallStatus {

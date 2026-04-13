@@ -173,28 +173,49 @@ class _PaymentScreenState extends State<PaymentScreen>
       isFirstPending = true;
     }
 
-    // Colors based on overall status
+    // Logic for identifying specifically the color theme
+    final isCurrentMonth = group.month.toLowerCase() == vm.currentMonthName;
+    
+    // Check for mixed state (for Orange)
+    // Mixed means: at least one service exists AND (one is paid while other is not)
+    bool isMixed = false;
+    if (group.scolarity != null && group.transport != null) {
+      if (group.scolarityPaid != group.transportPaid) {
+        isMixed = true;
+      }
+    }
+    
+    // All existing items are overdue (for Red)
+    bool allOverdue = true;
+    if (group.scolarity != null && !group.scolarityOverdue) allOverdue = false;
+    if (group.transport != null && !group.transportOverdue) allOverdue = false;
+    if (group.scolarity == null && group.transport == null) allOverdue = false;
+
+    // Colors base setup
     Color glowColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.7);
     Color borderColor = isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.9);
     Color labelColor = isDark ? Colors.white60 : Colors.black54;
 
-    if (group.allPaid) {
-      glowColor = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFD1FAE5);
-      borderColor = isDark ? const Color(0xFF10B981).withValues(alpha: 0.4) : const Color(0xFF10B981).withValues(alpha: 0.3);
-      labelColor = isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
-    } else if (overallStatus == PaymentStatus.overdue) {
-      glowColor = isDark ? const Color(0xFF450A0A).withValues(alpha: 0.3) : const Color(0xFFFEE2E2);
-      borderColor = isDark ? const Color(0xFFEF4444).withValues(alpha: 0.4) : const Color(0xFFEF4444).withValues(alpha: 0.3);
-      labelColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
-    } else if (group.anyPaid) {
-      // Partial: some paid, some not
-      glowColor = isDark ? const Color(0xFF1E3A5F).withValues(alpha: 0.3) : const Color(0xFFFFF7ED);
-      borderColor = isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.4) : const Color(0xFFF59E0B).withValues(alpha: 0.3);
-      labelColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
-    } else if (isFirstPending) {
+    if (isCurrentMonth) {
+      // 1. Current Month (Blue - Priority 1)
       glowColor = isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.3) : const Color(0xFFDBEAFE);
       borderColor = isDark ? const Color(0xFF3B82F6).withValues(alpha: 0.4) : const Color(0xFF3B82F6).withValues(alpha: 0.3);
       labelColor = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
+    } else if (group.allPaid) {
+      // 2. All Paid (Green - Priority 2)
+      glowColor = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFD1FAE5);
+      borderColor = isDark ? const Color(0xFF10B981).withValues(alpha: 0.4) : const Color(0xFF10B981).withValues(alpha: 0.3);
+      labelColor = isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
+    } else if (allOverdue) {
+      // 3. All Overdue (Red - Priority 3)
+      glowColor = isDark ? const Color(0xFF450A0A).withValues(alpha: 0.3) : const Color(0xFFFEE2E2);
+      borderColor = isDark ? const Color(0xFFEF4444).withValues(alpha: 0.4) : const Color(0xFFEF4444).withValues(alpha: 0.3);
+      labelColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+    } else if (isMixed || group.anyPaid) {
+      // 4. Mixed (Orange - Priority 4)
+      glowColor = isDark ? const Color(0xFF431407).withValues(alpha: 0.3) : const Color(0xFFFFF7ED);
+      borderColor = isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.4) : const Color(0xFFF59E0B).withValues(alpha: 0.3);
+      labelColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
     }
 
     return GestureDetector(
@@ -226,64 +247,37 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ),
               ),
               const SizedBox(height: 4),
-              // Type status indicators
+              // Type status indicators (Smart: only show if exists)
               Row(
                 children: [
-                  _typeStatusDot(
-                    Icons.school_rounded,
-                    group.scolarityPaid,
-                    group.scolarity != null,
-                    isDark,
-                  ),
-                  const SizedBox(width: 8),
-                  _typeStatusDot(
-                    Icons.directions_bus_rounded,
-                    group.transportPaid,
-                    group.transport != null,
-                    isDark,
-                  ),
+                  if (group.scolarity != null)
+                    _typeStatusDot(
+                      Icons.school_rounded,
+                      group.scolarityPaid,
+                      true,
+                      isDark,
+                    ),
+                  if (group.scolarity != null && group.transport != null)
+                    const SizedBox(width: 8),
+                  if (group.transport != null)
+                    _typeStatusDot(
+                      Icons.directions_bus_rounded,
+                      group.transportPaid,
+                      true,
+                      isDark,
+                    ),
                 ],
               ),
               const Spacer(),
               Text(
                 loc.translate(group.month),
                 style: TextStyle(
-                  color: group.allPaid || group.anyPaid || overallStatus == PaymentStatus.overdue || isFirstPending
-                      ? labelColor
-                      : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4)),
+                  color: labelColor,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              if (!group.anyPaid && overallStatus == PaymentStatus.pending)
-                Text(
-                  isFirstPending ? '${loc.translate('pay_now')} →' : loc.translate('pending'),
-                  style: TextStyle(
-                    color: isFirstPending ? (isDark ? Colors.blueAccent : Colors.blue) : (isDark ? Colors.white24 : Colors.black26),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              if (group.anyPaid && !group.allPaid && overallStatus != PaymentStatus.overdue)
-                Text(
-                  'Partiel',
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              if (group.anyPaid && !group.allPaid && overallStatus == PaymentStatus.overdue)
-                Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: const Color(0xFFF87171), size: 12),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Partiel ⚠',
-                      style: TextStyle(color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626), fontSize: 9, fontWeight: FontWeight.w900),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 2),
               if (group.allPaid)
                 Row(
                   children: [
@@ -294,18 +288,52 @@ class _PaymentScreenState extends State<PaymentScreen>
                       style: TextStyle(color: labelColor, fontSize: 9, fontWeight: FontWeight.w900),
                     ),
                   ],
-                ),
-              if (overallStatus == PaymentStatus.overdue && !group.anyPaid)
+                )
+              else if (isCurrentMonth)
                 Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: labelColor, size: 12),
-                    const SizedBox(width: 3),
                     Text(
-                      loc.translate('overdue'),
-                      style: TextStyle(color: labelColor, fontSize: 9, fontWeight: FontWeight.w900),
+                      '${loc.translate('pay_now')} >',
+                      style: TextStyle(
+                        color: labelColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ],
-                ),
+                )
+              else ...[
+                // Specific labels for past/future unpaid months
+                if (group.anyPaid)
+                  Text(
+                    'Partiel',
+                    style: TextStyle(
+                      color: labelColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  )
+                else if (allOverdue)
+                  Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: labelColor, size: 12),
+                      const SizedBox(width: 3),
+                      Text(
+                        loc.translate('overdue'),
+                        style: TextStyle(color: labelColor, fontSize: 9, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    loc.translate('pending'),
+                    style: TextStyle(
+                      color: labelColor.withValues(alpha: 0.6),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+              ],
             ],
           ),
         ),
@@ -591,18 +619,23 @@ class _PaymentScreenState extends State<PaymentScreen>
                             onTap: () async {
                               if (isDownloading) return;
                               HapticFeedback.mediumImpact();
-                              String? url = payment.invoiceUrl;
-                              if (url == null || url.isEmpty) {
-                                url = await vm.getReceiptUrl(payment.id, isTransport ? 'transport' : 'scolarity');
-                              }
-                              if (url != null && url.isNotEmpty) {
+                              
+                              // Use the new internal download and open flow
+                              final success = await vm.getReceiptUrl(
+                                payment.id, 
+                                isTransport ? 'transport' : 'scolarity'
+                              );
+
+                              if (success) {
                                 HapticFeedback.heavyImpact();
-                                await vm.launchURL(url);
                                 if (context.mounted) Navigator.pop(context);
                               } else {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Reçu non disponible.'), backgroundColor: Colors.orangeAccent),
+                                    const SnackBar(
+                                      content: Text('Erreur lors du téléchargement du reçu.'),
+                                      backgroundColor: Colors.redAccent,
+                                    ),
                                   );
                                 }
                               }
