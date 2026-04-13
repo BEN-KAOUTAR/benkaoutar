@@ -428,10 +428,11 @@ class AttendanceRecord {
                          extractAttachment(json['proof']) ?? 
                          extractAttachment(json['justificationAttachment']);
     
-    bool justifiedByStudent = parseBool(json['justifiedByStudent']) || 
-                              parseBool(json['justified']) || 
-                              parseBool(json['isJustified']) || 
-                              parseBool(json['hasJustification']);
+    // Keep this strict: a teacher-marked absence must not become "justified"
+    // unless there is an explicit student/parent justification signal.
+    bool justifiedByStudent = parseBool(json['justifiedByStudent']) ||
+                              parseBool(json['hasJustification']) ||
+                              parseBool(json['justificationSubmitted']);
                               
     String? approvalStatus = json['approvalStatus']?.toString() ?? json['justificationStatus']?.toString();
 
@@ -495,26 +496,19 @@ class AttendanceRecord {
   bool get isJustified {
     if (status != 'absent') return false;
 
-    // 1. Server explicitly set the flag
+    // 1) Explicit student/parent justification flag.
     if (justifiedByStudent) return true;
 
-    // 2. Server returned an explicit approvalStatus
+    // 2) Approval status is only trusted when there is actual justification content.
+    final hasContent = (motif != null && motif!.trim().isNotEmpty) ||
+        (attachment != null && attachment!.trim().isNotEmpty);
+
     if (approvalStatus != null) {
       final s = approvalStatus!.toLowerCase().trim().replaceAll('é', 'e');
       if (s == 'pending' || s == 'en_attente' || s == 'justified' ||
           s == 'justifie' || s == 'reviewed' || s == 'submitted' ||
           s == 'approved' || s == 'valide') {
-        return true;
-      }
-    }
-
-    // 3. Raw status from server is an explicitly justified variant
-    if (rawStatus != null) {
-      final s = rawStatus!.toLowerCase().replaceAll('é', 'e').replaceAll('_', ' ');
-      if (s.contains('justifie') || s.contains('justified')) {
-        if (!s.contains('non') && !s.contains('not') && !s.contains('unjustified')) {
-          return true;
-        }
+        return hasContent;
       }
     }
 

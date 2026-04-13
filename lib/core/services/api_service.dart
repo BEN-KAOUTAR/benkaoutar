@@ -176,24 +176,31 @@ class ApiService {
   /// Submit a PDF or image justification for an absence
   Future<String?> submitJustification(String attendanceId, {String? filePath, Uint8List? fileBytes, required String fileName, String reason = '', void Function(int, int)? onProgress}) async {
     try {
-      final ext = fileName.split('.').last.toLowerCase();
-      MediaType? mediaType;
-      if (ext == 'pdf') {
-        mediaType = MediaType('application', 'pdf');
-      } else if (ext == 'jpg' || ext == 'jpeg') {
-        mediaType = MediaType('image', 'jpeg');
-      } else if (ext == 'png') {
-        mediaType = MediaType('image', 'png');
+      MultipartFile? attachment;
+      final hasFilePath = filePath != null && filePath.isNotEmpty;
+      final hasFileBytes = fileBytes != null && fileBytes.isNotEmpty;
+
+      if (hasFilePath || hasFileBytes) {
+        final ext = fileName.split('.').last.toLowerCase();
+        MediaType? mediaType;
+        if (ext == 'pdf') {
+          mediaType = MediaType('application', 'pdf');
+        } else if (ext == 'jpg' || ext == 'jpeg') {
+          mediaType = MediaType('image', 'jpeg');
+        } else if (ext == 'png') {
+          mediaType = MediaType('image', 'png');
+        }
+
+        attachment = hasFilePath
+            ? await MultipartFile.fromFile(filePath, filename: fileName, contentType: mediaType)
+            : await MultipartFile.fromBytes(fileBytes!, filename: fileName, contentType: mediaType);
       }
 
-      final attachment = (filePath != null && filePath.isNotEmpty)
-          ? await MultipartFile.fromFile(filePath, filename: fileName, contentType: mediaType)
-          : MultipartFile.fromBytes(fileBytes!, filename: fileName, contentType: mediaType);
-
-      final formData = FormData.fromMap({
-        'attachment': attachment,
-        'reason': reason,
-      });
+      final payload = <String, dynamic>{'reason': reason};
+      if (attachment != null) {
+        payload['attachment'] = attachment;
+      }
+      final formData = FormData.fromMap(payload);
 
       final response = await _dio.put(
         '/attendances/$attendanceId/justify', 
