@@ -17,17 +17,26 @@ class HomeworkScreen extends StatefulWidget {
   State<HomeworkScreen> createState() => _HomeworkScreenState();
 }
 
-class _HomeworkScreenState extends State<HomeworkScreen> {
+class _HomeworkScreenState extends State<HomeworkScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeworkViewModel>().fetchHomework(widget.studentId).then((_) {
         if (!mounted) return;
         context.read<HomeworkViewModel>().markAllAsSeen();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -80,77 +89,168 @@ class _HomeworkScreenState extends State<HomeworkScreen> {
                 );
               }
 
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Global Progress Indicator
-                    _buildProgressHeader(context, isDark, vm),
+              return Column(
+                children: [
+                  // Progress header (always visible)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                    child: _buildProgressHeader(context, isDark, vm),
+                  ),
 
-                    const SizedBox(height: 48),
+                  const SizedBox(height: 24),
 
-                    Text('DEVOIRS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: secondaryTextColor, letterSpacing: 2)).animate().fadeIn(delay: 200.ms),
-                    const SizedBox(height: 24),
+                  // ── TAB BAR ──
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildTabBar(isDark),
+                  ),
 
-                    if (vm.devoirsList.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Column(
-                            children: [
-                               Icon(Icons.assignment_turned_in_rounded, size: 48, color: Colors.greenAccent.withValues(alpha: 0.2)),
-                               const SizedBox(height: 16),
-                               Text('Aucun devoir', style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
+                  const SizedBox(height: 20),
+
+                  // ── TAB VIEWS ──
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        // Tab 1 — Devoirs
+                        _buildTabContent(
+                          context: context,
+                          isDark: isDark,
+                          primaryTextColor: primaryTextColor,
+                          secondaryTextColor: secondaryTextColor,
+                          label: 'DEVOIRS',
+                          icon: Icons.book_outlined,
+                          accentColor: Colors.greenAccent,
+                          items: vm.devoirsList,
+                          emptyIcon: Icons.assignment_turned_in_rounded,
+                          emptyLabel: 'Aucun devoir',
+                          vm: vm,
+                          animationOffset: 0,
                         ),
-                      )
-                    else
-                      ...vm.devoirsList.asMap().entries.map((entry) {
-                        final homework = entry.value;
-                        return _HomeworkListItem(
-                          homework: homework,
-                          onStatusUpdate: (status, {String? filePath}) => vm.updateStatus(homework.id, widget.studentId, status, filePath: filePath),
-                        ).animate().fadeIn(delay: (entry.key * 150).ms).slideY(begin: 0.1);
-                      }),
-                      
-                    const SizedBox(height: 48),
-
-                    Text('EXAMENS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: secondaryTextColor, letterSpacing: 2)).animate().fadeIn(delay: 200.ms),
-                    const SizedBox(height: 24),
-                    
-                    if (vm.examsList.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Column(
-                            children: [
-                               Icon(Icons.assignment_turned_in_rounded, size: 48, color: Colors.blueAccent.withValues(alpha: 0.2)),
-                               const SizedBox(height: 16),
-                               Text('Aucun examen', style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
+                        // Tab 2 — Examens
+                        _buildTabContent(
+                          context: context,
+                          isDark: isDark,
+                          primaryTextColor: primaryTextColor,
+                          secondaryTextColor: secondaryTextColor,
+                          label: 'EXAMENS',
+                          icon: Icons.school_outlined,
+                          accentColor: Colors.blueAccent,
+                          items: vm.examsList,
+                          emptyIcon: Icons.assignment_turned_in_rounded,
+                          emptyLabel: 'Aucun examen',
+                          vm: vm,
+                          animationOffset: 0,
                         ),
-                      )
-                    else
-                      ...vm.examsList.asMap().entries.map((entry) {
-                        final exam = entry.value;
-                        return _HomeworkListItem(
-                          homework: exam,
-                          onStatusUpdate: (status, {String? filePath}) => vm.updateStatus(exam.id, widget.studentId, status, filePath: filePath),
-                        ).animate().fadeIn(delay: (entry.key * 150).ms).slideY(begin: 0.1);
-                      }),
-                    
-                    const SizedBox(height: 100),
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                ],
               );
             },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTabBar(bool isDark) {
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, _) {
+        return Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            children: [
+              _buildTabPill(0, 'Devoirs', Icons.book_outlined, Colors.greenAccent, isDark),
+              _buildTabPill(1, 'Examens', Icons.school_outlined, Colors.blueAccent, isDark),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTabPill(int index, String label, IconData icon, Color accent, bool isDark) {
+    final isSelected = _tabController.index == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _tabController.animateTo(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? accent.withValues(alpha: isDark ? 0.22 : 0.18) : Colors.transparent,
+            borderRadius: BorderRadius.circular(25),
+            border: isSelected ? Border.all(color: accent.withValues(alpha: 0.45), width: 1.5) : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 15, color: isSelected ? accent : (isDark ? Colors.white38 : Colors.black38)),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? accent : (isDark ? Colors.white38 : Colors.black38),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabContent({
+    required BuildContext context,
+    required bool isDark,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
+    required String label,
+    required IconData icon,
+    required Color accentColor,
+    required List<HomeworkModel> items,
+    required IconData emptyIcon,
+    required String emptyLabel,
+    required HomeworkViewModel vm,
+    required int animationOffset,
+  }) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+      children: [
+        if (items.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 60),
+            child: Column(
+              children: [
+                Icon(emptyIcon, size: 64, color: accentColor.withValues(alpha: 0.2)),
+                const SizedBox(height: 16),
+                Text(emptyLabel, style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.bold, fontSize: 15)),
+              ],
+            ),
+          )
+        else
+          ...items.asMap().entries.map((entry) {
+            final item = entry.value;
+            return _HomeworkListItem(
+              homework: item,
+              onStatusUpdate: (status, {String? filePath}) =>
+                  vm.updateStatus(item.id, widget.studentId, status, filePath: filePath),
+            ).animate().fadeIn(delay: (entry.key * 100).ms).slideY(begin: 0.06);
+          }),
+      ],
     );
   }
 

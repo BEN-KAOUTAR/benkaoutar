@@ -1492,7 +1492,6 @@ class PaymentModel {
   }
 }
 
-<<<<<<< HEAD
 class TimetableSessionModel {
   final int dayIndex;
   final String time;
@@ -1511,7 +1510,8 @@ class TimetableSessionModel {
     this.isCanceled = false,
     this.isLive = false,
   });
-=======
+}
+
 /// Groups scolarité and transport payments for a single month
 class MonthPaymentGroup {
   final String month;
@@ -1534,5 +1534,4 @@ class MonthPaymentGroup {
     if (scolarity?.status == PaymentStatus.overdue || transport?.status == PaymentStatus.overdue) return PaymentStatus.overdue;
     return PaymentStatus.pending;
   }
->>>>>>> 7a8449f93c85bcd072a0fba9045d89c6affa94df
 }

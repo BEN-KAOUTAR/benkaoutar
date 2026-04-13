@@ -67,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
 
                     // Profile Sections
                     _buildProfileTile(context, Icons.person_outline_rounded, loc.translate('personal_info'), loc.translate('personal_info_desc'), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
-                    _buildProfileTile(context, Icons.lock_outline_rounded, loc.translate('security'), 'Mot de passe et téléphone', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
+                    _buildProfileTile(context, Icons.lock_outline_rounded, loc.translate('security'), 'Mot de passe', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
                     _buildProfileTile(context, Icons.notifications_none_rounded, loc.translate('notifications_settings'), 'Gérer vos alertes', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
                     _buildProfileTile(context, Icons.language_rounded, loc.translate('language'), 'Changer la langue', () => _showLanguageSwitcher(context), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
                     _buildProfileTile(context, Icons.help_outline_rounded, loc.translate('help_support'), 'Centre de support', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
