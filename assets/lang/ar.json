@@ -230,7 +230,7 @@
   "internal_server_error": "خطأ داخلي في الخادم. فنيونا يعملون على حل المشكلة.",
   "june": "يونيو",
   "just_now": "الآن",
-  "justified": "مبرر",
+  "justified": "غياب مبرر",
   "justified_caps": "تم تبريره",
   "justified_medical": "تم تبرير الغياب بشهادة طبية.",
   "key_indicators": "المؤشرات الأساسية",
@@ -522,7 +522,7 @@
   "tue_short": "الثلاثاء",
   "type_comment": "أدخل تعليقك هنا...",
   "typed_message_hint": "اكتب رسالتك المدرية...",
-  "unjustified": "غير مبرر",
+  "unjustified": "غياب",
   "unauthorized": "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.",
   "unjustified_caps": "لم يتم تبريره",
   "upcoming_evaluations": "التقييمات الدراسية القادمة",
@@ -562,5 +562,14 @@
   "your_home": "موقع المنزل المسجل",
   "submit_justification": "إرسال تبرير",
   "justification_sent": "تم إرسال التبرير بنجاح",
-  "sending": "جاري الإرسال..."
+  "sending": "جاري الإرسال...",
+  "justification_reason": "سبب الغياب",
+  "update_justification": "تحديث التبرير",
+  "view_proof": "عرض التبرير الحالي",
+  "enter_reason_hint": "أدخل السبب...",
+  "please_enter_reason": "يرجى إدخال السبب",
+  "send": "إرسال",
+  "document_selected": "تم اختيار المستند",
+  "justified": "غياب مبرر",
+  "unjustified": "غياب"
 }

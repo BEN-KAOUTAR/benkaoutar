@@ -29,7 +29,8 @@ class _FeedScreenState extends State<FeedScreen> {
     super.initState();
     // Fetch posts on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FeedViewModel>().fetchPosts();
+      final userName = context.read<AppState>().currentUser?.name;
+      context.read<FeedViewModel>().fetchPosts(currentUserName: userName);
     });
   }
 
@@ -349,10 +350,10 @@ class _FeedScreenState extends State<FeedScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.blueAccent.withValues(alpha: 0.1),
+                                  color: Colors.redAccent.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(Icons.favorite_rounded, color: Colors.blueAccent, size: 14),
+                                  ),
+                                  child: const Icon(Icons.favorite_rounded, color: Colors.redAccent, size: 14),
                               ),
                             ],
                           ),
@@ -495,7 +496,7 @@ class _FeedScreenState extends State<FeedScreen> {
             }
 
             return RefreshIndicator(
-              onRefresh: vm.fetchPosts,
+              onRefresh: () => vm.fetchPosts(currentUserName: context.read<AppState>().currentUser?.name),
               color: Colors.blueAccent,
               child: ListView.builder(
                 physics: const BouncingScrollPhysics(),

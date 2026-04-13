@@ -557,5 +557,17 @@
   "yes_link_button": "Yes, Link Student",
   "yesterday_section": "Yesterday",
   "your_children": "Your Children",
-  "your_home": "Home Address"
+  "your_home": "Home Address",
+  "submit_justification": "Submit Justification",
+  "justification_sent": "Justification sent successfully",
+  "sending": "Sending...",
+  "justification_reason": "Reason for absence",
+  "update_justification": "Update justification",
+  "view_proof": "View current document",
+  "enter_reason_hint": "Enter your reason...",
+  "please_enter_reason": "Please enter a reason",
+  "send": "Send",
+  "document_selected": "Document selected",
+  "justified": "Justified Absence",
+  "unjustified": "Absence"
 }

@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
 
@@ -23,6 +26,12 @@ class PaymentViewModel extends ChangeNotifier {
   int get overdueCount => _monthGroups.where((g) => g.overallStatus == PaymentStatus.overdue).length;
   int get pendingCount => _monthGroups.where((g) => g.overallStatus == PaymentStatus.pending).length;
   double get progressionRate => _monthGroups.isEmpty ? 0 : (paidCount / _monthGroups.length);
+  
+  String get currentMonthName {
+    final now = DateTime.now();
+    final months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    return months[now.month - 1];
+  }
 
   static const List<String> _schoolMonths = [
     'september', 'october', 'november', 'december',
@@ -74,6 +83,10 @@ class PaymentViewModel extends ChangeNotifier {
       final apiPayments = await _apiService.getPayments();
       _allPayments = apiPayments;
 
+      // Detect active services for this student across the whole year
+      final hasAnyScolarity = apiPayments.any((p) => p.paymentType == PaymentType.scolarity);
+      final hasAnyTransport = apiPayments.any((p) => p.paymentType == PaymentType.transport);
+
       _monthGroups = _schoolMonths.map((month) {
         final bool isOverdue = _isMonthOverdue(month);
         
@@ -98,18 +111,23 @@ class PaymentViewModel extends ChangeNotifier {
           tra = _withOverdueStatus(tra);
         }
 
-        // Create overdue placeholders for months that passed with no API data
-        if (sco == null && isOverdue) {
+        final bool isCurrentMonth = month.toLowerCase() == currentMonthName;
+        
+        // Create placeholders for active services that are missing from API for this month
+        // FORCE both for current month to ensure visibility of unpaid items
+        if (sco == null && (hasAnyScolarity || isCurrentMonth)) {
           sco = PaymentModel(
-            id: 'missing_sco_$month', month: month, amount: 0,
-            status: PaymentStatus.overdue, date: '', childIds: [],
+            id: 'placeholder_sco_$month', month: month, amount: 0,
+            status: isOverdue ? PaymentStatus.overdue : PaymentStatus.pending, 
+            date: '', childIds: [],
             paymentType: PaymentType.scolarity,
           );
         }
-        if (tra == null && isOverdue) {
+        if (tra == null && (hasAnyTransport || isCurrentMonth)) {
           tra = PaymentModel(
-            id: 'missing_tra_$month', month: month, amount: 0,
-            status: PaymentStatus.overdue, date: '', childIds: [],
+            id: 'placeholder_tra_$month', month: month, amount: 0,
+            status: isOverdue ? PaymentStatus.overdue : PaymentStatus.pending, 
+            date: '', childIds: [],
             paymentType: PaymentType.transport,
           );
         }
@@ -128,16 +146,34 @@ class PaymentViewModel extends ChangeNotifier {
     }
   }
 
-  Future<String?> getReceiptUrl(String paymentId, String type) async {
+  Future<bool> getReceiptUrl(String paymentId, String type) async {
     _isDownloading = true;
     notifyListeners();
 
     try {
-      final url = await _apiService.downloadReceipt(paymentId, type);
-      return url;
+      final endpoint = await _apiService.downloadReceipt(paymentId, type);
+      
+      // Get temporary directory to save the file
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'receipt_${paymentId}_${type}.pdf';
+      final savePath = '${tempDir.path}/$fileName';
+      
+      // Download the file internally with headers
+      final downloadedPath = await _apiService.downloadInternalFile(endpoint, savePath);
+      
+      if (downloadedPath != null) {
+        // Open the file using the local viewer
+        final result = await OpenFilex.open(downloadedPath);
+        if (result.type != ResultType.done) {
+          _errorMessage = 'Could not open PDF: ${result.message}';
+          return false;
+        }
+        return true;
+      }
+      return false;
     } catch (e) {
       _errorMessage = _apiService.getLocalizedErrorMessage(e);
-      return null;
+      return false;
     } finally {
       _isDownloading = false;
       notifyListeners();

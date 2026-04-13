@@ -10,12 +10,14 @@ class SuiviViewModel extends ChangeNotifier {
   Map<String, List<dynamic>> _evolutionData = {}; // Map of subject -> list of FlSpot-like data
   bool _isLoading = false;
   String? _errorMessage;
+  double _uploadProgress = 0.0;
 
   List<GradeModel> get grades => _grades;
   List<AttendanceRecord> get absences => _absences;
   Map<String, List<dynamic>> get evolutionData => _evolutionData;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  double get uploadProgress => _uploadProgress;
 
   // Group grades by subject for UI display
   Map<String, List<GradeModel>> get groupedGrades {
@@ -50,8 +52,12 @@ class SuiviViewModel extends ChangeNotifier {
       _schedule = results[2] as List<Map<String, dynamic>>;
       
       debugPrint('Parsed ${_grades.length} grades, ${_absences.length} absences, ${_schedule.length} schedule slots');
-      if (_absences.isNotEmpty) {
-        debugPrint('Sample Absence Status: ${_absences.first.status} (Raw: ${_absences.first.rawStatus})');
+      
+      // Diagnostic logging for persistence issue
+      for (var a in _absences) {
+        if (a.status == 'absent') {
+          debugPrint('Absence ID: ${a.id}, Justified: ${a.isJustified}, Flag: ${a.justifiedByStudent}, Approval: ${a.approvalStatus}, Motif: ${a.motif}');
+        }
       }
 
       // Generate evolution data from local grades chronologically
@@ -152,26 +158,8 @@ class SuiviViewModel extends ChangeNotifier {
 
   int get totalAttendanceDays => _absences.length;
 
-  int get unjustifiedAbsences {
-    return _absences.where((a) {
-      if (a.status != 'absent') return false;
-      // If raw status explicitly says non-justified
-      if (a.rawStatus != null && a.rawStatus!.contains('non_justifie')) return true;
-      // If it's absent and has no motif AND not explicitly marked as justified in rawStatus
-      return (a.motif == null || a.motif!.isEmpty) && (a.rawStatus == null || !a.rawStatus!.contains('justifie'));
-    }).length;
-  }
-
-  int get justifiedAbsences {
-    return _absences.where((a) {
-      if (a.status != 'absent') return false;
-      // If raw status says justified
-      if (a.rawStatus != null && a.rawStatus!.contains('justifie') && !a.rawStatus!.contains('non_justifie')) return true;
-      // Standard check
-      return a.motif != null && a.motif!.isNotEmpty;
-    }).length;
-  }
-
+  int get unjustifiedAbsences => _absences.where((a) => a.status == 'absent' && !a.isJustified).length;
+  int get justifiedAbsences => _absences.where((a) => a.isJustified).length;
   int get delays => _absences.where((a) => a.status == 'late').length;
   int get presentDays => _absences.where((a) => a.status == 'present').length;
 
@@ -226,14 +214,52 @@ class SuiviViewModel extends ChangeNotifier {
     return null;
   }
 
-  Future<bool> submitJustification(String attendanceId, String filePath, String fileName, {String reason = ''}) async {
+  Future<bool> submitJustification(String attendanceId, {String? filePath, Uint8List? fileBytes, required String fileName, String reason = ''}) async {
     _isLoading = true;
     _errorMessage = null;
+    _uploadProgress = 0.0;
     notifyListeners();
 
     try {
-      final success = await _apiService.submitJustification(attendanceId, filePath, fileName, reason: reason);
-      if (success) {
+      final result = await _apiService.submitJustification(
+        attendanceId, 
+        filePath: filePath,
+        fileBytes: fileBytes,
+        fileName: fileName,
+        reason: reason,
+        onProgress: (sent, total) {
+            if (total > 0) {
+                _uploadProgress = sent / total;
+                notifyListeners();
+            }
+        }
+      );
+      if (result != null) {
+        // Instant local state update: mark the absence as justified
+        final index = _absences.indexWhere((a) => a.id == attendanceId);
+        if (index != -1) {
+          final old = _absences[index];
+          final newAttachmentUrl = (result != 'success') ? result : old.attachment;
+          _absences[index] = AttendanceRecord(
+            id: old.id,
+            date: old.date,
+            status: old.status,
+            motif: reason.isNotEmpty ? reason : old.motif,
+            attachment: newAttachmentUrl,
+            rawStatus: 'absent_justifie',
+            startTime: old.startTime,
+            endTime: old.endTime,
+            subjectName: old.subjectName,
+            sessionName: old.sessionName,
+            justifiedByStudent: true,
+            approvalStatus: old.approvalStatus ?? 'pending',
+            recordedBy: old.recordedBy,
+          );
+        }
+        
+        // Optional: Re-fetch to confirm server persistence
+        // await fetchSuiviData(studentId); 
+        
         return true;
       }
       return false;
@@ -242,6 +268,7 @@ class SuiviViewModel extends ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
+      _uploadProgress = 0.0;
       notifyListeners();
     }
   }
