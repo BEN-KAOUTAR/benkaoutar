@@ -159,7 +159,35 @@ class SuiviViewModel extends ChangeNotifier {
         }
         return fetched;
       }).toList();
-      _absences = mergedAbsences;
+
+      final fetchedIdentifiers = <String>{
+        ...fetchedAbsences.map((a) => a.id),
+        ...fetchedAbsences.where((a) => a.id.isNotEmpty).map((a) => a.id),
+      };
+
+      final finalAbsences = List<AttendanceRecord>.from(mergedAbsences);
+
+      for (final localJson in _localJustifications.values) {
+        try {
+          final localRecord = AttendanceRecord.fromJson(json.decode(localJson));
+          if (localRecord.id.isNotEmpty && !fetchedIdentifiers.contains(localRecord.id)) {
+            // It was wiped from server response! Bring it back from local persistence
+            finalAbsences.add(localRecord);
+          }
+        } catch (_) {}
+      }
+
+      // Sort by date descending to ensure chronological order in UI
+      finalAbsences.sort((a, b) {
+        try {
+          return DateTime.parse(b.date).compareTo(DateTime.parse(a.date));
+        } catch (_) {
+          return 0;
+        }
+      });
+
+      _absences.clear();
+      _absences.addAll(finalAbsences);
       
       debugPrint('Parsed ${_grades.length} grades, ${_absences.length} absences, ${_schedule.length} schedule slots');
       
