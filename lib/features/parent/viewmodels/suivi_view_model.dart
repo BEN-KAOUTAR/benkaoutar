@@ -53,8 +53,8 @@ class SuiviViewModel extends ChangeNotifier {
     return grouped;
   }
 
-  List<Map<String, dynamic>> _schedule = [];
-  List<Map<String, dynamic>> get schedule => _schedule;
+  List<TimetableSessionModel> _schedule = [];
+  List<TimetableSessionModel> get schedule => _schedule;
 
   String _forcedKeysStorageKey(String studentId) => 'suivi_forced_justified_keys_$studentId';
 
@@ -95,12 +95,12 @@ class SuiviViewModel extends ChangeNotifier {
       final results = await Future.wait([
         _apiService.getGrades(studentId),
         _apiService.getAbsences(studentId),
-        _apiService.getTimetable(studentId).catchError((_) => <Map<String, dynamic>>[]),
+        _apiService.getTimetable(studentId).catchError((_) => <TimetableSessionModel>[]),
       ]);
 
       _grades = results[0] as List<GradeModel>;
       final fetchedAbsences = results[1] as List<AttendanceRecord>;
-      _schedule = results[2] as List<Map<String, dynamic>>;
+      _schedule = results[2] as List<TimetableSessionModel>;
 
       // Preserve optimistic justifications when backend propagation is delayed.
       final optimisticById = <String, AttendanceRecord>{
@@ -211,21 +211,19 @@ class SuiviViewModel extends ChangeNotifier {
 
   /// Find a matching schedule slot for a given attendance record
   /// Matches by day of week and subject name
-  Map<String, dynamic>? getScheduleForAttendance(AttendanceRecord a) {
+  TimetableSessionModel? getScheduleForAttendance(AttendanceRecord a) {
     try {
       final dt = DateTime.parse(a.date);
       // weekday: 1=Monday, 2=Tuesday,...,7=Sunday
-      final dayOfWeek = dt.weekday;
-      final dayNames = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-      final dayName = dayNames[dayOfWeek].toLowerCase();
+      // dayIndex in model: 0=Monday, 1=Tuesday, ...
+      final dayOfWeekIndex = dt.weekday - 1;
 
       for (final slot in _schedule) {
-        final slotDay = (slot['day'] ?? slot['dayOfWeek'] ?? '').toString().toLowerCase();
-        if (!slotDay.contains(dayName) && slotDay != dayOfWeek.toString()) continue;
+        if (slot.dayIndex != dayOfWeekIndex) continue;
 
         // Try to match by subject name
         if (a.subjectName != null) {
-          final slotSubject = (slot['subject'] ?? '').toString().toLowerCase();
+          final slotSubject = slot.subject.toLowerCase();
           if (slotSubject.contains(a.subjectName!.toLowerCase()) || a.subjectName!.toLowerCase().contains(slotSubject)) {
             return slot;
           }

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import 'package:http_parser/http_parser.dart';
 
@@ -32,12 +33,29 @@ class ApiService {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
-  // Helper to extract data field from ApiResponse
+  // Helper to extract list data from various API response shapes:
+  // { data: [...] }, { result: [...] }, { list: [...] }, { items: [...] },
+  // { attendances: [...] }, { grades: [...] }, { records: [...] }, or plain [...]
   dynamic _handleResponseData(Response response) {
-    if (response.data is Map && response.data.containsKey('data')) {
-      return response.data['data'];
+    final d = response.data;
+    if (d is List) return d;
+    if (d is Map) {
+      // Try common wrapper keys in priority order
+      for (final key in [
+        'data', 'result', 'results', 'list', 'items',
+        'attendances', 'attendance', 'records',
+        'grades', 'notes', 'exams',
+        'absences', 'sessions',
+      ]) {
+        if (d.containsKey(key) && d[key] is List) {
+          debugPrint('[API] Extracted list from key "$key" (${(d[key] as List).length} items)');
+          return d[key];
+        }
+      }
+      // If there is a single 'data' key that's a map, return it
+      if (d.containsKey('data')) return d['data'];
     }
-    return response.data;
+    return d;
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -127,50 +145,70 @@ class ApiService {
   // --- STUDENT / PARENT DATA ---
 
   Future<List<GradeModel>> getGrades(String studentId) async {
-    try {
-      // Fetch both exams and notes as some results might be in one or the other
-      final responses = await Future.wait([
-        _dio.get('/exams/my-results'),
-        _dio.get('/notes/my-results').catchError((e) => Response(requestOptions: RequestOptions(path: ''), statusCode: 404, data: {'data': []})),
-      ]);
-
-      List<GradeModel> allGrades = [];
-      
-      for (final response in responses) {
-        if (response.statusCode == 200) {
-          final List data = _handleResponseData(response);
-          allGrades.addAll(data.map((json) => GradeModel.fromJson(json)));
-        }
-      }
-      
-      // Sort by date descending if possible
-      allGrades.sort((a, b) => b.date.compareTo(a.date));
-      
-      return allGrades;
-    } catch (e) {
-      // Fallback to one of them if the wait fails
+    List<GradeModel> allGrades = [];
+    final endpoints = ['/exams/my-results', '/notes/my-results', '/grades/me', '/evaluations/me'];
+    
+    for (final endpoint in endpoints) {
       try {
-        final response = await _dio.get('/exams/my-results');
+        final response = await _dio.get(endpoint);
+        debugPrint('[Grades] $endpoint → status=${response.statusCode}, type=${response.data.runtimeType}');
         if (response.statusCode == 200) {
-          final List data = _handleResponseData(response);
-          return data.map((json) => GradeModel.fromJson(json)).toList();
+          final raw = _handleResponseData(response);
+          if (raw is List && raw.isNotEmpty) {
+            debugPrint('[Grades] $endpoint → ${raw.length} items, first keys=${raw.first is Map ? (raw.first as Map).keys.toList() : "?"}');
+            final parsed = raw.map((json) {
+              try { return GradeModel.fromJson(json as Map<String, dynamic>); }
+              catch (e) { debugPrint('[Grades] parse error: $e'); return null; }
+            }).whereType<GradeModel>().toList();
+            allGrades.addAll(parsed);
+          } else {
+            debugPrint('[Grades] $endpoint → empty or non-list: $raw');
+          }
         }
-      } catch (_) {}
-      rethrow;
+      } catch (e) {
+        debugPrint('[Grades] $endpoint failed: $e');
+        // Continue trying other endpoints
+      }
     }
+
+    debugPrint('[Grades] Total parsed: ${allGrades.length} grades');
+    // Sort by date descending and deduplicate by id
+    allGrades.sort((a, b) => b.date.compareTo(a.date));
+    final seen = <String>{};
+    allGrades = allGrades.where((g) => g.id.isEmpty || seen.add(g.id)).toList();
+    return allGrades;
   }
 
   Future<List<AttendanceRecord>> getAbsences(String studentId) async {
-    try {
-      final response = await _dio.get('/attendances/me');
-      if (response.statusCode == 200) {
-        final List data = _handleResponseData(response);
-        return data.map((json) => AttendanceRecord.fromJson(json)).toList();
+    final endpoints = ['/attendances/me', '/attendance/me', '/absences/me', '/attendances/student/me'];
+    
+    for (final endpoint in endpoints) {
+      try {
+        final response = await _dio.get(endpoint);
+        debugPrint('[Absences] $endpoint → status=${response.statusCode}, type=${response.data.runtimeType}');
+        if (response.statusCode == 200) {
+          final raw = _handleResponseData(response);
+          if (raw is List) {
+            debugPrint('[Absences] $endpoint → ${raw.length} items');
+            if (raw.isNotEmpty) {
+              debugPrint('[Absences] First item keys: ${raw.first is Map ? (raw.first as Map).keys.toList() : "?"}');
+            }
+            return raw.map((json) {
+              try { return AttendanceRecord.fromJson(json as Map<String, dynamic>); }
+              catch (e) { debugPrint('[Absences] parse error: $e'); return null; }
+            }).whereType<AttendanceRecord>().toList();
+          } else {
+            debugPrint('[Absences] $endpoint → non-list response: ${raw.runtimeType} → $raw');
+          }
+        }
+      } catch (e) {
+        debugPrint('[Absences] $endpoint failed: $e');
+        // Continue trying next endpoint
       }
-      throw Exception('Failed to load absences');
-    } catch (e) {
-      rethrow;
     }
+    
+    debugPrint('[Absences] All endpoints failed or returned empty — returning empty list');
+    return [];
   }
 
   /// Submit a PDF or image justification for an absence

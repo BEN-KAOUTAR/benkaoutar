@@ -1318,12 +1318,12 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
         // Resolve timing from record or schedule cross-reference
         final slot = vm.getScheduleForAttendance(a);
-        final startTime = a.startTime ?? slot?['time'] ?? slot?['startTime'] ?? slot?['start'];
-        final endTime   = a.endTime   ?? slot?['endTime']   ?? slot?['end'];
+        final startTime = a.startTime ?? slot?.time;
+        final endTime   = a.endTime; 
         final timing    = (startTime != null && endTime != null) ? '$startTime - $endTime' : (startTime ?? '');
-        final sessionTitle = a.subjectName ?? a.sessionName ?? slot?['subject']?.toString() ?? AppLocalizations.of(context)!.translate('session');
-        final teacher = slot?['teacher']?.toString();
-        final room = slot?['room']?.toString() ?? slot?['classroom']?.toString();
+        final sessionTitle = a.subjectName ?? a.sessionName ?? slot?.subject ?? AppLocalizations.of(context)!.translate('session');
+        final teacher = slot?.teacher;
+        final room = slot?.room;
 
         void showDetailSheet() {
           bool isUploading = false;
