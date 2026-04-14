@@ -210,19 +210,22 @@ class ApiService {
 
       final payload = <String, dynamic>{
         'reason': reason,
-        'motif': reason, // Rétablir motif pour compatibilité serveur
+        'motif': reason, 
+        'justificationReason': reason,
+        'justificationText': reason,
         'justifiedByStudent': true,
         'hasJustification': true,
+        'isJustified': true,
       };
 
-      // Always use FormData (multipart/form-data) as required by the backend
-      final formData = FormData.fromMap(payload);
+      // Always use FormData (multipart/form-data) for the file
+      final formDataMap = <String, dynamic>{};
+      payload.forEach((k, v) => formDataMap[k] = v.toString());
+      final formData = FormData.fromMap(formDataMap);
       
       if (attachment != null) {
-        // Appending NEW file
         formData.files.add(MapEntry('attachment', attachment));
       } else if (oldAttachmentUrl != null && oldAttachmentUrl.isNotEmpty) {
-        // Strict Rule: Passing OLD file URL to prevent deletion by the server
         formData.fields.add(MapEntry('attachment', oldAttachmentUrl));
       }
 
@@ -237,6 +240,18 @@ class ApiService {
           headers: {'Accept': 'application/json'},
         )
       );
+
+      // --- SECONDARY SYNC ---
+      // Force update the record using standard JSON PUT just in case the /justify multipart route 
+      // fails to map the boolean or reason fields in Node.js
+      try {
+         await _dio.put(
+            '/attendances/$attendanceId',
+            data: payload, // Sending as raw application/json
+         );
+      } catch (e) {
+         print('Secondary JSON sync failed, proceeding anyway: $e');
+      }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.data is Map) {
