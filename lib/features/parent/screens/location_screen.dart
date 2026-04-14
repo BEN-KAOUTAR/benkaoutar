@@ -214,7 +214,7 @@ class _LocationScreenState extends State<LocationScreen>
                     Text(
                       isArrived 
                         ? "${AppLocalizations.of(context)!.translate('arrived_label')} : ${AppLocalizations.of(context)!.translate('home_label')}"
-                        : "${AppLocalizations.of(context)!.translate('trip_in_progress')}",
+                        : AppLocalizations.of(context)!.translate('trip_in_progress'),
                       style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)
                     ),
                     Text(
@@ -472,7 +472,7 @@ class _DraggableHistorySheetState extends State<_DraggableHistorySheet> {
                       const SizedBox(height: 20),
                       Text(AppLocalizations.of(context)!.translate('today_history'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? Colors.white : const Color(0xFF0F172A))),
                       const SizedBox(height: 16),
-                      ...widget.history.map((r) => widget.buildItem(r)).toList(),
+                      ...widget.history.map((r) => widget.buildItem(r)),
                       const SizedBox(height: 30),
                     ],
                   ),

@@ -96,7 +96,7 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
   }
 
   void _editPost(NewsPost post) {
-    final TextEditingController _editController = TextEditingController(text: post.content);
+    final TextEditingController editController = TextEditingController(text: post.content);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     showDialog(
@@ -117,7 +117,7 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
             ],
           ),
           content: TextField(
-            controller: _editController,
+            controller: editController,
             maxLines: 5,
             style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 14, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
@@ -142,7 +142,7 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                       id: post.id,
                       authorName: post.authorName,
                       authorRole: post.authorRole,
-                      content: _editController.text,
+                      content: editController.text,
                       time: post.time,
                       imageUrl: post.imageUrl,
                       extraImages: post.extraImages,

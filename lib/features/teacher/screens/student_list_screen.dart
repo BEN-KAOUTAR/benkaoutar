@@ -220,7 +220,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${student.average.toStringAsFixed(2)}',
+                  student.average.toStringAsFixed(2),
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 16,

@@ -96,7 +96,7 @@ class GroupInfoScreen extends StatelessWidget {
                               final isAdminOnly = appState.groupAdminOnlyMessaging.contains(groupName);
                               return SwitchListTile(
                                 value: isAdminOnly,
-                                activeColor: Colors.blueAccent,
+                                activeThumbColor: Colors.blueAccent,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                                 title: Text(

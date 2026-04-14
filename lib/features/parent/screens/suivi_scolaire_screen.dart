@@ -1014,8 +1014,8 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildDistributionDetail("Présent", presentRate, Colors.greenAccent, Icons.check_circle_rounded, isDark),
-              _buildDistributionDetail("Retard", lateRate, Colors.orangeAccent, Icons.access_time_filled_rounded, isDark),
+              _buildDistributionDetail("Présent", presentRate, const Color(0xFF10B981), Icons.check_circle_rounded, isDark),
+              _buildDistributionDetail("Retard", lateRate, const Color(0xFFFBBF24), Icons.access_time_filled_rounded, isDark),
               _buildDistributionDetail("Absent", absRate, Colors.redAccent, Icons.error_outline_rounded, isDark),
             ],
           ),
@@ -1160,11 +1160,19 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                   
                   final isAbsent = attendance?.status == 'absent'; 
                   final isLate = attendance?.status == 'late';
+                  final isPresent = attendance?.status == 'present';
                   final isToday = dayNum == DateTime.now().day && realMonth == DateTime.now().month && realYear == DateTime.now().year;
 
                   Color? dotColor;
-                  if (isAbsent) dotColor = Colors.redAccent;
-                  if (isLate) dotColor = Colors.orangeAccent;
+                  if (isPresent) {
+                    dotColor = const Color(0xFF10B981); // Teal for presence
+                  } else if (attendance?.isJustified ?? false) {
+                    dotColor = const Color(0xFF8B5CF6); // Violet for justified absence
+                  } else if (isAbsent) {
+                    dotColor = Colors.redAccent;
+                  } else if (isLate) {
+                    dotColor = const Color(0xFFFBBF24); // Amber for late to match Image 4
+                  }
 
                   return Container(
                     alignment: Alignment.center,
@@ -1244,13 +1252,16 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     final yearParts = _selectedYear.split(' - ');
     final realYear = int.parse(realMonth >= 9 ? yearParts[0] : yearParts[1]);
 
-    // Filter absences and delays for the SELECTED month, excluding "present" records
+    // Keep complete attendance history for the selected month:
+    // - late
+    // - unjustified absences
+    // - justified absences (even if backend normalizes status differently)
     final filteredHistory = vm.absences.where((a) {
         try {
             final dt = DateTime.parse(a.date);
             final matchesMonth = dt.month == realMonth && dt.year == realYear;
-            final isNotPresent = a.status != 'present';
-            return matchesMonth && isNotPresent;
+            final isHistoryEntry = true; // Show all attendance records (absent, late, present) as seen in Image 4
+            return matchesMonth && isHistoryEntry;
         } catch (e) {
             return false;
         }
@@ -1286,16 +1297,14 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
         Color color;
         
-        if (a.status == 'absent') {
-          if (a.isJustified) {
-            color = const Color(0xFF10B981); // Teal for justified
-          } else {
-            color = Colors.redAccent;
-          }
+        if (a.isJustified) {
+          color = const Color(0xFF8B5CF6); // Violet for justified absence
+        } else if (a.status == 'absent') {
+          color = Colors.redAccent;
         } else if (a.status == 'late') {
-          color = Colors.orangeAccent;
+          color = const Color(0xFFFBBF24); // Amber for late
         } else {
-          color = Colors.greenAccent;
+          color = const Color(0xFF10B981); // Teal for presence
         }
 
         // Format Date
@@ -1351,7 +1360,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
               return StatefulBuilder(
                 builder: (context, setStateSheet) {
                   final reasons = ['Maladie', 'Médical', 'Famille', 'Voyage', 'Autre'];
-                  final isJustified = a.isJustified && !isEditing;
+                  final isJustified = a.isJustified;
 
                   return Container(
                     padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -1376,12 +1385,12 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: (isJustified ? const Color(0xFF10B981) : Colors.redAccent).withValues(alpha: 0.1),
+                                  color: (isJustified ? const Color(0xFF8B5CF6) : Colors.redAccent).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Icon(
                                   isJustified ? Icons.verified_rounded : Icons.cancel_rounded,
-                                  color: isJustified ? const Color(0xFF10B981) : Colors.redAccent,
+                                  color: isJustified ? const Color(0xFF8B5CF6) : Colors.redAccent,
                                   size: 28,
                                 ),
                               ),
@@ -1393,12 +1402,14 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: (isJustified ? const Color(0xFF10B981) : Colors.redAccent).withValues(alpha: 0.1),
+                                        color: (isJustified ? const Color(0xFF8B5CF6) : Colors.redAccent).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
-                                        (isJustified ? "ABSENCE JUSTIFIÉE" : "ABSENCE").toUpperCase(),
-                                        style: TextStyle(color: isJustified ? const Color(0xFF10B981) : Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.8),
+                                        (isJustified 
+                                          ? AppLocalizations.of(context)!.translate('absence_justifiee') 
+                                          : AppLocalizations.of(context)!.translate('unjustified')).toUpperCase(),
+                                        style: TextStyle(color: isJustified ? const Color(0xFF8B5CF6) : Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.8),
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -1635,11 +1646,27 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                               height: 64,
                               child: ElevatedButton(
                                 onPressed: isUploading ? null : () async {
-                                  if (selectedFile == null && a.status == 'absent') {
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez sélectionner un fichier justification')));
-                                    return;
+                                  final bool isCreateMode = !a.isJustified;
+                                  final String finalReasonString = '$selectedReason: ${commentController.text}'.trim();
+                                  final bool isReasonModified = a.motif != finalReasonString;
+                                  
+                                  if (isCreateMode) {
+                                    // Strict Rule 1: CREATE -> Must provide BOTH reason and attachment
+                                    if (selectedFile == null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez fournir un fichier de justification (document/image).')));
+                                      return;
+                                    }
+                                    if (commentController.text.trim().isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez préciser le motif de l\'absence.')));
+                                      return;
+                                    }
+                                  } else {
+                                    // Strict Rule 2: UPDATE -> Must provide AT LEAST ONE change
+                                    if (selectedFile == null && !isReasonModified) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez modifier le motif ou joindre un nouveau document.')));
+                                      return;
+                                    }
                                   }
-
                                   setStateSheet(() => isUploading = true);
                                   final timer = Stream.periodic(const Duration(seconds: 1), (i) => 30 - i - 1).take(30).listen((val) => setStateSheet(() => uploadCountdown = val));
 
@@ -1665,10 +1692,22 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                         ),
                                       );
-                                      vm.fetchSuiviData(widget.student.id);
                                     } else {
                                       setStateSheet(() => isUploading = false);
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(vm.errorMessage ?? 'Erreur lors de l\'envoi')));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                                              const SizedBox(width: 12),
+                                              Expanded(child: Text(vm.errorMessage ?? 'Échec de l\'envoi au serveur')),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        ),
+                                      );
                                     }
                                   } catch (e) {
                                     timer.cancel();
@@ -1778,7 +1817,14 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                                     border: Border.all(color: color.withValues(alpha: 0.15)),
                                   ),
                                   child: Text(
-                                    AppLocalizations.of(context)!.translate('${a.status}_label').toUpperCase(),
+                                    (() {
+                                      final rawStatus = a.isJustified ? 'absence_justifiee' : a.status;
+                                      final local = AppLocalizations.of(context)!;
+                                      // Try common key variations
+                                      final translated = local.translate(rawStatus);
+                                      if (translated == rawStatus) return local.translate('${rawStatus}_label').toUpperCase();
+                                      return translated.toUpperCase();
+                                    })(),
                                     style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.8),
                                   ),
                                 ),
@@ -1876,31 +1922,6 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     );
   }
 
-  Widget _buildSummaryHeaderPill(String value, String label, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.12 : 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.25), width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: -0.5),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(color: color.withValues(alpha: 0.7), fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 1.2),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSummaryAbsenceCards(bool isDark, SuiviViewModel vm) {
     return Row(
       children: [
@@ -1917,7 +1938,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
           child: _buildSummaryCardItem(
             vm.justifiedAbsences.toString().padLeft(2, '0'),
             'JUSTIFIÉ',
-            const Color(0xFF10B981),
+            const Color(0xFF8B5CF6),
             isDark,
           ),
         ),
@@ -1926,7 +1947,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
           child: _buildSummaryCardItem(
             vm.delays.toString().padLeft(2, '0'),
             'RETARDS',
-            Colors.orangeAccent,
+            const Color(0xFFFBBF24),
             isDark,
           ),
         ),

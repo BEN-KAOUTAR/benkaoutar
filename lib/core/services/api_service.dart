@@ -174,7 +174,15 @@ class ApiService {
   }
 
   /// Submit a PDF or image justification for an absence
-  Future<String?> submitJustification(String attendanceId, {String? filePath, Uint8List? fileBytes, required String fileName, String reason = '', void Function(int, int)? onProgress}) async {
+  Future<AttendanceRecord?> submitJustification({
+    required String attendanceId,
+    String? filePath,
+    Uint8List? fileBytes,
+    required String fileName,
+    String reason = '',
+    String? oldAttachmentUrl,
+    void Function(int, int)? onProgress,
+  }) async {
     try {
       MultipartFile? attachment;
       final hasFilePath = filePath != null && filePath.isNotEmpty;
@@ -191,43 +199,63 @@ class ApiService {
           mediaType = MediaType('image', 'png');
         }
 
-        attachment = hasFilePath
-            ? await MultipartFile.fromFile(filePath, filename: fileName, contentType: mediaType)
-            : await MultipartFile.fromBytes(fileBytes!, filename: fileName, contentType: mediaType);
+        // Web compatibility: Use fromBytes if available (always for Web picker). 
+        // Chrome fails with UnimplementedError if trying fromFile.
+        if (fileBytes != null && fileBytes.isNotEmpty) {
+          attachment = MultipartFile.fromBytes(fileBytes, filename: fileName, contentType: mediaType);
+        } else if (filePath != null && filePath.isNotEmpty) {
+          attachment = await MultipartFile.fromFile(filePath, filename: fileName, contentType: mediaType);
+        }
       }
 
-      final payload = <String, dynamic>{'reason': reason};
-      if (attachment != null) {
-        payload['attachment'] = attachment;
-      }
+      final payload = <String, dynamic>{
+        'reason': reason,
+        'motif': reason, // Rétablir motif pour compatibilité serveur
+        'justifiedByStudent': true,
+        'hasJustification': true,
+      };
+
+      // Always use FormData (multipart/form-data) as required by the backend
       final formData = FormData.fromMap(payload);
+      
+      if (attachment != null) {
+        // Appending NEW file
+        formData.files.add(MapEntry('attachment', attachment));
+      } else if (oldAttachmentUrl != null && oldAttachmentUrl.isNotEmpty) {
+        // Strict Rule: Passing OLD file URL to prevent deletion by the server
+        formData.fields.add(MapEntry('attachment', oldAttachmentUrl));
+      }
 
       final response = await _dio.put(
         '/attendances/$attendanceId/justify', 
         data: formData,
         onSendProgress: onProgress,
         options: Options(
-          sendTimeout: const Duration(seconds: 45), // Kill stuck uploads
+          sendTimeout: const Duration(seconds: 45),
           receiveTimeout: const Duration(seconds: 45),
+          contentType: 'multipart/form-data',
+          headers: {'Accept': 'application/json'},
         )
       );
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.data is Map) {
           if (response.data['success'] == false) {
              throw Exception(response.data['message'] ?? 'Erreur Serveur');
           }
-          if (response.data['data'] != null) {
-            final dataMap = response.data['data'];
-            if (dataMap['justificationAttachment'] != null) {
-              String? url = dataMap['justificationAttachment']['url']?.toString();
-              if (url != null && !url.startsWith('http')) {
-                 url = 'https://api-demo.intranet.ikenas.com$url';
-              }
-              return url ?? 'success';
-            }
+          final responseData = response.data['data'];
+          if (responseData != null && responseData is Map<String, dynamic>) {
+            return AttendanceRecord.fromJson(responseData);
           }
         }
-        return 'success';
+        // If data is missing but status is success, return a partial object to signal success
+        return AttendanceRecord(
+          id: attendanceId,
+          date: '',
+          status: 'absent',
+          motif: reason,
+          justifiedByStudent: true,
+        );
       }
       return null;
     } catch (e) {
@@ -297,8 +325,9 @@ class ApiService {
               globalClassName = (s['group'] as Map)['name']?.toString() ?? (s['group'] as Map)['label']?.toString();
             } else if (s['affectation'] is Map) {
               final aff = s['affectation'];
-              if (aff['class'] is Map) globalClassName = aff['class']['name']?.toString();
-              else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
+              if (aff['class'] is Map) {
+                globalClassName = aff['class']['name']?.toString();
+              } else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
               else if (aff['group'] is Map) globalClassName = aff['group']['name']?.toString();
             }
             globalClassName ??= s['className']?.toString() ?? s['level']?.toString();
@@ -318,8 +347,9 @@ class ApiService {
               globalClassName = (data['group'] as Map)['name']?.toString() ?? (data['group'] as Map)['label']?.toString();
             } else if (data['affectation'] is Map) {
               final aff = data['affectation'];
-              if (aff['class'] is Map) globalClassName = aff['class']['name']?.toString();
-              else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
+              if (aff['class'] is Map) {
+                globalClassName = aff['class']['name']?.toString();
+              } else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
               else if (aff['group'] is Map) globalClassName = aff['group']['name']?.toString();
             }
             globalClassName ??= data['className']?.toString() ?? data['level']?.toString() ?? data['groupName']?.toString();

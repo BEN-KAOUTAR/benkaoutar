@@ -341,6 +341,7 @@ class AttendanceRecord {
   final bool justifiedByStudent;
   final String? approvalStatus; // 'pending', 'approved', 'rejected'
   final String? recordedBy;
+  final String? scheduleId;
   
 
   AttendanceRecord({
@@ -357,11 +358,13 @@ class AttendanceRecord {
     this.justifiedByStudent = false,
     this.approvalStatus,
     this.recordedBy,
+    this.scheduleId,
   });
 
   factory AttendanceRecord.fromJson(Map<String, dynamic> json) {
     // Standardize status: absent_justifie, absent_non_justifie, retard, present
     String rawStatus = (json['status'] ?? json['attendanceStatus'] ?? json['type'] ?? 'present').toString().toLowerCase();
+    String? scheduleId = json['schedule']?.toString() ?? json['calendarId']?.toString();
     
     // Normalize status strings
     String finalStatus = 'present';
@@ -442,9 +445,12 @@ class AttendanceRecord {
         final j = json['justification'];
         final jMotif = j['motif']?.toString() ?? j['reason']?.toString() ?? j['text']?.toString();
         final jAttachment = extractAttachment(j['attachment']) ?? extractAttachment(j['file']) ?? extractAttachment(j['url']);
+        final hasAnyJustificationPayload = j.isNotEmpty;
         if (jMotif != null && jMotif.isNotEmpty) motif ??= jMotif;
         if (jAttachment != null && jAttachment.isNotEmpty) attachment ??= jAttachment;
-        if (parseBool(j['justified']) || parseBool(j['isJustified'])) justifiedByStudent = true;
+        if (hasAnyJustificationPayload || parseBool(j['justified']) || parseBool(j['isJustified'])) {
+          justifiedByStudent = true;
+        }
         approvalStatus ??= j['status']?.toString() ?? j['approvalStatus']?.toString() ?? j['justificationStatus']?.toString();
       } else if (json['justification'] is String && (json['justification'] as String).isNotEmpty && json['justification'] != 'null') {
         final jStr = (json['justification'] as String).toLowerCase();
@@ -477,8 +483,8 @@ class AttendanceRecord {
     }
 
     return AttendanceRecord(
-      id: (json['id'] ?? json['_id'])?.toString() ?? '',
-      date: json['date'] ?? json['createdAt'] ?? json['passedAt'] ?? '',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      date: json['date']?.toString() ?? '',
       status: finalStatus,
       motif: motif,
       attachment: processImageUrl(attachment),
@@ -490,36 +496,8 @@ class AttendanceRecord {
       justifiedByStudent: justifiedByStudent,
       approvalStatus: approvalStatus,
       recordedBy: json['recordedBy'] is Map ? (json['recordedBy']['fullName'] ?? json['recordedBy']['name']) : json['recordedBy']?.toString(),
+      scheduleId: scheduleId,
     );
-  }
-
-  bool get isJustified {
-    if (status != 'absent') return false;
-
-    // 1) Explicit student/parent justification flag.
-    if (justifiedByStudent) return true;
-
-    // 2) Check for presence of motif or attachment as proxy for justification
-    final hasContent = (motif != null && motif!.trim().isNotEmpty && motif != 'null') ||
-        (attachment != null && attachment!.trim().isNotEmpty && attachment != 'null');
-
-    // 3) Trust specific raw statuses from API
-    if (rawStatus != null) {
-      final rs = rawStatus!.toLowerCase();
-      if (rs.contains('justifie') || rs.contains('justified')) return true;
-    }
-
-    // 4) Trust approval status if content exists
-    if (approvalStatus != null) {
-      final s = approvalStatus!.toLowerCase().trim().replaceAll('é', 'e');
-      if (s == 'pending' || s == 'en_attente' || s == 'justified' ||
-          s == 'justifie' || s == 'reviewed' || s == 'submitted' ||
-          s == 'approved' || s == 'valide') {
-        return hasContent;
-      }
-    }
-
-    return hasContent; // Fallback: if it has a motif/file, it's considered justified in the UI
   }
 
   Map<String, dynamic> toJson() {
@@ -528,8 +506,30 @@ class AttendanceRecord {
       'date': date,
       'status': status,
       'motif': motif,
+      'attachment': attachment,
+      'rawStatus': rawStatus,
+      'startTime': startTime,
+      'endTime': endTime,
+      'subjectName': subjectName,
+      'sessionName': sessionName,
+      'justifiedByStudent': justifiedByStudent,
+      'approvalStatus': approvalStatus,
+      'recordedBy': recordedBy,
+      'scheduleId': scheduleId,
     };
   }
+
+  bool get isJustified {
+    // 1) Explicit student/parent justification flag.
+    if (justifiedByStudent) return true;
+
+    // 2) Check for presence of motif or attachment as proxy for justification
+    final hasContent = (motif != null && motif!.trim().isNotEmpty && motif != 'null') ||
+        (attachment != null && attachment!.trim().isNotEmpty && attachment != 'null');
+
+    return hasContent;
+  }
+
 }
 
 class PostModel {
@@ -1487,8 +1487,9 @@ class PaymentModel {
       className = (json['group'] as Map)['name']?.toString() ?? (json['group'] as Map)['label']?.toString();
     } else if (json['affectation'] is Map) {
       final aff = json['affectation'];
-      if (aff['class'] is Map) className = aff['class']['name']?.toString();
-      else if (aff['classe'] is Map) className = aff['classe']['name']?.toString();
+      if (aff['class'] is Map) {
+        className = aff['class']['name']?.toString();
+      } else if (aff['classe'] is Map) className = aff['classe']['name']?.toString();
       else if (aff['group'] is Map) className = aff['group']['name']?.toString();
     }
     className ??= json['className']?.toString() ?? json['level']?.toString() ?? json['groupName']?.toString();

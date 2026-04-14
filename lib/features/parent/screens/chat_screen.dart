@@ -379,7 +379,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isWriting = false;
-  bool _isRecording = false;
+  final bool _isRecording = false;
 
   @override
   void initState() {

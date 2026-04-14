@@ -170,7 +170,7 @@ class StudentDetailFullScreen extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ChatDetailScreen(
-                                  name: loc.translate('parent_of') + " " + student.name,
+                                  name: "${loc.translate('parent_of')} ${student.name}",
                                   avatarUrl: 'https://i.pravatar.cc/150?u=${student.id}',
                                 ),
                               ),

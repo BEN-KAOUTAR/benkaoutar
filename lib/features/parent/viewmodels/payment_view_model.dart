@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
@@ -155,7 +154,7 @@ class PaymentViewModel extends ChangeNotifier {
       
       // Get temporary directory to save the file
       final tempDir = await getTemporaryDirectory();
-      final fileName = 'receipt_${paymentId}_${type}.pdf';
+      final fileName = 'receipt_${paymentId}_$type.pdf';
       final savePath = '${tempDir.path}/$fileName';
       
       // Download the file internally with headers

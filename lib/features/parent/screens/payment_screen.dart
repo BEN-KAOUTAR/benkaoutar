@@ -875,8 +875,7 @@ class _PaymentScreenState extends State<PaymentScreen>
 class _ReceiptField {
   final String label;
   final String value;
-  final bool fullWidth;
   final bool isGreen;
 
-  const _ReceiptField(this.label, this.value, {this.fullWidth = false, this.isGreen = false});
+  const _ReceiptField(this.label, this.value, {this.isGreen = false});
 }

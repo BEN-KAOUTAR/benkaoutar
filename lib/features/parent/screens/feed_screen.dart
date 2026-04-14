@@ -262,7 +262,7 @@ class _FeedScreenState extends State<FeedScreen> {
       
       return DateFormat("dd MMMM yyyy 'à' HH:mm", 'fr').format(date);
     } catch (e) {
-      if (dateStr.toLowerCase() == "à l\'instant") return dateStr;
+      if (dateStr.toLowerCase() == "à l'instant") return dateStr;
       return dateStr;
     }
   }

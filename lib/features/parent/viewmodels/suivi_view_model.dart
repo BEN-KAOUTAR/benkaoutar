@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
 
@@ -11,6 +13,22 @@ class SuiviViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   double _uploadProgress = 0.0;
+  String? _lastStudentId;
+  String? _forcedKeysLoadedForStudentId;
+  Map<String, String> _localJustifications = {};
+
+  String _attendanceKey(AttendanceRecord a) {
+    // Primarily use scheduleId as it is the most stable unique identifier for a session
+    if (a.scheduleId != null && a.scheduleId!.isNotEmpty && a.scheduleId != 'null') {
+      return 'schedule|${a.scheduleId}';
+    }
+
+    final subject = (a.subjectName ?? a.sessionName ?? '').trim().toLowerCase();
+    final start = (a.startTime ?? '').trim().toLowerCase();
+    String dateString = a.date.trim();
+    String normalizedDate = dateString.length >= 10 ? dateString.substring(0, 10) : dateString;
+    return 'content|$normalizedDate|$subject|$start';
+  }
 
   List<GradeModel> get grades => _grades;
   List<AttendanceRecord> get absences => _absences;
@@ -34,7 +52,36 @@ class SuiviViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> _schedule = [];
   List<Map<String, dynamic>> get schedule => _schedule;
 
+  String _forcedKeysStorageKey(String studentId) => 'suivi_forced_justified_keys_$studentId';
+
+  Future<void> _loadForcedJustifiedKeys(String studentId) async {
+    if (_forcedKeysLoadedForStudentId == studentId) return;
+    final prefs = await SharedPreferences.getInstance();
+    final String? jsonStr = prefs.getString(_forcedKeysStorageKey(studentId));
+    if (jsonStr != null) {
+       try {
+         final Map<String, dynamic> decoded = json.decode(jsonStr);
+         _localJustifications = decoded.map((key, value) => MapEntry(key, value.toString()));
+       } catch(_) {
+         _localJustifications = {};
+       }
+    } else {
+       _localJustifications = {};
+    }
+    _forcedKeysLoadedForStudentId = studentId;
+  }
+
+  Future<void> _persistForcedJustifiedKeys(String studentId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _forcedKeysStorageKey(studentId),
+      json.encode(_localJustifications),
+    );
+  }
+
   Future<void> fetchSuiviData(String studentId) async {
+    _lastStudentId = studentId;
+    await _loadForcedJustifiedKeys(studentId);
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -48,15 +95,63 @@ class SuiviViewModel extends ChangeNotifier {
       ]);
 
       _grades = results[0] as List<GradeModel>;
-      _absences = results[1] as List<AttendanceRecord>;
+      final fetchedAbsences = results[1] as List<AttendanceRecord>;
       _schedule = results[2] as List<Map<String, dynamic>>;
+
+      // Preserve optimistic justifications when backend propagation is delayed.
+      final optimisticById = <String, AttendanceRecord>{
+        for (final a in _absences)
+          if (a.isJustified) a.id: a,
+      };
+      final mergedAbsences = fetchedAbsences.map((fetched) {
+        final optimistic = optimisticById[fetched.id];
+        final fKey = _attendanceKey(fetched);
+        final String? localSavedJson = _localJustifications[fKey];
+        AttendanceRecord? localRecord;
+        
+        if (localSavedJson != null) {
+          try {
+            // Reconstruct the record from local DB
+            localRecord = AttendanceRecord.fromJson(json.decode(localSavedJson));
+            debugPrint('>>> SUCCESS: Loaded local DB justification for session key: $fKey');
+          } catch (e) {
+            debugPrint('Failed to parse local record: $e');
+          }
+        }
+        
+        final shouldForceJustified = localRecord != null || (optimistic != null && !fetched.isJustified);
+        if (shouldForceJustified) {
+          return AttendanceRecord(
+            id: fetched.id,
+            date: fetched.date,
+            status: fetched.status,
+            motif: (localRecord?.motif != null && localRecord!.motif!.isNotEmpty) 
+                ? localRecord.motif 
+                : ((optimistic?.motif != null && optimistic!.motif!.isNotEmpty) ? optimistic.motif : fetched.motif),
+            attachment: (localRecord?.attachment != null && localRecord!.attachment!.isNotEmpty) 
+                ? localRecord.attachment 
+                : ((optimistic?.attachment != null && optimistic!.attachment!.isNotEmpty) ? optimistic.attachment : fetched.attachment),
+            rawStatus: localRecord?.rawStatus ?? optimistic?.rawStatus ?? fetched.rawStatus,
+            startTime: fetched.startTime,
+            endTime: fetched.endTime,
+            subjectName: fetched.subjectName,
+            sessionName: fetched.sessionName,
+            justifiedByStudent: true,
+            approvalStatus: localRecord?.approvalStatus ?? optimistic?.approvalStatus ?? fetched.approvalStatus ?? 'pending',
+            recordedBy: fetched.recordedBy,
+            scheduleId: fetched.scheduleId,
+          );
+        }
+        return fetched;
+      }).toList();
+      _absences = mergedAbsences;
       
       debugPrint('Parsed ${_grades.length} grades, ${_absences.length} absences, ${_schedule.length} schedule slots');
       
-      // Diagnostic logging for persistence issue
+      // Diagnostic logging for persistence and justification issues
       for (var a in _absences) {
-        if (a.status == 'absent') {
-          debugPrint('Absence ID: ${a.id}, Justified: ${a.isJustified}, Flag: ${a.justifiedByStudent}, Approval: ${a.approvalStatus}, Motif: ${a.motif}');
+        if (a.status != 'present' || a.isJustified) {
+          debugPrint('Absence ID: ${a.id}, Status: ${a.status}, Justified: ${a.isJustified}, Flag: ${a.justifiedByStudent}, Approval: ${a.approvalStatus}, Motif: ${a.motif}');
         }
       }
 
@@ -214,62 +309,137 @@ class SuiviViewModel extends ChangeNotifier {
     return null;
   }
 
-  Future<bool> submitJustification(String attendanceId, {String? filePath, Uint8List? fileBytes, required String fileName, String reason = ''}) async {
+  Future<bool> submitJustification(
+    String attendanceId, {
+    String? filePath,
+    Uint8List? fileBytes,
+    required String fileName,
+    String reason = '',
+  }) async {
+    // Find original record BEFORE any API call
+    int index = _absences.indexWhere((a) => a.id == attendanceId);
+    if (index == -1) {
+      index = _absences.indexWhere((a) => _attendanceKey(a).contains(attendanceId));
+    }
+
+    final AttendanceRecord? originalRecord = index != -1 ? _absences[index] : null;
+
+    // Build final reason: fallback to old motif if user left it empty
+    final String finalReason = (reason.trim().isEmpty &&
+            originalRecord?.motif != null &&
+            originalRecord!.motif!.isNotEmpty)
+        ? originalRecord.motif!
+        : reason;
+
+    // OPTIMISTIC UPDATE: Show justified status immediately for better UX
+    if (index != -1 && originalRecord != null) {
+      final optimistic = AttendanceRecord(
+        id: originalRecord.id,
+        date: originalRecord.date,
+        status: originalRecord.status,
+        motif: finalReason.isNotEmpty ? finalReason : originalRecord.motif,
+        attachment: originalRecord.attachment,
+        rawStatus: originalRecord.rawStatus,
+        startTime: originalRecord.startTime,
+        endTime: originalRecord.endTime,
+        subjectName: originalRecord.subjectName,
+        sessionName: originalRecord.sessionName,
+        justifiedByStudent: true,
+        approvalStatus: originalRecord.approvalStatus ?? 'pending',
+        recordedBy: originalRecord.recordedBy,
+        scheduleId: originalRecord.scheduleId,
+      );
+      _absences[index] = optimistic;
+      notifyListeners();
+    }
+
     _isLoading = true;
     _errorMessage = null;
-    _uploadProgress = 0.0;
     notifyListeners();
 
     try {
-      final result = await _apiService.submitJustification(
-        attendanceId, 
+      final updatedRecord = await _apiService.submitJustification(
+        attendanceId: attendanceId,
         filePath: filePath,
         fileBytes: fileBytes,
         fileName: fileName,
-        reason: reason,
-        onProgress: (sent, total) {
-            if (total > 0) {
-                _uploadProgress = sent / total;
-                notifyListeners();
-            }
-        }
+        reason: finalReason,
+        oldAttachmentUrl: originalRecord?.attachment,
+        onProgress: (sent, total) {},
       );
-      if (result != null) {
-        // Instant local state update: mark the absence as justified
-        final index = _absences.indexWhere((a) => a.id == attendanceId);
-        if (index != -1) {
-          final old = _absences[index];
-          final newAttachmentUrl = (result != 'success') ? result : old.attachment;
-          _absences[index] = AttendanceRecord(
-            id: old.id,
-            date: old.date,
-            status: old.status,
-            motif: reason.isNotEmpty ? reason : old.motif,
-            attachment: newAttachmentUrl,
-            rawStatus: 'absent_justifie',
-            startTime: old.startTime,
-            endTime: old.endTime,
-            subjectName: old.subjectName,
-            sessionName: old.sessionName,
-            justifiedByStudent: true,
-            approvalStatus: old.approvalStatus ?? 'pending',
-            recordedBy: old.recordedBy,
-          );
-        }
-        
-        // Optional: Re-fetch to confirm server persistence
-        // await fetchSuiviData(studentId); 
-        
-        return true;
+
+      // Re-locate after async gap (index might shift if list was rebuilt)
+      int finalIndex = _absences.indexWhere((a) => a.id == attendanceId);
+      if (finalIndex == -1 && originalRecord != null) {
+        finalIndex = _absences.indexWhere(
+            (a) => _attendanceKey(a) == _attendanceKey(originalRecord));
       }
-      return false;
+
+      if (finalIndex != -1) {
+        final current = _absences[finalIndex]; // This is the optimistic version
+
+        // Merge: server data takes priority, fallback to optimistic/original
+        final merged = AttendanceRecord(
+          // Prefer original ID to avoid doublon issues when server returns new justification object
+          id: current.id,
+          date: current.date.isNotEmpty ? current.date : (originalRecord?.date ?? ''),
+          status: updatedRecord?.status ?? current.status,
+          motif: _pickBest([
+            updatedRecord?.motif,
+            finalReason,
+            current.motif,
+            originalRecord?.motif,
+          ]),
+          attachment: _pickBest([
+            updatedRecord?.attachment,
+            current.attachment,
+            originalRecord?.attachment,
+          ]),
+          rawStatus: updatedRecord?.rawStatus ?? current.rawStatus,
+          startTime: current.startTime ?? originalRecord?.startTime,
+          endTime: current.endTime ?? originalRecord?.endTime,
+          subjectName: current.subjectName ?? originalRecord?.subjectName,
+          sessionName: current.sessionName ?? originalRecord?.sessionName,
+          justifiedByStudent: true,
+          approvalStatus: updatedRecord?.approvalStatus ?? current.approvalStatus ?? 'pending',
+          recordedBy: current.recordedBy ?? originalRecord?.recordedBy,
+          scheduleId: current.scheduleId ?? originalRecord?.scheduleId,
+        );
+
+        _absences[finalIndex] = merged;
+
+        // Persist clean merged state to local DB
+        final key = _attendanceKey(merged);
+        _localJustifications[key] = json.encode(merged.toJson());
+        debugPrint('>>> JUSTIFIED & PERSISTED: key=$key, motif=${merged.motif}, attachment=${merged.attachment}');
+
+        if (_lastStudentId != null) {
+          await _persistForcedJustifiedKeys(_lastStudentId!);
+        }
+      }
+
+      return true;
     } catch (e) {
+      debugPrint('>>> submitJustification ERROR: $e');
       _errorMessage = _apiService.getLocalizedErrorMessage(e);
+
+      // ROLLBACK on error: revert to original record
+      if (index != -1 && originalRecord != null) {
+        _absences[index] = originalRecord;
+      }
       return false;
     } finally {
       _isLoading = false;
       _uploadProgress = 0.0;
       notifyListeners();
     }
+  }
+
+  /// Returns the first non-null, non-empty, non-'null' string from a list
+  String? _pickBest(List<String?> candidates) {
+    for (final c in candidates) {
+      if (c != null && c.isNotEmpty && c != 'null' && c != '{}') return c;
+    }
+    return null;
   }
 }

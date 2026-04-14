@@ -755,8 +755,9 @@ class _ParentHomeState extends State<_ParentHome> {
       Color color, Widget? screen, bool isDark, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap ?? () {
-        if (screen != null)
+        if (screen != null) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+        }
       },
       child: Column(
         children: [
