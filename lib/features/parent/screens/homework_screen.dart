@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:percent_indicator/percent_indicator.dart';
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -439,6 +440,41 @@ class _HomeworkListItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(homework.subject, style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                if (homework.teacherName != null && homework.teacherName!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline_rounded, size: 14, color: secondaryTextColor.withValues(alpha: 0.8)),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Prof: ${homework.teacherName}",
+                        style: TextStyle(color: secondaryTextColor.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ],
+
+                // --- PROGRESS BAR (Homework cards ONLY) ---
+                if (homework.type == 'devoir') ...[
+                  const SizedBox(height: 20),
+                  LinearPercentIndicator(
+                    animation: true,
+                    lineHeight: 6.0,
+                    animationDuration: 1000,
+                    percent: (homework.progressRate / 100).clamp(0.0, 1.0),
+                    trailing: Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        "${homework.progressRate.toInt()}%",
+                        style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 11),
+                      ),
+                    ),
+                    barRadius: const Radius.circular(10),
+                    progressColor: Colors.blueAccent,
+                    backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Container(
                   width: double.infinity,
@@ -467,8 +503,14 @@ class _HomeworkListItem extends StatelessWidget {
                         GestureDetector(
                           onTap: () async {
                             final url = Uri.parse(homework.attachment!);
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(url);
+                            try {
+                              await launchUrl(url, mode: LaunchMode.externalApplication);
+                            } catch (e) {
+                              debugPrint('Error launching URL: $e');
+                              // Fallback
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url);
+                              }
                             }
                           },
                           child: Container(

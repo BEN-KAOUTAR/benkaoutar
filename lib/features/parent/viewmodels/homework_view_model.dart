@@ -129,6 +129,7 @@ extension HomeworkModelExtension on HomeworkModel {
     String? teacherName,
     String? submissionId,
     String? type,
+    double? progressRate,
   }) {
     return HomeworkModel(
       id: id ?? this.id,
@@ -143,6 +144,7 @@ extension HomeworkModelExtension on HomeworkModel {
       teacherName: teacherName ?? this.teacherName,
       submissionId: submissionId ?? this.submissionId,
       type: type ?? this.type,
+      progressRate: progressRate ?? this.progressRate,
     );
   }
 }

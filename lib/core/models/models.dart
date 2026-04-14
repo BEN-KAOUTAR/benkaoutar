@@ -987,6 +987,7 @@ class HomeworkModel {
   final String? teacherComment;
   final String? teacherName;
   final String type; // 'devoir' or 'exam'
+  final double progressRate; // 0-100
 
   HomeworkModel({
     required this.id,
@@ -1001,6 +1002,7 @@ class HomeworkModel {
     this.teacherComment,
     this.teacherName,
     this.type = 'devoir',
+    this.progressRate = 0,
   });
 
   factory HomeworkModel.fromJson(Map<String, dynamic> json) {
@@ -1045,6 +1047,11 @@ class HomeworkModel {
 
     if (isDone) statusStr = 'done';
     
+    // Extract progress/percentage
+    double progress = (json['progress'] ?? json['percentage'] ?? json['completionRate'] ?? 0.0).toDouble();
+    if (progress == 0 && statusStr == 'done') progress = 100.0;
+    if (progress == 0 && statusStr == 'inProgress') progress = 50.0;
+
     String? foundAttachment = json['attachment'] ?? json['fileUrl'] ?? json['document'] ?? nestedAttachment;
     
     // Aggressive media hunt
@@ -1071,10 +1078,11 @@ class HomeworkModel {
       startDate: json['createdAt']?.toString().split('T')[0] ?? json['startDate']?.toString() ?? '',
       submissionId: submissionId,
       status: _statusFromString(statusStr),
-      attachment: foundAttachment,
+      attachment: processImageUrl(foundAttachment),
       teacherComment: json['teacherComment'] ?? json['feedback'],
       teacherName: teacherName,
       type: (json['type'] ?? json['assignmentType'] ?? 'devoir').toString().toLowerCase() == 'exam' ? 'exam' : 'devoir',
+      progressRate: progress,
     );
   }
 

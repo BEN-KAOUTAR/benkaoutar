@@ -66,7 +66,7 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
             child: SafeArea(
               child: Column(
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24), // Reduced to bring layout closer to top
                   // Glassmorphic Day Selector
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -83,42 +83,43 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
                             border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
                             boxShadow: [if (!isDark) BoxShadow(color: Colors.white.withValues(alpha: 0.8), blurRadius: 20, offset: const Offset(0, 10))],
                           ),
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: days.length,
-                            itemBuilder: (context, index) {
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: days.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              String dayName = entry.value;
                               final isSelected = _selectedDayIndex == index;
                               final selectedText = Colors.white;
                               final unselectedText = isDark ? Colors.white54 : Colors.black54;
 
-                              return GestureDetector(
-                                onTap: () => setState(() => _selectedDayIndex = index),
-                                behavior: HitTestBehavior.opaque,
-                                child: AnimatedContainer(
-                                  duration: 300.ms,
-                                  curve: Curves.easeOutCubic,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                                  decoration: BoxDecoration(
-                                    gradient: isSelected ? const LinearGradient(colors: [Colors.blueAccent, Colors.indigoAccent], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
-                                    borderRadius: BorderRadius.circular(18),
-                                    boxShadow: isSelected ? [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))] : [],
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      days[index],
-                                      style: TextStyle(
-                                        color: isSelected ? selectedText : unselectedText,
-                                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
-                                        fontSize: 12,
-                                        letterSpacing: 2,
+                              return Expanded(
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _selectedDayIndex = index),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: AnimatedContainer(
+                                    duration: 300.ms,
+                                    curve: Curves.easeOutCubic,
+                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    decoration: BoxDecoration(
+                                      gradient: isSelected ? const LinearGradient(colors: [Colors.blueAccent, Colors.indigoAccent], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: isSelected ? [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))] : [],
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        dayName,
+                                        style: TextStyle(
+                                          color: isSelected ? selectedText : unselectedText,
+                                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+                                          fontSize: 12,
+                                          letterSpacing: 2,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               );
-                            },
+                            }).toList(),
                           ),
                         ),
                       ),
@@ -157,6 +158,7 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
                             isCanceled: item.isCanceled, 
                             isLive: item.isLive,
                             index: index,
+                            isLast: index == dayTimetable.length - 1,
                           ).animate().fadeIn(delay: (index * 80).ms).slideX(begin: 0.05);
                         },
                       ),
@@ -180,6 +182,7 @@ class _TimetableRow extends StatelessWidget {
   final bool isCanceled;
   final bool isLive;
   final int index;
+  final bool isLast;
 
   const _TimetableRow({
     required this.time, 
@@ -188,7 +191,8 @@ class _TimetableRow extends StatelessWidget {
     required this.room, 
     required this.isCanceled, 
     required this.isLive, 
-    required this.index
+    required this.index,
+    this.isLast = false,
   });
 
   @override
@@ -248,16 +252,17 @@ class _TimetableRow extends StatelessWidget {
                   ],
                 ),
               ).animate(target: isLive ? 1 : 0, onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 800.ms),
-              Expanded(
-                child: Container(
-                  width: 2, 
-                  margin: const EdgeInsets.only(top: 8, bottom: 8),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
-                    borderRadius: BorderRadius.circular(2)
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2, 
+                    margin: const EdgeInsets.only(top: 8, bottom: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
+                      borderRadius: BorderRadius.circular(2)
+                    )
                   )
-                )
-              ),
+                ),
             ],
           ),
 
@@ -346,7 +351,7 @@ class _TimetableRow extends StatelessWidget {
                             const Spacer(),
                             Icon(Icons.location_on_rounded, size: 16, color: secondaryTextColor),
                             const SizedBox(width: 8),
-                            Text('${AppLocalizations.of(context)!.translate('room_label')} $room', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12, fontWeight: FontWeight.w900)),
+                            Text(room, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12, fontWeight: FontWeight.w900)),
                           ],
                         ),
                       ],

@@ -23,6 +23,8 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _submittedOnce = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -197,7 +199,9 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       child: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: _submittedOnce
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: Column(
           children: [
           Row(
@@ -230,6 +234,9 @@ class _AuthScreenState extends State<AuthScreen> {
               }
               return null;
             },
+            onChanged: (val) {
+              if (_errorMessage != null) setState(() => _errorMessage = null);
+            },
           ),
           const SizedBox(height: 20),
           _buildPlatinumInput(
@@ -260,7 +267,34 @@ class _AuthScreenState extends State<AuthScreen> {
               }
               return null;
             },
+            onChanged: (val) {
+              if (_errorMessage != null) setState(() => _errorMessage = null);
+            },
           ),
+
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 16),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn().shake(duration: 400.ms),
+          ],
 
           const SizedBox(height: 40),
 
@@ -316,6 +350,11 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _login() async {
+    setState(() {
+      _submittedOnce = true;
+      _errorMessage = null;
+    });
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -342,7 +381,10 @@ class _AuthScreenState extends State<AuthScreen> {
       
       String errorMessage = e.toString();
       if (errorMessage.contains('401')) {
-        errorMessage = AppLocalizations.of(context)!.translate('login_invalid_credentials');
+        setState(() {
+          _errorMessage = AppLocalizations.of(context)!.translate('login_error_invalid');
+        });
+        return;
       } else if (errorMessage.contains('404')) {
         errorMessage = "Service d'authentification indisponible (404)";
       } else if (errorMessage.contains('SocketException') || errorMessage.contains('connection')) {
@@ -446,6 +488,7 @@ class _AuthScreenState extends State<AuthScreen> {
       {bool obscure = false,
       TextEditingController? controller,
       String? Function(String?)? validator,
+      void Function(String)? onChanged,
       Widget? suffixIcon}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
@@ -504,7 +547,10 @@ class _AuthScreenState extends State<AuthScreen> {
                           child: TextFormField(
                               controller: controller,
                               obscureText: obscure,
-                              onChanged: (value) => state.didChange(value),
+                              onChanged: (value) {
+                                state.didChange(value);
+                                if (onChanged != null) onChanged(value);
+                              },
                               style: TextStyle(
                                   color: primaryTextColor,
                                   fontSize: 14,
