@@ -34,7 +34,6 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
       AppLocalizations.of(context)!.translate('wed_short'),
       AppLocalizations.of(context)!.translate('thu_short'),
       AppLocalizations.of(context)!.translate('fri_short'),
-      AppLocalizations.of(context)!.translate('sat_short'),
     ];
     
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -43,7 +42,7 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
     return Consumer<TimetableViewModel>(
       builder: (context, vm, child) {
         // Filter timetable for selected day
-        final dayTimetable = vm.timetable.where((item) => (item['day_index'] ?? 0) == _selectedDayIndex).toList();
+        final dayTimetable = vm.timetable.where((item) => item.dayIndex == _selectedDayIndex).toList();
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -61,12 +60,6 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
             ),
             title: Text(AppLocalizations.of(context)!.translate('timetable_title'), style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 20, letterSpacing: -0.5)),
             centerTitle: true,
-            actions: [
-              IconButton(
-                icon: Icon(Icons.file_download_outlined, color: primaryTextColor),
-                onPressed: () {},
-              ),
-            ],
           ),
           body: DeepSpaceBackground(
             showOrbs: true,
@@ -157,12 +150,12 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
                         itemBuilder: (context, index) {
                           final item = dayTimetable[index];
                           return _TimetableRow(
-                            time: item['time']?.toString() ?? '00:00', 
-                            subject: item['subject']?.toString() ?? 'Subject',
-                            teacher: item['teacher']?.toString() ?? 'Teacher',
-                            room: item['room']?.toString() ?? 'Room',
-                            isCanceled: item['is_canceled'] ?? false, 
-                            isLive: item['is_live'] ?? false,
+                            time: item.time, 
+                            subject: item.subject,
+                            teacher: item.teacher,
+                            room: item.room,
+                            isCanceled: item.isCanceled, 
+                            isLive: item.isLive,
                             index: index,
                           ).animate().fadeIn(delay: (index * 80).ms).slideX(begin: 0.05);
                         },

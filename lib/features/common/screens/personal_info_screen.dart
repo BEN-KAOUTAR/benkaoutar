@@ -4,6 +4,7 @@ import '../../../core/providers/app_state.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/widgets/sprite_avatar.dart';
 import '../../../core/widgets/avatar_selector_modal.dart';
+import '../viewmodels/profile_view_model.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -17,6 +18,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   late TextEditingController _emailController;
   late TextEditingController _dobController;
   late TextEditingController _phoneController;
+  int? _tempAvatarIndex;
 
   @override
   void initState() {
@@ -26,6 +28,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _emailController = TextEditingController(text: appState.currentUser?.email ?? '');
     _dobController = TextEditingController(text: '-- / -- / ----');
     _phoneController = TextEditingController(text: appState.currentUser?.phone ?? '');
+    _tempAvatarIndex = appState.currentUser?.avatarIndex;
   }
 
   @override
@@ -40,7 +43,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    final user = appState.currentUser;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
@@ -79,31 +81,77 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                         child: Column(
                           children: [
                             GestureDetector(
-                              onTap: () => AvatarSelectorModal.show(context),
+                              onTap: () => AvatarSelectorModal.show(
+                                context,
+                                initialIndex: _tempAvatarIndex,
+                                onSelect: (index) => setState(() => _tempAvatarIndex = index),
+                              ),
                               child: Stack(
-                                alignment: Alignment.bottomRight,
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.1), width: 1),
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFF06B6D4)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
                                     ),
-                                    child: appState.profileAvatarIndex != null
-                                        ? SpriteAvatar(index: appState.profileAvatarIndex!, size: 100)
-                                        : CircleAvatar(
-                                            radius: 50,
-                                            backgroundColor: isDark ? Colors.white10 : Colors.white,
-                                            backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${user?.id ?? "1"}'),
-                                          ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                      ),
+                                      child: _tempAvatarIndex != null
+                                          ? SpriteAvatar(index: _tempAvatarIndex!, size: 100)
+                                          : Container(
+                                              width: 100,
+                                              height: 100,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Colors.blueAccent.withValues(alpha: 0.15),
+                                                    Colors.purpleAccent.withValues(alpha: 0.15),
+                                                  ],
+                                                ),
+                                              ),
+                                              child: Icon(Icons.person_rounded, color: isDark ? Colors.white38 : Colors.black26, size: 50),
+                                            ),
+                                    ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.blueAccent,
-                                      shape: BoxShape.circle,
+                                  Positioned(
+                                    bottom: 4,
+                                    right: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                                        ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                          width: 3,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 14),
                                     ),
-                                    child: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
                                   ),
                                 ],
                               ),
@@ -165,24 +213,34 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               // Save Button
               Padding(
                 padding: const EdgeInsets.all(24),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (user != null) {
-                        Provider.of<AppState>(context, listen: false).updateName(_nameController.text);
-                        Provider.of<AppState>(context, listen: false).updatePhone(_phoneController.text);
-                      }
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      elevation: 0,
+                child: Consumer<ProfileViewModel>(
+                  builder: (context, vm, child) => SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: vm.isUpdating ? null : () async {
+                        await vm.updateProfile(
+                          phone: _phoneController.text,
+                          avatarIndex: _tempAvatarIndex,
+                        );
+                        if (mounted && vm.errorMessage == null) {
+                          Navigator.pop(context);
+                        } else if (mounted && vm.errorMessage != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(vm.errorMessage!), backgroundColor: Colors.redAccent),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 0,
+                      ),
+                      child: vm.isUpdating 
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text('SAUVEGARDER', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 13)),
                     ),
-                    child: const Text('SAUVEGARDER', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 13)),
                   ),
                 ),
               ),

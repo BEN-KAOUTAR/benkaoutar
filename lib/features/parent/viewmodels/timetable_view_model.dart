@@ -1,14 +1,15 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
 
 class TimetableViewModel extends ChangeNotifier {
   final ApiService _apiService = ApiService.instance;
 
-  List<Map<String, dynamic>> _timetable = [];
+  List<TimetableSessionModel> _timetable = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<Map<String, dynamic>> get timetable => _timetable;
+  List<TimetableSessionModel> get timetable => _timetable;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
