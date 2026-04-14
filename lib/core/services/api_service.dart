@@ -330,6 +330,24 @@ class ApiService {
     }
   }
 
+  Future<List<HomeworkModel>> getExams(String studentId) async {
+    try {
+      // Swagger: /exams is the correct route for exams
+      final response = await _dio.get('/exams', queryParameters: {'studentId': studentId});
+      if (response.statusCode == 200) {
+        final List data = _handleResponseData(response);
+        return data.map((json) {
+          final mapped = HomeworkModel.fromJson(json);
+          // Ensure type is forced to 'exam' for data from this endpoint
+          return mapped.copyWith(type: 'exam');
+        }).toList();
+      }
+      throw Exception('Failed to load exams');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<HomeworkModel> updateHomeworkStatus(String id, String studentId, HomeworkStatus status, {String? filePath}) async {
     print('DEBUG: Updating homework $id to status $status for student $studentId');
     try {

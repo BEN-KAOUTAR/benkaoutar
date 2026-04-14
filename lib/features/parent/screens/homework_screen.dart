@@ -9,6 +9,7 @@ import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../viewmodels/homework_view_model.dart';
+import '../../../core/providers/app_state.dart';
 
 class HomeworkScreen extends StatefulWidget {
   final String studentId;
@@ -92,13 +93,7 @@ class _HomeworkScreenState extends State<HomeworkScreen>
 
               return Column(
                 children: [
-                  // Progress header (always visible)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                    child: _buildProgressHeader(context, isDark, vm),
-                  ),
-
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // ── TAB BAR ──
                   Padding(
@@ -110,41 +105,47 @@ class _HomeworkScreenState extends State<HomeworkScreen>
 
                   // ── TAB VIEWS ──
                   Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        // Tab 1 — Devoirs
-                        _buildTabContent(
-                          context: context,
-                          isDark: isDark,
-                          primaryTextColor: primaryTextColor,
-                          secondaryTextColor: secondaryTextColor,
-                          label: 'DEVOIRS',
-                          icon: Icons.book_outlined,
-                          accentColor: Colors.greenAccent,
-                          items: vm.devoirsList,
-                          emptyIcon: Icons.assignment_turned_in_rounded,
-                          emptyLabel: 'Aucun devoir',
-                          vm: vm,
-                          animationOffset: 0,
-                        ),
-                        // Tab 2 — Examens
-                        _buildTabContent(
-                          context: context,
-                          isDark: isDark,
-                          primaryTextColor: primaryTextColor,
-                          secondaryTextColor: secondaryTextColor,
-                          label: 'EXAMENS',
-                          icon: Icons.school_outlined,
-                          accentColor: Colors.blueAccent,
-                          items: vm.examsList,
-                          emptyIcon: Icons.assignment_turned_in_rounded,
-                          emptyLabel: 'Aucun examen',
-                          vm: vm,
-                          animationOffset: 0,
-                        ),
-                      ],
+                    child: RefreshIndicator(
+                      onRefresh: () => vm.fetchHomework(widget.studentId),
+                      color: Colors.blueAccent,
+                      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      child: TabBarView(
+                        controller: _tabController,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          // Tab 1 — Devoirs
+                          _buildTabContent(
+                            context: context,
+                            isDark: isDark,
+                            primaryTextColor: primaryTextColor,
+                            secondaryTextColor: secondaryTextColor,
+                            label: 'DEVOIRS',
+                            icon: Icons.book_outlined,
+                            accentColor: Colors.greenAccent,
+                            items: vm.devoirsList,
+                            emptyIcon: Icons.assignment_turned_in_rounded,
+                            emptyLabel: 'Aucun devoir',
+                            vm: vm,
+                            animationOffset: 0,
+                            showProgressHeader: true,
+                          ),
+                          // Tab 2 — Examens
+                          _buildTabContent(
+                            context: context,
+                            isDark: isDark,
+                            primaryTextColor: primaryTextColor,
+                            secondaryTextColor: secondaryTextColor,
+                            label: 'EXAMENS',
+                            icon: Icons.school_outlined,
+                            accentColor: Colors.blueAccent,
+                            items: vm.examsList,
+                            emptyIcon: Icons.assignment_turned_in_rounded,
+                            emptyLabel: 'Aucun examen',
+                            vm: vm,
+                            animationOffset: 0,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -226,11 +227,17 @@ class _HomeworkScreenState extends State<HomeworkScreen>
     required String emptyLabel,
     required HomeworkViewModel vm,
     required int animationOffset,
+    bool showProgressHeader = false,
   }) {
     return ListView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
       children: [
+        if (showProgressHeader)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: _buildProgressHeader(context, isDark, vm),
+          ),
         if (items.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 60),
@@ -355,7 +362,7 @@ class _HomeworkListItem extends StatelessWidget {
     switch (homework.status) {
       case HomeworkStatus.notStarted:
         statusColor = isDark ? Colors.white38 : Colors.black38;
-        statusLabel = AppLocalizations.of(context)!.translate('not_started');
+        statusLabel = homework.type == 'exam' ? 'NON VU' : AppLocalizations.of(context)!.translate('not_started');
         break;
       case HomeworkStatus.inProgress:
         statusColor = Colors.orangeAccent;
@@ -363,7 +370,7 @@ class _HomeworkListItem extends StatelessWidget {
         break;
       case HomeworkStatus.done:
         statusColor = Colors.greenAccent;
-        statusLabel = AppLocalizations.of(context)!.translate('done_status');
+        statusLabel = homework.type == 'exam' ? 'VU' : AppLocalizations.of(context)!.translate('done_status');
         break;
       case HomeworkStatus.late:
         statusColor = Colors.redAccent;
@@ -381,8 +388,28 @@ class _HomeworkListItem extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 24),
           decoration: BoxDecoration(
             color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.8),
+            gradient: homework.type == 'exam' && isDark ? LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.blueAccent.withValues(alpha: 0.05),
+                Colors.purpleAccent.withValues(alpha: 0.05),
+              ],
+            ) : null,
             borderRadius: BorderRadius.circular(36),
-            border: Border.all(color: statusColor.withValues(alpha: 0.3), width: homework.status == HomeworkStatus.done ? 2 : 1),
+            border: Border.all(
+              color: homework.type == 'exam' 
+                  ? Colors.blueAccent.withValues(alpha: 0.5) 
+                  : statusColor.withValues(alpha: 0.3), 
+              width: (homework.status == HomeworkStatus.done || homework.type == 'exam') ? 2 : 1
+            ),
+            boxShadow: homework.type == 'exam' ? [
+              BoxShadow(
+                color: Colors.blueAccent.withValues(alpha: 0.1),
+                blurRadius: 20,
+                spreadRadius: 2,
+              )
+            ] : null,
           ),
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -391,18 +418,19 @@ class _HomeworkListItem extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    if (homework.type != 'exam')
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          statusLabel.toUpperCase(),
+                          style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5),
+                        ),
                       ),
-                      child: Text(
-                        statusLabel.toUpperCase(),
-                        style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5),
-                      ),
-                    ),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -417,17 +445,7 @@ class _HomeworkListItem extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.event_outlined, size: 10, color: secondaryTextColor),
-                    const SizedBox(width: 6),
-                    Text(
-                      "${AppLocalizations.of(context)!.translate('due_date') ?? 'Échéance'}: ${homework.dueDate}", 
-                      style: TextStyle(color: secondaryTextColor, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)
-                    ),
-                  ],
-                ),
+
                 const SizedBox(height: 24),
                 Text(
                   homework.title,
@@ -440,41 +458,17 @@ class _HomeworkListItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(homework.subject, style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.bold)),
-                if (homework.teacherName != null && homework.teacherName!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline_rounded, size: 14, color: secondaryTextColor.withValues(alpha: 0.8)),
-                      const SizedBox(width: 6),
-                      Text(
-                        "Prof: ${homework.teacherName}",
-                        style: TextStyle(color: secondaryTextColor.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ],
-
-                // --- PROGRESS BAR (Homework cards ONLY) ---
-                if (homework.type == 'devoir') ...[
-                  const SizedBox(height: 20),
-                  LinearPercentIndicator(
-                    animation: true,
-                    lineHeight: 6.0,
-                    animationDuration: 1000,
-                    percent: (homework.progressRate / 100).clamp(0.0, 1.0),
-                    trailing: Padding(
-                      padding: const EdgeInsets.only(left: 10),
-                      child: Text(
-                        "${homework.progressRate.toInt()}%",
-                        style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 11),
-                      ),
+                Row(
+                  children: [
+                    Icon(Icons.person_outline_rounded, size: 14, color: secondaryTextColor.withValues(alpha: 0.8)),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Prof: ${homework.teacherName == 'Unknown' ? AppLocalizations.of(context)!.translate('unknown_prof') : homework.teacherName}",
+                      style: TextStyle(color: secondaryTextColor.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w600),
                     ),
-                    barRadius: const Radius.circular(10),
-                    progressColor: Colors.blueAccent,
-                    backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
+                  ],
+                ),
+
                 const SizedBox(height: 16),
                 Container(
                   width: double.infinity,
@@ -535,7 +529,10 @@ class _HomeworkListItem extends StatelessWidget {
                   ),
                 ),
                 
-                if (homework.status != HomeworkStatus.done) ...[
+                // --- ACTION BUTTONS ---
+                
+                // Homework (Devoirs): Hide submission for Parents/Students (View Only)
+                if (homework.status != HomeworkStatus.done && !Provider.of<AppState>(context, listen: false).isParent) ...[
                   const SizedBox(height: 32),
                   Row(
                     children: [
@@ -558,13 +555,16 @@ class _HomeworkListItem extends StatelessWidget {
                       ],
                     ],
                   ),
-                ] else ...[
+                ] else if (homework.status == HomeworkStatus.done) ...[
                   const SizedBox(height: 24),
                   Row(
                     children: [
                       const Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 16),
                       const SizedBox(width: 8),
-                      Text(AppLocalizations.of(context)!.translate('verified_status'), style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
+                      Text(
+                        AppLocalizations.of(context)!.translate('verified_status'), 
+                        style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)
+                      ),
                     ],
                   ),
                 ],

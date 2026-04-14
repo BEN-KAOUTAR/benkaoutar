@@ -580,5 +580,6 @@
   "retards": "Retards",
   "unjustified": "ABSENCE",
   "processing": "Traitement par le serveur...",
-  "select_document": "Sélectionner un document"
+  "unknown": "Inconnu",
+  "unknown_prof": "Inconnu"
 }
