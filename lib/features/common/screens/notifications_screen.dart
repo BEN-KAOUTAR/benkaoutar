@@ -43,7 +43,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black45;
 
-    final List<String> filters = ['all', 'urgent', 'academic', 'payment', 'message'];
+    final List<String> filters = ['all', 'exams', 'devoirs', 'evenements', 'payment', 'message'];
     if (isTeacher) filters.add('request');
 
     return Scaffold(
@@ -55,10 +55,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             final filteredNotifications = vm.notifications.where((n) {
               // Category filter
               bool categoryMatch = true;
-              if (_selectedFilter == 'urgent') {
-                categoryMatch = n.isUrgent == true || n.type == 'location';
-              } else if (_selectedFilter == 'academic') {
-                categoryMatch = n.type == 'grade' || n.type == 'absence';
+              if (_selectedFilter == 'exams') {
+                categoryMatch = n.type == 'exam' || n.type == 'examen';
+              } else if (_selectedFilter == 'devoirs') {
+                categoryMatch = n.type == 'devoir' || n.type == 'assignment';
+              } else if (_selectedFilter == 'evenements') {
+                categoryMatch = n.type == 'event' || n.type == 'evenement';
               } else if (_selectedFilter == 'payment') {
                 categoryMatch = n.type == 'payment';
               } else if (_selectedFilter == 'message') {
@@ -234,11 +236,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   String _getFilterLabel(BuildContext context, String filter) {
     final loc = AppLocalizations.of(context)!;
     switch (filter) {
-      case 'all': return loc.translate('all_filter');
-      case 'urgent': return "Urgent";
-      case 'academic': return loc.translate('academic_filter');
-      case 'payment': return loc.translate('payments_nav');
-      case 'message': return loc.translate('messages');
+      case 'all': return loc.translate('all_filter') ?? 'Tout';
+      case 'exams': return "Examens";
+      case 'devoirs': return "Devoirs";
+      case 'evenements': return "Événements";
+      case 'payment': return loc.translate('payments_nav') ?? 'Paiements';
+      case 'message': return loc.translate('messages') ?? 'Messages';
       default: return filter;
     }
   }
@@ -279,7 +282,7 @@ class _NotificationCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(child: Text(notification.title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primaryTextColor))),
-                    Text(notification.time, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                    Text(_formatDate(notification.time), style: const TextStyle(color: Colors.grey, fontSize: 11)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -299,6 +302,9 @@ class _NotificationCard extends StatelessWidget {
       case IconType.absence: return Icons.event_busy_rounded;
       case IconType.payment: return Icons.payments_rounded;
       case IconType.message: return Icons.message_rounded;
+      case IconType.exam: return Icons.assignment_late_rounded;
+      case IconType.devoir: return Icons.menu_book_rounded;
+      case IconType.event: return Icons.event_available_rounded;
       default: return Icons.info_rounded;
     }
   }
@@ -319,7 +325,7 @@ void _showNotificationDetail(BuildContext context, NotificationModel n) {
         children: [
           Text(n.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22)),
           const SizedBox(height: 8),
-          Text(n.time, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          Text(_formatDate(n.time), style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
@@ -340,11 +346,25 @@ void _showNotificationDetail(BuildContext context, NotificationModel n) {
 }
 
 Color _getTypeColor(String type) {
-  switch (type) {
-    case 'location': return Colors.redAccent;
-    case 'grade': return Colors.indigoAccent;
+  switch (type.toLowerCase()) {
+    case 'exam':
+    case 'examen': return Colors.purpleAccent;
+    case 'devoir':
+    case 'assignment': return Colors.indigoAccent;
+    case 'event':
+    case 'evenement': return Colors.orangeAccent;
     case 'payment': return Colors.greenAccent;
     case 'message': return Colors.blueAccent;
-    default: return Colors.orangeAccent;
+    case 'location': return Colors.redAccent;
+    default: return Colors.blueGrey;
+  }
+}
+
+String _formatDate(String time) {
+  try {
+    final date = DateTime.parse(time);
+    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} à ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+  } catch (e) {
+    return time;
   }
 }

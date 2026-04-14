@@ -35,7 +35,25 @@ class HomeworkViewModel extends ChangeNotifier {
     }
 
     try {
-      _homeworks = await _apiService.getHomework(studentId);
+      // Fetch homework and exams in parallel to ensure fresh data for both
+      final results = await Future.wait([
+        _apiService.getHomework(studentId),
+        _apiService.getExams(studentId),
+      ]);
+      
+      final combined = [...results[0], ...results[1]];
+      
+      // Data Sync: Overwriting _homeworks ensures that items deleted in backend 
+      // (not returned in list) disappear from the UI.
+      _homeworks = combined;
+      
+      // Sort by due date (closest first)
+      _homeworks.sort((a, b) {
+        if (a.dueDate.isEmpty) return 1;
+        if (b.dueDate.isEmpty) return -1;
+        return a.dueDate.compareTo(b.dueDate);
+      });
+      
     } catch (e) {
       _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
@@ -101,16 +119,18 @@ class HomeworkViewModel extends ChangeNotifier {
     }
   }
 
-  // Stats for the UI
+  // Stats for the UI - ONLY for Devoirs
   double get progressionRate {
-    if (_homeworks.isEmpty) return 0.0;
-    final done = _homeworks.where((h) => h.status == HomeworkStatus.done).length;
-    return (done / _homeworks.length) * 100;
+    final devoirs = _homeworks.where((h) => h.type == 'devoir').toList();
+    if (devoirs.isEmpty) return 0.0;
+    final done = devoirs.where((h) => h.status == HomeworkStatus.done).length;
+    return (done / devoirs.length) * 100;
   }
 
   String get progressionLabel {
-    final done = _homeworks.where((h) => h.status == HomeworkStatus.done).length;
-    return "$done/${_homeworks.length}";
+    final devoirs = _homeworks.where((h) => h.type == 'devoir').toList();
+    final done = devoirs.where((h) => h.status == HomeworkStatus.done).length;
+    return "$done/${devoirs.length}";
   }
 }
 

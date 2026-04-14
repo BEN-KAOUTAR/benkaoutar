@@ -3,7 +3,7 @@ import 'package:latlong2/latlong.dart';
 
 enum HomeworkStatus { notStarted, inProgress, done, late }
 enum UserRole { parent, teacher }
-enum IconType { location, grade, absence, payment, post, message, info }
+enum IconType { location, grade, absence, payment, post, message, info, exam, devoir, event }
 
 class UserModel {
   final String id;
@@ -1013,11 +1013,29 @@ class HomeworkModel {
       subjectName = json['subject'] ?? json['subjectName'] ?? '';
     }
 
-    String teacherName = '';
-    if (json['teacher'] is Map) {
-      teacherName = json['teacher']['name'] ?? json['teacher']['fullName'] ?? '';
-    } else {
-      teacherName = json['teacherName'] ?? json['teacher'] ?? '';
+    String teacherName = 'Unknown';
+    if (json['teacher'] != null) {
+      if (json['teacher'] is Map) {
+        final t = json['teacher'] as Map;
+        teacherName = t['name'] ?? t['fullName'] ?? t['username'] ?? 
+                     ((t['firstName'] != null || t['lastName'] != null) 
+                      ? "${t['firstName'] ?? ''} ${t['lastName'] ?? ''}".trim() 
+                      : 'Unknown');
+      } else if (json['teacher'] is String && json['teacher'].toString().isNotEmpty) {
+        teacherName = json['teacher'];
+      }
+    } else if (json['teacherName'] != null && json['teacherName'].toString().isNotEmpty) {
+      teacherName = json['teacherName'];
+    } else if (json['createdBy'] != null) {
+      if (json['createdBy'] is Map) {
+        final c = json['createdBy'] as Map;
+        teacherName = c['name'] ?? c['fullName'] ?? 
+                     ((c['firstName'] != null || c['lastName'] != null) 
+                      ? "${c['firstName'] ?? ''} ${c['lastName'] ?? ''}".trim() 
+                      : 'Unknown');
+      } else {
+        teacherName = json['createdBy'].toString();
+      }
     }
 
     // Advanced status extraction
@@ -1109,6 +1127,38 @@ class HomeworkModel {
       'teacherName': teacherName,
     };
   }
+
+  HomeworkModel copyWith({
+    String? id,
+    String? subject,
+    String? title,
+    String? description,
+    String? dueDate,
+    String? startDate,
+    String? submissionId,
+    HomeworkStatus? status,
+    String? attachment,
+    String? teacherComment,
+    String? teacherName,
+    String? type,
+    double? progressRate,
+  }) {
+    return HomeworkModel(
+      id: id ?? this.id,
+      subject: subject ?? this.subject,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      dueDate: dueDate ?? this.dueDate,
+      startDate: startDate ?? this.startDate,
+      submissionId: submissionId ?? this.submissionId,
+      status: status ?? this.status,
+      attachment: attachment ?? this.attachment,
+      teacherComment: teacherComment ?? this.teacherComment,
+      teacherName: teacherName ?? this.teacherName,
+      type: type ?? this.type,
+      progressRate: progressRate ?? this.progressRate,
+    );
+  }
 }
 
 class NotificationModel {
@@ -1161,20 +1211,26 @@ class NotificationModel {
       body: json['message'] ?? json['body'] ?? '',
       time: json['createdAt'] ?? json['time'] ?? '',
       type: json['type'] ?? '',
-      iconType: _iconTypeFromString(json['type']), // Use type to infer icon
+      iconType: _iconTypeFromString(json['type'] ?? ''), // Use type to infer icon
       isRead: (json['readBy'] as List?)?.isNotEmpty ?? json['isRead'] ?? false,
       isUrgent: json['isUrgent'] ?? (json['type'] == 'exam_scheduled'),
     );
   }
 
-  static IconType _iconTypeFromString(String? type) {
-    switch (type) {
-      case 'location': return IconType.location;
+  static IconType _iconTypeFromString(String type) {
+    if (type.contains('location') || type.contains('zone')) return IconType.location;
+    switch (type.toLowerCase()) {
       case 'grade': return IconType.grade;
       case 'absence': return IconType.absence;
       case 'payment': return IconType.payment;
       case 'post': return IconType.post;
       case 'message': return IconType.message;
+      case 'exam':
+      case 'examen': return IconType.exam;
+      case 'devoir':
+      case 'assignment': return IconType.devoir;
+      case 'event':
+      case 'evenement': return IconType.event;
       default: return IconType.info;
     }
   }

@@ -575,5 +575,6 @@
   "send": "Send",
   "document_selected": "Document selected",
   "justified": "Justified Absence",
-  "unjustified": "Absence"
+  "unknown": "Unknown",
+  "unknown_prof": "Unknown"
 }
