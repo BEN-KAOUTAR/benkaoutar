@@ -18,15 +18,19 @@ class SuiviViewModel extends ChangeNotifier {
   Map<String, String> _localJustifications = {};
 
   String _attendanceKey(AttendanceRecord a) {
-    // Primarily use scheduleId as it is the most stable unique identifier for a session
+    if (a.id.isNotEmpty && a.id != 'null' && a.id != '0') {
+      return 'id|${a.id}';
+    }
+
+    String dateString = a.date.trim();
+    String normalizedDate = dateString.length >= 10 ? dateString.substring(0, 10) : dateString;
+
     if (a.scheduleId != null && a.scheduleId!.isNotEmpty && a.scheduleId != 'null') {
-      return 'schedule|${a.scheduleId}';
+      return 'schedule|$normalizedDate|${a.scheduleId}';
     }
 
     final subject = (a.subjectName ?? a.sessionName ?? '').trim().toLowerCase();
     final start = (a.startTime ?? '').trim().toLowerCase();
-    String dateString = a.date.trim();
-    String normalizedDate = dateString.length >= 10 ? dateString.substring(0, 10) : dateString;
     return 'content|$normalizedDate|$subject|$start';
   }
 
@@ -105,15 +109,26 @@ class SuiviViewModel extends ChangeNotifier {
       };
       final mergedAbsences = fetchedAbsences.map((fetched) {
         final optimistic = optimisticById[fetched.id];
-        final fKey = _attendanceKey(fetched);
-        final String? localSavedJson = _localJustifications[fKey];
-        AttendanceRecord? localRecord;
         
+        // Comprehensive key checking for reliability
+        final idKey = (fetched.id.isNotEmpty && fetched.id != 'null') ? 'id|${fetched.id}' : null;
+        final dateStr = (fetched.date.length >= 10) ? fetched.date.substring(0, 10) : fetched.date.trim();
+        final schedKey = (fetched.scheduleId != null && fetched.scheduleId!.isNotEmpty && fetched.scheduleId != 'null') 
+            ? 'schedule|$dateStr|${fetched.scheduleId}' : null;
+
+        String? localSavedJson;
+        if (idKey != null && _localJustifications.containsKey(idKey)) {
+          localSavedJson = _localJustifications[idKey];
+        } else if (schedKey != null && _localJustifications.containsKey(schedKey)) {
+          localSavedJson = _localJustifications[schedKey];
+        } else {
+          localSavedJson = _localJustifications[_attendanceKey(fetched)];
+        }
+
+        AttendanceRecord? localRecord;
         if (localSavedJson != null) {
           try {
-            // Reconstruct the record from local DB
             localRecord = AttendanceRecord.fromJson(json.decode(localSavedJson));
-            debugPrint('>>> SUCCESS: Loaded local DB justification for session key: $fKey');
           } catch (e) {
             debugPrint('Failed to parse local record: $e');
           }
@@ -123,12 +138,12 @@ class SuiviViewModel extends ChangeNotifier {
         if (shouldForceJustified) {
           return AttendanceRecord(
             id: fetched.id,
-            date: fetched.date,
-            status: fetched.status,
-            motif: (localRecord?.motif != null && localRecord!.motif!.isNotEmpty) 
+            date: fetched.date.isNotEmpty ? fetched.date : (localRecord?.date ?? ''),
+            status: localRecord?.status ?? optimistic?.status ?? fetched.status,
+            motif: (localRecord?.motif != null && localRecord!.motif!.isNotEmpty && localRecord.motif != 'null') 
                 ? localRecord.motif 
                 : ((optimistic?.motif != null && optimistic!.motif!.isNotEmpty) ? optimistic.motif : fetched.motif),
-            attachment: (localRecord?.attachment != null && localRecord!.attachment!.isNotEmpty) 
+            attachment: (localRecord?.attachment != null && localRecord!.attachment!.isNotEmpty && localRecord.attachment != 'null') 
                 ? localRecord.attachment 
                 : ((optimistic?.attachment != null && optimistic!.attachment!.isNotEmpty) ? optimistic.attachment : fetched.attachment),
             rawStatus: localRecord?.rawStatus ?? optimistic?.rawStatus ?? fetched.rawStatus,
@@ -136,7 +151,7 @@ class SuiviViewModel extends ChangeNotifier {
             endTime: fetched.endTime,
             subjectName: fetched.subjectName,
             sessionName: fetched.sessionName,
-            justifiedByStudent: true,
+            justifiedByStudent: true, // Safely forced true
             approvalStatus: localRecord?.approvalStatus ?? optimistic?.approvalStatus ?? fetched.approvalStatus ?? 'pending',
             recordedBy: fetched.recordedBy,
             scheduleId: fetched.scheduleId,
