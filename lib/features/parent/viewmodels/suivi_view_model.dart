@@ -257,10 +257,7 @@ class SuiviViewModel extends ChangeNotifier {
       
       for (int i = 0; i < chronologicalGrades.length; i++) {
         final g = chronologicalGrades[i];
-        double score = g.grade;
-        if (g.maxGrade > 0 && g.maxGrade != 20) {
-          score = (g.grade / g.maxGrade) * 20.0;
-        }
+        double score = (g.grade / (g.maxGrade > 0 ? g.maxGrade : 20.0)) * 10.0;
 
         final isS2 = g.semester?.toUpperCase().contains('2') ?? false;
 
@@ -306,14 +303,16 @@ class SuiviViewModel extends ChangeNotifier {
 
   double get gradeAverage {
     if (_grades.isEmpty) return 0.0;
-    final total = _grades.fold<double>(0, (sum, g) => sum + g.grade);
+    final total = _grades.fold<double>(
+        0, (sum, g) => sum + (g.grade / (g.maxGrade > 0 ? g.maxGrade : 20.0)) * 10.0);
     return total / _grades.length;
   }
 
   double calculateSubjectAverage(String subjectId) {
     final subjectGrades = _grades.where((g) => g.subject == subjectId);
     if (subjectGrades.isEmpty) return 0.0;
-    final total = subjectGrades.fold<double>(0, (sum, g) => sum + g.grade);
+    final total = subjectGrades.fold<double>(
+        0, (sum, g) => sum + (g.grade / (g.maxGrade > 0 ? g.maxGrade : 20.0)) * 10.0);
     return total / subjectGrades.length;
   }
 

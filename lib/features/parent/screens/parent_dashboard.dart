@@ -30,7 +30,6 @@ class ParentDashboard extends StatefulWidget {
 }
 
 class _ParentDashboardState extends State<ParentDashboard> {
-
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -85,8 +84,12 @@ class _ParentDashboardState extends State<ParentDashboard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home_rounded,
-                    AppLocalizations.of(context)!.translate('home'), 0, isDark, appState),
+                _buildNavItem(
+                    Icons.home_rounded,
+                    AppLocalizations.of(context)!.translate('home'),
+                    0,
+                    isDark,
+                    appState),
                 _buildNavItem(
                     Icons.feed_rounded,
                     AppLocalizations.of(context)!.translate('feed_nav'),
@@ -119,7 +122,8 @@ class _ParentDashboardState extends State<ParentDashboard> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index, bool isDark, AppState appState) {
+  Widget _buildNavItem(
+      IconData icon, String label, int index, bool isDark, AppState appState) {
     final isActive = appState.dashboardIndex == index;
     final activeColor = Colors.white;
     final inactiveColor = isDark ? const Color(0xFF64748B) : Colors.black38;
@@ -169,7 +173,7 @@ class _ParentHome extends StatefulWidget {
 class _ParentHomeState extends State<_ParentHome> {
   int _currentPostIndex = 0;
   String _selectedYear = '2023-2024';
-  String _selectedSemester = 'S1';
+  String _selectedSemester = 'all'; // Default to Both/All
 
   @override
   void initState() {
@@ -181,12 +185,7 @@ class _ParentHomeState extends State<_ParentHome> {
     } else {
       _selectedYear = '${now.year - 1}-${now.year}';
     }
-    // Semester logic
-    if (now.month >= 2 && now.month <= 7) {
-      _selectedSemester = 'S2';
-    } else {
-      _selectedSemester = 'S1';
-    }
+    _selectedSemester = 'all'; // Default to all/both
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboardVM = context.read<DashboardViewModel>();
@@ -195,7 +194,7 @@ class _ParentHomeState extends State<_ParentHome> {
         // Fetch initial evolution and homework for the first child if available
         if (dashboardVM.children.isNotEmpty) {
           final studentId = dashboardVM.children[0].id;
-          dashboardVM.fetchEvolution(studentId, _selectedYear, _selectedSemester);
+          dashboardVM.fetchSubjectAverages(semester: _selectedSemester);
           context.read<HomeworkViewModel>().fetchHomework(studentId);
         }
       });
@@ -240,7 +239,7 @@ class _ParentHomeState extends State<_ParentHome> {
                           color: Colors.redAccent.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12)),
                       child: Text(
-                          AppLocalizations.of(context)!.translate('urgent'),
+                          AppLocalizations.of(context)!.translate('Événements'),
                           style: const TextStyle(
                               color: Colors.redAccent,
                               fontWeight: FontWeight.w900,
@@ -305,103 +304,203 @@ class _ParentHomeState extends State<_ParentHome> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Consumer2<FeedViewModel, DashboardViewModel>(
       builder: (context, feedVM, dashVM, child) {
         final appState = Provider.of<AppState>(context);
-        final urgentPosts = feedVM.posts.where((p) => p.isUrgent || p.isEvent).toList();
+        final urgentPosts =
+            feedVM.posts.where((p) => p.isUrgent || p.isEvent).toList();
         final totalUrgent = urgentPosts.length;
-        final currentIndex = _currentPostIndex % (totalUrgent > 0 ? totalUrgent : 1);
-        final urgentPost = urgentPosts.isNotEmpty ? urgentPosts[currentIndex] : null;
+        final currentIndex =
+            _currentPostIndex % (totalUrgent > 0 ? totalUrgent : 1);
+        final urgentPost =
+            urgentPosts.isNotEmpty ? urgentPosts[currentIndex] : null;
 
         final isOffline = appState.isOffline;
 
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: (dashVM.isLoading && dashVM.children.isEmpty)
-            ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
-            : dashVM.errorMessage != null && dashVM.children.isEmpty
-              ? _buildErrorPlaceholder(context, dashVM.errorMessage!, dashVM.init)
-              : SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                if (isOffline) _buildOfflineBanner(context),
-                _buildHeader(context, isDark)
-                    .animate()
-                    .fadeIn(duration: 500.ms)
-                    .slideY(begin: -0.2),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 40),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(AppLocalizations.of(context)!.translate('hello'),
-                                style: TextStyle(
-                                    color: isDark ? Colors.white38 : Colors.black38,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.5)),
-                            const SizedBox(height: 4),
-                            Text(
-                                '${AppLocalizations.of(context)!.translate('parent_name')} 👋',
-                                style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 32,
-                                    letterSpacing: -1)),
-                          ],
-                        ),
-                        const SizedBox(height: 32),
-                        if (urgentPost != null)
-                          _buildUrgentCard(
-                              context, urgentPost, isDark, totalUrgent, currentIndex),
-                        const SizedBox(height: 24),
-                        const SizedBox(height: 48),
-                        _buildQuickActions(context, isDark),
-                        const SizedBox(height: 48),
-                        _buildComparisonChart(context, isDark),
-                        const SizedBox(height: 48),
-                        _buildRecentActivities(context, isDark),
-                        const SizedBox(height: 120),
-                      ],
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.blueAccent))
+              : dashVM.errorMessage != null && dashVM.children.isEmpty
+                  ? _buildErrorPlaceholder(
+                      context, dashVM.errorMessage!, dashVM.init)
+                  : SafeArea(
+                      bottom: false,
+                      child: Column(
+                        children: [
+                          if (isOffline) _buildOfflineBanner(context),
+                          _buildHeader(context, isDark)
+                              .animate()
+                              .fadeIn(duration: 500.ms)
+                              .slideY(begin: -0.2),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 40),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                          AppLocalizations.of(context)!
+                                              .translate('hello'),
+                                          style: TextStyle(
+                                              color: isDark
+                                                  ? Colors.white38
+                                                  : Colors.black38,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 1.5)),
+                                      const SizedBox(height: 4),
+                                      Consumer2<AppState, DashboardViewModel>(
+                                        builder:
+                                            (context, appState, dashVM, child) {
+                                          final user = appState.currentUser;
+                                          final firstChild =
+                                              dashVM.children.isNotEmpty
+                                                  ? dashVM.children[0]
+                                                  : null;
+                                          String displayName = user?.name ?? '';
+                                          if (displayName.isEmpty ||
+                                              displayName
+                                                  .toLowerCase()
+                                                  .contains('parent')) {
+                                            if (firstChild != null) {
+                                              displayName =
+                                                  'Parent de ${firstChild.name.split(' ')[0]}';
+                                            } else {
+                                              displayName = 'Parent';
+                                            }
+                                          }
+                                          return Text('$displayName 👋',
+                                              style: TextStyle(
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : const Color(0xFF0F172A),
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 32,
+                                                  letterSpacing: -1));
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 32),
+                                  if (urgentPost != null)
+                                    _buildUrgentCard(context, urgentPost,
+                                        isDark, totalUrgent, currentIndex),
+                                  const SizedBox(height: 24),
+                                  const SizedBox(height: 48),
+                                  _buildQuickActions(context, isDark),
+                                  const SizedBox(height: 48),
+                                  _buildComparisonChart(context, isDark),
+                                  const SizedBox(height: 48),
+                                  _buildRecentActivities(context, isDark),
+                                  const SizedBox(height: 120),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         );
       },
     );
   }
 
   Widget _buildRecentActivities(BuildContext context, bool isDark) {
-    final activities = context.watch<DashboardViewModel>().activities;
+    final dashVM = context.watch<DashboardViewModel>();
+    final agenda = dashVM.todayAgenda;
+    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-            AppLocalizations.of(context)!
-                .translate('recent_activities')
-                .toUpperCase(),
-            style: TextStyle(
-                color: isDark ? Colors.white38 : Colors.black38,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "L'AGENDA D'AUJOURD'HUI",
+              style: TextStyle(
+                  color: isDark ? Colors.white38 : Colors.black38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2),
+            ),
+            if (agenda.isNotEmpty)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  "${agenda.length} AU PROGRAMME",
+                  style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 24),
-        ...activities
-            .map((a) => _ActivityPlatinumTile(activity: a, isDark: isDark)),
+        if (agenda.isEmpty)
+          _buildEmptyAgenda(context, isDark)
+        else
+          ...agenda
+              .map((a) => _ActivityPlatinumTile(activity: a, isDark: isDark)),
       ],
+    );
+  }
+
+  Widget _buildEmptyAgenda(BuildContext context, bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.02)
+            : Colors.black.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.calendar_today_outlined,
+              size: 48,
+              color: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: 0.1)),
+          const SizedBox(height: 16),
+          Text(
+            "Rien de prévu pour aujourd'hui",
+            style: TextStyle(
+              color: isDark ? Colors.white54 : Colors.black54,
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Profitez d'une journée tranquille !",
+            style: TextStyle(
+              color: isDark ? Colors.white24 : Colors.black26,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -433,7 +532,8 @@ class _ParentHomeState extends State<_ParentHome> {
     ).animate().slideY(begin: -1, end: 0);
   }
 
-  Widget _buildErrorPlaceholder(BuildContext context, String message, VoidCallback onRetry) {
+  Widget _buildErrorPlaceholder(
+      BuildContext context, String message, VoidCallback onRetry) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
     return Center(
@@ -442,18 +542,25 @@ class _ParentHomeState extends State<_ParentHome> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off_rounded, size: 80, color: Colors.blueAccent.withValues(alpha: 0.3)),
+            Icon(Icons.cloud_off_rounded,
+                size: 80, color: Colors.blueAccent.withValues(alpha: 0.3)),
             const SizedBox(height: 24),
             Text(
               AppLocalizations.of(context)!.translate(message),
               textAlign: TextAlign.center,
-              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 18),
+              style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18),
             ),
             const SizedBox(height: 12),
             Text(
               AppLocalizations.of(context)!.translate('check_connection'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w700, fontSize: 14),
+              style: TextStyle(
+                  color: secondaryTextColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
@@ -461,10 +568,17 @@ class _ParentHomeState extends State<_ParentHome> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
-              child: Text(AppLocalizations.of(context)!.translate('retry_btn').toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+              child: Text(
+                  AppLocalizations.of(context)!
+                      .translate('retry_btn')
+                      .toUpperCase(),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, letterSpacing: 1)),
             ),
           ],
         ),
@@ -547,7 +661,8 @@ class _ParentHomeState extends State<_ParentHome> {
           ),
           const SizedBox(width: 12),
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen())),
             child: Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
@@ -575,8 +690,11 @@ class _ParentHomeState extends State<_ParentHome> {
                     ? SpriteAvatar(index: user!.avatarIndex!, size: 40)
                     : CircleAvatar(
                         radius: 20,
-                        backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
-                        child: Icon(Icons.person_rounded, color: isDark ? Colors.white38 : Colors.black26, size: 20),
+                        backgroundColor:
+                            Colors.blueAccent.withValues(alpha: 0.1),
+                        child: Icon(Icons.person_rounded,
+                            color: isDark ? Colors.white38 : Colors.black26,
+                            size: 20),
                       ),
               ),
             ),
@@ -586,8 +704,8 @@ class _ParentHomeState extends State<_ParentHome> {
     );
   }
 
-   Widget _buildUrgentCard(
-      BuildContext context, PostModel post, bool isDark, int totalPosts, int currentIndex) {
+  Widget _buildUrgentCard(BuildContext context, PostModel post, bool isDark,
+      int totalPosts, int currentIndex) {
     final showArrow = totalPosts > 1;
     return Container(
       padding: const EdgeInsets.all(28),
@@ -635,17 +753,18 @@ class _ParentHomeState extends State<_ParentHome> {
               const Spacer(),
               if (showArrow)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text('${currentIndex + 1}/$totalPosts',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1)),
                 ),
               const SizedBox(width: 12),
               Text(post.date,
@@ -659,14 +778,17 @@ class _ParentHomeState extends State<_ParentHome> {
           ),
           const SizedBox(height: 24),
           Text(post.content,
-              key: ValueKey('content_${post.id}'),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  height: 1.5)).animate().fadeIn().slideX(begin: 0.02),
+                  key: ValueKey('content_${post.id}'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      height: 1.5))
+              .animate()
+              .fadeIn()
+              .slideX(begin: 0.02),
           const SizedBox(height: 32),
           Row(
             children: [
@@ -678,12 +800,13 @@ class _ParentHomeState extends State<_ParentHome> {
                     decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white12, width: 1.5)
-                    ),
+                        border: Border.all(color: Colors.white12, width: 1.5)),
                     child: const Icon(Icons.arrow_forward_rounded,
                         color: Colors.white, size: 16),
                   ),
-                ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 2.seconds, color: Colors.white24),
+                )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .shimmer(duration: 2.seconds, color: Colors.white24),
               const Spacer(),
               InkWell(
                 onTap: () => _showPostDetails(context, post),
@@ -699,9 +822,11 @@ class _ParentHomeState extends State<_ParentHome> {
           ),
         ],
       ),
-    ).animate(key: ValueKey('card_${post.id}')).fadeIn(duration: 400.ms).slideY(begin: 0.05);
+    )
+        .animate(key: ValueKey('card_${post.id}'))
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.05);
   }
-
 
   Widget _buildQuickActions(BuildContext context, bool isDark) {
     return Column(
@@ -723,13 +848,16 @@ class _ParentHomeState extends State<_ParentHome> {
                 Icons.grid_view_rounded,
                 Colors.purpleAccent,
                 null,
-                isDark,
-                onTap: () {
-                  final children = context.read<DashboardViewModel>().children;
-                  if (children.isNotEmpty) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => TimetableGridScreen(student: children[0])));
-                  }
-                }),
+                isDark, onTap: () {
+              final children = context.read<DashboardViewModel>().children;
+              if (children.isNotEmpty) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            TimetableGridScreen(student: children[0])));
+              }
+            }),
             Consumer<HomeworkViewModel>(
               builder: (context, homeworkVM, child) => _buildActionIcon(
                   context,
@@ -738,13 +866,16 @@ class _ParentHomeState extends State<_ParentHome> {
                   Colors.orangeAccent,
                   null,
                   isDark,
-                  showBadge: homeworkVM.hasNewAssignments,
-                  onTap: () {
-                    final dashVM = context.read<DashboardViewModel>();
-                    if (dashVM.children.isNotEmpty) {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => HomeworkScreen(studentId: dashVM.children[0].id)));
-                    }
-                  }),
+                  showBadge: homeworkVM.hasNewAssignments, onTap: () {
+                final dashVM = context.read<DashboardViewModel>();
+                if (dashVM.children.isNotEmpty) {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => HomeworkScreen(
+                              studentId: dashVM.children[0].id)));
+                }
+              }),
             ),
             _buildActionIcon(
                 context,
@@ -752,33 +883,34 @@ class _ParentHomeState extends State<_ParentHome> {
                 Icons.location_on_rounded,
                 Colors.blueAccent,
                 null,
-                isDark,
-                onTap: () {
-                  final children = context.read<DashboardViewModel>().children;
-                  if (children.isNotEmpty) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => LocationScreen(student: children[0])));
-                  }
-                }),
+                isDark, onTap: () {
+              final children = context.read<DashboardViewModel>().children;
+              if (children.isNotEmpty) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => LocationScreen(student: children[0])));
+              }
+            }),
             _buildActionIcon(
                 context,
-                AppLocalizations.of(context)!.translate('evaluation'),
+                AppLocalizations.of(context)!.translate('Suivi scolaire'),
                 Icons.bar_chart_rounded,
                 Colors.greenAccent,
                 null,
-                isDark,
-                onTap: () {
-                  final children = context.read<DashboardViewModel>().children;
-                  if (children.isEmpty) return;
-                  final student = children[0];
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SuiviScolaireScreen(
-                        student: student,
-                      ),
-                    ),
-                  );
-                }),
+                isDark, onTap: () {
+              final children = context.read<DashboardViewModel>().children;
+              if (children.isEmpty) return;
+              final student = children[0];
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SuiviScolaireScreen(
+                    student: student,
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ],
@@ -786,13 +918,16 @@ class _ParentHomeState extends State<_ParentHome> {
   }
 
   Widget _buildActionIcon(BuildContext context, String label, IconData icon,
-      Color color, Widget? screen, bool isDark, {VoidCallback? onTap, bool showBadge = false}) {
+      Color color, Widget? screen, bool isDark,
+      {VoidCallback? onTap, bool showBadge = false}) {
     return GestureDetector(
-      onTap: onTap ?? () {
-        if (screen != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-        }
-      },
+      onTap: onTap ??
+          () {
+            if (screen != null) {
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (_) => screen));
+            }
+          },
       child: Column(
         children: [
           Stack(
@@ -835,7 +970,9 @@ class _ParentHomeState extends State<_ParentHome> {
                       ],
                     ),
                   ),
-                ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 2.seconds),
+                )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .shimmer(duration: 2.seconds),
             ],
           ),
           const SizedBox(height: 12),
@@ -852,7 +989,8 @@ class _ParentHomeState extends State<_ParentHome> {
 
   Widget _buildComparisonChart(BuildContext context, bool isDark) {
     final textColor = isDark ? Colors.white38 : Colors.black45;
-    final yassinColor = isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5); // Indigo
+    final yassinColor =
+        isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5); // Indigo
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -866,19 +1004,17 @@ class _ParentHomeState extends State<_ParentHome> {
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2)),
             const Spacer(),
-            // Year Selector
             _buildChartSelector(
-              _selectedYear,
-              ['2025-2026', '2024-2025', '2023-2024', '2022-2023'],
-              (val) => setState(() => _selectedYear = val),
-              isDark,
-            ),
-            const SizedBox(width: 8),
-            // Semester Selector
-            _buildChartSelector(
-              _selectedSemester,
-              ['S1', 'S2'],
-              (val) => setState(() => _selectedSemester = val),
+              _selectedSemester == 'all'
+                  ? 'Année Complète'
+                  : (_selectedSemester == 'S1' ? 'Semestre 1' : 'Semestre 2'),
+              ['S1', 'S2', 'all'],
+              (val) {
+                setState(() => _selectedSemester = val);
+                context
+                    .read<DashboardViewModel>()
+                    .fetchSubjectAverages(semester: val);
+              },
               isDark,
             ),
           ],
@@ -890,7 +1026,8 @@ class _ParentHomeState extends State<_ParentHome> {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               height: 360, // Increased height for titles and tooltips
-              padding: const EdgeInsets.fromLTRB(16, 48, 28, 20), // Increased top padding
+              padding: const EdgeInsets.fromLTRB(
+                  16, 48, 28, 20), // Increased top padding
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.03)
@@ -914,7 +1051,7 @@ class _ParentHomeState extends State<_ParentHome> {
                     child: LineChart(
                       LineChartData(
                         minY: 0,
-                        maxY: 25, // Internal scale is higher to avoid clipping
+                        maxY: 10,
                         gridData: FlGridData(
                             show: true,
                             drawVerticalLine: false,
@@ -937,35 +1074,36 @@ class _ParentHomeState extends State<_ParentHome> {
                                   interval: 5,
                                   reservedSize: 35,
                                   getTitlesWidget: (val, meta) {
-                                    if (val > 20) return const SizedBox.shrink(); // Strict 0-20 axis
+                                    if (val > 10)
+                                      return const SizedBox.shrink();
                                     return Padding(
-                                        padding: const EdgeInsets.only(right: 8),
-                                        child: Text(val.toInt().toString(),
-                                            style: TextStyle(
-                                                color: textColor.withValues(alpha: 0.5),
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w900)),
-                                      );
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: Text(val.toInt().toString(),
+                                          style: TextStyle(
+                                              color: textColor.withValues(
+                                                  alpha: 0.5),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w900)),
+                                    );
                                   })),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               interval: 1,
                               getTitlesWidget: (val, meta) {
-                                final titles = [
-                                  AppLocalizations.of(context)!.translate('math'),
-                                  AppLocalizations.of(context)!.translate('physics'),
-                                  AppLocalizations.of(context)!.translate('arabic'),
-                                  AppLocalizations.of(context)!.translate('french'),
-                                  AppLocalizations.of(context)!.translate('english'),
-                                ];
-                                if (val.toInt() >= 0 && val.toInt() < titles.length) {
+                                final dashVM =
+                                    context.read<DashboardViewModel>();
+                                final averages = dashVM.subjectAverages;
+                                if (val.toInt() >= 0 &&
+                                    val.toInt() < averages.length) {
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 12.0),
-                                    child: Text(titles[val.toInt()],
+                                    child: Text(
+                                        averages[val.toInt()]['subject'] ?? '',
                                         style: TextStyle(
                                             color: textColor,
-                                            fontSize: 10,
+                                            fontSize:
+                                                9, // Slightly smaller for many subjects
                                             fontWeight: FontWeight.w900)),
                                   );
                                 }
@@ -978,13 +1116,18 @@ class _ParentHomeState extends State<_ParentHome> {
                         borderData: FlBorderData(show: false),
                         lineTouchData: LineTouchData(
                           handleBuiltInTouches: true,
-                          getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+                          getTouchedSpotIndicator: (LineChartBarData barData,
+                              List<int> spotIndexes) {
                             return spotIndexes.map((spotIndex) {
                               return TouchedSpotIndicatorData(
-                                FlLine(color: barData.color?.withValues(alpha: 0.3), strokeWidth: 4),
+                                FlLine(
+                                    color:
+                                        barData.color?.withValues(alpha: 0.3),
+                                    strokeWidth: 4),
                                 FlDotData(
-                                  getDotPainter: (spot, percent, barData, index) =>
-                                      FlDotCirclePainter(
+                                  getDotPainter:
+                                      (spot, percent, barData, index) =>
+                                          FlDotCirclePainter(
                                     radius: 8,
                                     color: barData.color ?? Colors.blueAccent,
                                     strokeWidth: 2,
@@ -995,17 +1138,18 @@ class _ParentHomeState extends State<_ParentHome> {
                             }).toList();
                           },
                           touchTooltipData: LineTouchTooltipData(
-                            getTooltipColor: (touchedSpot) => isDark
-                                ? const Color(0xFF0F172A)
-                                : Colors.white,
+                            getTooltipColor: (touchedSpot) =>
+                                isDark ? const Color(0xFF0F172A) : Colors.white,
                             tooltipBorderRadius: BorderRadius.circular(20),
-                            tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            tooltipPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             tooltipBorder: BorderSide(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.1)
                                     : Colors.black.withValues(alpha: 0.05)),
                             getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                              return touchedSpots.map((LineBarSpot touchedSpot) {
+                              return touchedSpots
+                                  .map((LineBarSpot touchedSpot) {
                                 return LineTooltipItem(
                                   touchedSpot.y.toStringAsFixed(1),
                                   TextStyle(
@@ -1020,38 +1164,50 @@ class _ParentHomeState extends State<_ParentHome> {
                         ),
                         lineBarsData: [
                           LineChartBarData(
-                            spots: context.read<DashboardViewModel>().evolutionData.isEmpty 
-                              ? const [FlSpot(0, 0)] // Empty fallback
-                              : context.read<DashboardViewModel>().evolutionData.map((e) => FlSpot(
-                                  (e['index'] as num).toDouble(), 
-                                  (e['grade'] as num).toDouble()
-                                )).toList(),
+                            spots: context
+                                    .watch<DashboardViewModel>()
+                                    .subjectAverages
+                                    .isEmpty
+                                ? const [FlSpot(0, 0)]
+                                : context
+                                    .watch<DashboardViewModel>()
+                                    .subjectAverages
+                                    .map((e) => FlSpot(
+                                        (e['index'] as num).toDouble(),
+                                        (e['grade'] as num).toDouble()))
+                                    .toList(),
                             isCurved: true,
-                            curveSmoothness: 0.35,
-                            color: yassinColor,
-                            barWidth: 4,
+                            curveSmoothness: 0.4,
+                            gradient: const LinearGradient(
+                              colors: [
+                                Colors.cyanAccent,
+                                Colors.blueAccent,
+                                Colors.indigoAccent,
+                              ],
+                            ),
+                            barWidth: 6,
                             isStrokeCapRound: true,
                             shadow: Shadow(
-                              color: yassinColor.withValues(alpha: 0.4),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
+                              color: Colors.blueAccent.withValues(alpha: 0.5),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
                             dotData: FlDotData(
                               show: true,
                               getDotPainter: (spot, percent, barData, index) =>
                                   FlDotCirclePainter(
-                                radius: 4,
+                                radius: 6,
                                 color: Colors.white,
-                                strokeWidth: 3,
-                                strokeColor: yassinColor,
+                                strokeWidth: 4,
+                                strokeColor: Colors.blueAccent,
                               ),
                             ),
                             belowBarData: BarAreaData(
                               show: true,
                               gradient: LinearGradient(
                                 colors: [
-                                  yassinColor.withValues(alpha: 0.15),
-                                  yassinColor.withValues(alpha: 0),
+                                  Colors.blueAccent.withValues(alpha: 0.2),
+                                  Colors.blueAccent.withValues(alpha: 0),
                                 ],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
@@ -1064,22 +1220,38 @@ class _ParentHomeState extends State<_ParentHome> {
                   ),
                   const SizedBox(height: 28),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
-                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.02),
+                      color: (isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.02),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05)),
+                      border: Border.all(
+                          color: (isDark ? Colors.white : Colors.black)
+                              .withValues(alpha: 0.05)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: context.read<DashboardViewModel>().children.asMap().entries.map((entry) {
+                      children: context
+                          .read<DashboardViewModel>()
+                          .children
+                          .asMap()
+                          .entries
+                          .map((entry) {
                         final index = entry.key;
                         final child = entry.value;
-                        final color = Colors.blueAccent;
+                        const color = Colors.blueAccent;
                         return Row(
                           children: [
-                            _buildLegendItem(child.name.split(' ')[0], color, isDark),
-                            if (index < context.read<DashboardViewModel>().children.length - 1) const SizedBox(width: 40),
+                            _buildLegendItem(
+                                child.name.split(' ')[0], color, isDark),
+                            if (index <
+                                context
+                                        .read<DashboardViewModel>()
+                                        .children
+                                        .length -
+                                    1)
+                              const SizedBox(width: 40),
                           ],
                         );
                       }).toList(),
@@ -1094,20 +1266,26 @@ class _ParentHomeState extends State<_ParentHome> {
     ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1);
   }
 
-  Widget _buildChartSelector(String value, List<String> options, Function(String) onChanged, bool isDark) {
+  Widget _buildChartSelector(String value, List<String> options,
+      Function(String) onChanged, bool isDark) {
     return PopupMenuButton<String>(
       onSelected: onChanged,
       offset: const Offset(0, 40),
       color: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      itemBuilder: (context) => options.map((opt) => PopupMenuItem(
-        value: opt,
-        child: Text(opt, style: TextStyle(
-          color: isDark ? Colors.white70 : Colors.black87,
-          fontSize: 12,
-          fontWeight: FontWeight.bold
-        )),
-      )).toList(),
+      itemBuilder: (context) => options.map((opt) {
+        String label = opt == 'all'
+            ? 'Année Complète'
+            : (opt == 'S1' ? 'Semestre 1' : 'Semestre 2');
+        return PopupMenuItem(
+          value: opt,
+          child: Text(label,
+              style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black87,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold)),
+        );
+      }).toList(),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -1116,17 +1294,19 @@ class _ParentHomeState extends State<_ParentHome> {
         ),
         child: Row(
           children: [
-            Text(value, style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black54,
-              fontSize: 10,
-              fontWeight: FontWeight.w900
-            )),
-            Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: isDark ? Colors.white38 : Colors.black38)
+            Text(value,
+                style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900)),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 14, color: isDark ? Colors.white38 : Colors.black38)
           ],
         ),
       ),
     );
   }
+
   Widget _buildLegendItem(String name, Color color, bool isDark) {
     return Row(
       children: [
@@ -1333,66 +1513,72 @@ class _ActivityPlatinumTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final color = activity.color as Color;
+    final color = activity['color'] as Color ?? Colors.blueAccent;
+    final type = activity['type'] as String? ?? 'activity';
 
-    return GestureDetector(
-      onTap: () {
-        final title = activity.title.toString().toLowerCase();
-        if (title.contains('note') || title.contains('grade')) {
-           Navigator.pushNamed(context, '/grades');
-        } else if (title.contains('devoir') || title.contains('homework')) {
-           Navigator.pushNamed(context, '/homework');
-        } else if (title.contains('absence')) {
-           Navigator.pushNamed(context, '/absences');
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.03)),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02), blurRadius: 20)
-                ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withValues(alpha: 0.2))),
-              child: Icon(activity.icon as IconData, color: color, size: 24),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.03)),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02), blurRadius: 20)
+              ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withValues(alpha: 0.2))),
+            child: Icon(
+                activity['icon'] as IconData ?? Icons.event_note_rounded,
+                color: color,
+                size: 24),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (type == 'absence')
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Icon(Icons.warning_rounded,
+                            color: Colors.redAccent, size: 14),
+                      ),
+                    Expanded(
+                      child: Text(activity['title'] ?? '',
+                          style: TextStyle(
+                              color: primaryColor,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                              letterSpacing: -0.5)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(activity['content'] ?? '',
+                    style: TextStyle(
+                        color: isDark ? Colors.white60 : Colors.black54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+              ],
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(activity.title,
-                      style: TextStyle(
-                          color: primaryColor,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 15,
-                          letterSpacing: -0.5)),
-                  const SizedBox(height: 6),
-                  Text(activity.detail ?? '',
-                      style: TextStyle(
-                          color: isDark ? Colors.white60 : Colors.black54,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
+          ),
+          if (activity['time'] != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
@@ -1400,14 +1586,13 @@ class _ActivityPlatinumTile extends StatelessWidget {
                       ? Colors.white10
                       : Colors.black.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8)),
-              child: Text(activity.date,
+              child: Text(activity['time'] ?? '',
                   style: TextStyle(
                       color: isDark ? Colors.white60 : Colors.black54,
                       fontSize: 10,
                       fontWeight: FontWeight.w900)),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

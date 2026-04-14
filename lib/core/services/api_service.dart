@@ -146,7 +146,7 @@ class ApiService {
 
   Future<List<GradeModel>> getGrades(String studentId) async {
     List<GradeModel> allGrades = [];
-    final endpoints = ['/exams/my-results', '/notes/my-results', '/grades/me', '/evaluations/me'];
+    final endpoints = ['/notes/my-results', '/exams/my-results'];
     
     for (final endpoint in endpoints) {
       try {
@@ -180,7 +180,7 @@ class ApiService {
   }
 
   Future<List<AttendanceRecord>> getAbsences(String studentId) async {
-    final endpoints = ['/attendances/me', '/attendance/me', '/absences/me', '/attendances/student/me'];
+    final endpoints = ['/attendances/me', '/attendances/student/me'];
     
     for (final endpoint in endpoints) {
       try {
@@ -694,10 +694,17 @@ class ApiService {
       final response = await _dio.get('/payments/student/me/space');
       if (response.statusCode == 200) {
         final dataMap = _handleResponseData(response);
-        final studentJson = dataMap['student'];
-        if (studentJson != null) {
-          return [StudentModel.fromJson(studentJson)];
+        
+        // The demo API might return a single student or multiple.
+        if (dataMap is Map) {
+          final studentJson = dataMap['student'];
+          if (studentJson != null) {
+            return [StudentModel.fromJson(studentJson as Map<String, dynamic>)];
+          }
+        } else if (dataMap is List) {
+          return dataMap.map((s) => StudentModel.fromJson(s as Map<String, dynamic>)).toList();
         }
+        
         return [];
       }
       throw Exception('Failed to load children data');
@@ -724,42 +731,62 @@ class ApiService {
       final results = await Future.wait([
         getPosts().catchError((_) => <PostModel>[]),
         getAbsences('me').catchError((_) => <AttendanceRecord>[]),
-        // We can't easily call getGrades('me') here without returning List<GradeModel>
-        // so we just fetch posts and absences for now as primary activities
+        getGrades('me').catchError((_) => <GradeModel>[]),
       ]);
 
       final List<Map<String, dynamic>> activities = [];
       
       // Map Posts (News)
       final posts = results[0] as List<PostModel>;
-      for (var post in posts.take(3)) {
+      for (var post in posts) {
         activities.add({
           'id': post.id,
           'type': 'news',
-          'title': post.title.isNotEmpty ? post.title : 'Nouveauté',
+          'title': post.title.isNotEmpty ? post.title : 'Actualité',
           'content': post.content,
           'date': post.date,
-          'icon': 'post',
+          'icon_type': 'post',
         });
       }
 
       // Map Absences
       final absences = results[1] as List<AttendanceRecord>;
-      for (var abs in absences.take(3)) {
+      for (var abs in absences) {
         activities.add({
           'id': abs.id,
           'type': 'absence',
           'title': 'Absence / Retard',
           'content': '${abs.subjectName ?? "Session"} - ${abs.status}',
           'date': abs.date,
-          'icon': 'absence',
+          'icon_type': 'absence',
+        });
+      }
+
+      // Map Grades
+      final grades = results[2] as List<GradeModel>;
+      for (var grade in grades) {
+        activities.add({
+          'id': grade.id,
+          'type': 'grade',
+          'title': 'Nouvelle Note',
+          'content': '${grade.subject}: ${grade.grade}/${grade.maxGrade}',
+          'date': grade.date,
+          'icon_type': 'grade',
         });
       }
 
       // Sort by date descending
-      activities.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
+      activities.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(a['date'] as String);
+          final dateB = DateTime.parse(b['date'] as String);
+          return dateB.compareTo(dateA);
+        } catch (_) {
+          return (b['date'] as String).compareTo(a['date'] as String);
+        }
+      });
       
-      return activities.take(5).toList();
+      return activities.take(10).toList();
     } catch (e) {
       return []; 
     }
