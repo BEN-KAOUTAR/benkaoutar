@@ -4,7 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:percent_indicator/percent_indicator.dart';
 import '../../../core/models/models.dart';
 import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -28,7 +27,10 @@ class _HomeworkScreenState extends State<HomeworkScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeworkViewModel>().fetchHomework(widget.studentId).then((_) {
+      context
+          .read<HomeworkViewModel>()
+          .fetchHomework(widget.studentId)
+          .then((_) {
         if (!mounted) return;
         context.read<HomeworkViewModel>().markAllAsSeen();
       });
@@ -56,12 +58,20 @@ class _HomeworkScreenState extends State<HomeworkScreen>
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.white, shape: BoxShape.circle),
-            child: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 16),
+            decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : Colors.white,
+                shape: BoxShape.circle),
+            child: Icon(Icons.arrow_back_ios_new_rounded,
+                color: primaryTextColor, size: 16),
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Devoirs / Examens', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: primaryTextColor, letterSpacing: -0.5)),
+        title: Text('Devoirs / Examens',
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                color: primaryTextColor,
+                letterSpacing: -0.5)),
         centerTitle: true,
       ),
       body: DeepSpaceBackground(
@@ -70,7 +80,8 @@ class _HomeworkScreenState extends State<HomeworkScreen>
           child: Consumer<HomeworkViewModel>(
             builder: (context, vm, child) {
               if (vm.isLoading && vm.homeworks.isEmpty) {
-                return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+                return const Center(
+                    child: CircularProgressIndicator(color: Colors.blueAccent));
               }
 
               if (vm.errorMessage != null && vm.homeworks.isEmpty) {
@@ -78,9 +89,14 @@ class _HomeworkScreenState extends State<HomeworkScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline_rounded, size: 64, color: Colors.orangeAccent.withValues(alpha: 0.5)),
+                      Icon(Icons.error_outline_rounded,
+                          size: 64,
+                          color: Colors.orangeAccent.withValues(alpha: 0.5)),
                       const SizedBox(height: 16),
-                      Text(vm.errorMessage!, style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.w900)),
+                      Text(vm.errorMessage!,
+                          style: const TextStyle(
+                              color: Colors.white54,
+                              fontWeight: FontWeight.w900)),
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () => vm.fetchHomework(widget.studentId),
@@ -108,7 +124,8 @@ class _HomeworkScreenState extends State<HomeworkScreen>
                     child: RefreshIndicator(
                       onRefresh: () => vm.fetchHomework(widget.studentId),
                       color: Colors.blueAccent,
-                      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      backgroundColor:
+                          isDark ? const Color(0xFF1E293B) : Colors.white,
                       child: TabBarView(
                         controller: _tabController,
                         physics: const BouncingScrollPhysics(),
@@ -164,14 +181,21 @@ class _HomeworkScreenState extends State<HomeworkScreen>
         return Container(
           padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.06),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.07)
+                : Colors.black.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08)),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.08)),
           ),
           child: Row(
             children: [
-              _buildTabPill(0, 'Devoirs', Icons.book_outlined, Colors.greenAccent, isDark),
-              _buildTabPill(1, 'Examens', Icons.school_outlined, Colors.blueAccent, isDark),
+              _buildTabPill(0, 'Devoirs', Icons.book_outlined,
+                  Colors.greenAccent, isDark),
+              _buildTabPill(1, 'Examens', Icons.school_outlined,
+                  Colors.blueAccent, isDark),
             ],
           ),
         );
@@ -179,7 +203,8 @@ class _HomeworkScreenState extends State<HomeworkScreen>
     );
   }
 
-  Widget _buildTabPill(int index, String label, IconData icon, Color accent, bool isDark) {
+  Widget _buildTabPill(
+      int index, String label, IconData icon, Color accent, bool isDark) {
     final isSelected = _tabController.index == index;
     return Expanded(
       child: GestureDetector(
@@ -189,19 +214,29 @@ class _HomeworkScreenState extends State<HomeworkScreen>
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? accent.withValues(alpha: isDark ? 0.22 : 0.18) : Colors.transparent,
+            color: isSelected
+                ? accent.withValues(alpha: isDark ? 0.22 : 0.18)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(25),
-            border: isSelected ? Border.all(color: accent.withValues(alpha: 0.45), width: 1.5) : null,
+            border: isSelected
+                ? Border.all(color: accent.withValues(alpha: 0.45), width: 1.5)
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 15, color: isSelected ? accent : (isDark ? Colors.white38 : Colors.black38)),
+              Icon(icon,
+                  size: 15,
+                  color: isSelected
+                      ? accent
+                      : (isDark ? Colors.white38 : Colors.black38)),
               const SizedBox(width: 7),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? accent : (isDark ? Colors.white38 : Colors.black38),
+                  color: isSelected
+                      ? accent
+                      : (isDark ? Colors.white38 : Colors.black38),
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
                   letterSpacing: 0.3,
@@ -243,9 +278,14 @@ class _HomeworkScreenState extends State<HomeworkScreen>
             padding: const EdgeInsets.only(top: 60),
             child: Column(
               children: [
-                Icon(emptyIcon, size: 64, color: accentColor.withValues(alpha: 0.2)),
+                Icon(emptyIcon,
+                    size: 64, color: accentColor.withValues(alpha: 0.2)),
                 const SizedBox(height: 16),
-                Text(emptyLabel, style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(emptyLabel,
+                    style: const TextStyle(
+                        color: Colors.white38,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15)),
               ],
             ),
           )
@@ -254,15 +294,17 @@ class _HomeworkScreenState extends State<HomeworkScreen>
             final item = entry.value;
             return _HomeworkListItem(
               homework: item,
-              onStatusUpdate: (status, {String? filePath}) =>
-                  vm.updateStatus(item.id, widget.studentId, status, filePath: filePath),
+              onStatusUpdate: (status, {String? filePath}) => vm.updateStatus(
+                  item.id, widget.studentId, status,
+                  filePath: filePath),
             ).animate().fadeIn(delay: (entry.key * 100).ms).slideY(begin: 0.06);
           }),
       ],
     );
   }
 
-  Widget _buildProgressHeader(BuildContext context, bool isDark, HomeworkViewModel vm) {
+  Widget _buildProgressHeader(
+      BuildContext context, bool isDark, HomeworkViewModel vm) {
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white54 : Colors.black54;
 
@@ -276,9 +318,14 @@ class _HomeworkScreenState extends State<HomeworkScreen>
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.white),
           ),
           child: Column(
             children: [
@@ -288,9 +335,23 @@ class _HomeworkScreenState extends State<HomeworkScreen>
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(AppLocalizations.of(context)!.translate('week_progression').toUpperCase(), style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate('week_progression')
+                              .toUpperCase(),
+                          style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2)),
                       const SizedBox(height: 8),
-                      Text('${progression.toInt()}% ${AppLocalizations.of(context)!.translate('completed_percent')}', style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 24, letterSpacing: -1)),
+                      Text(
+                          '${progression.toInt()}% ${AppLocalizations.of(context)!.translate('completed_percent')}',
+                          style: TextStyle(
+                              color: primaryTextColor,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 24,
+                              letterSpacing: -1)),
                     ],
                   ),
                   Container(
@@ -298,58 +359,70 @@ class _HomeworkScreenState extends State<HomeworkScreen>
                     decoration: BoxDecoration(
                       color: Colors.greenAccent.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3), width: 2),
+                      border: Border.all(
+                          color: Colors.greenAccent.withValues(alpha: 0.3),
+                          width: 2),
                     ),
-                    child: Text(label, style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w900, fontSize: 14)),
-                  ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 2.seconds),
+                    child: Text(label,
+                        style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14)),
+                  ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.05, 1.05),
+                      duration: 2.seconds),
                 ],
               ),
               const SizedBox(height: 32),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                   return Stack(
-                    children: [
-                      Container(
-                        height: 12,
-                        width: constraints.maxWidth,
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white10 : Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+              LayoutBuilder(builder: (context, constraints) {
+                return Stack(
+                  children: [
+                    Container(
+                      height: 12,
+                      width: constraints.maxWidth,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white10 : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      AnimatedContainer(
-                        duration: 1.seconds,
-                        curve: Curves.easeOutCubic,
-                        height: 12,
-                        width: constraints.maxWidth * (progression / 100),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Colors.greenAccent, Colors.tealAccent]),
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.4), blurRadius: 10)],
-                        ),
-                      ).animate().slideX(begin: -1, duration: 800.ms, curve: Curves.easeOutQuart),
-                    ],
-                  );
-                }
-              ),
+                    ),
+                    AnimatedContainer(
+                      duration: 1.seconds,
+                      curve: Curves.easeOutCubic,
+                      height: 12,
+                      width: constraints.maxWidth * (progression / 100),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                            colors: [Colors.greenAccent, Colors.tealAccent]),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.greenAccent.withValues(alpha: 0.4),
+                              blurRadius: 10)
+                        ],
+                      ),
+                    ).animate().slideX(
+                        begin: -1,
+                        duration: 800.ms,
+                        curve: Curves.easeOutQuart),
+                  ],
+                );
+              }),
             ],
           ),
         ),
       ),
     ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.1);
   }
-
-
 }
 
 class _HomeworkListItem extends StatelessWidget {
   final HomeworkModel homework;
-  final Future<bool> Function(HomeworkStatus, {String? filePath}) onStatusUpdate;
-  
-  const _HomeworkListItem({
-    required this.homework, 
-    required this.onStatusUpdate
-  });
+  final Future<bool> Function(HomeworkStatus, {String? filePath})
+      onStatusUpdate;
+
+  const _HomeworkListItem(
+      {required this.homework, required this.onStatusUpdate});
 
   @override
   Widget build(BuildContext context) {
@@ -362,7 +435,9 @@ class _HomeworkListItem extends StatelessWidget {
     switch (homework.status) {
       case HomeworkStatus.notStarted:
         statusColor = isDark ? Colors.white38 : Colors.black38;
-        statusLabel = homework.type == 'exam' ? 'NON VU' : AppLocalizations.of(context)!.translate('not_started');
+        statusLabel = homework.type == 'exam'
+            ? 'NON VU'
+            : AppLocalizations.of(context)!.translate('not_started');
         break;
       case HomeworkStatus.inProgress:
         statusColor = Colors.orangeAccent;
@@ -370,7 +445,9 @@ class _HomeworkListItem extends StatelessWidget {
         break;
       case HomeworkStatus.done:
         statusColor = Colors.greenAccent;
-        statusLabel = homework.type == 'exam' ? 'VU' : AppLocalizations.of(context)!.translate('done_status');
+        statusLabel = homework.type == 'exam'
+            ? 'VU'
+            : AppLocalizations.of(context)!.translate('done_status');
         break;
       case HomeworkStatus.late:
         statusColor = Colors.redAccent;
@@ -387,29 +464,37 @@ class _HomeworkListItem extends StatelessWidget {
           curve: Curves.easeOutQuart,
           margin: const EdgeInsets.only(bottom: 24),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.8),
-            gradient: homework.type == 'exam' && isDark ? LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.blueAccent.withValues(alpha: 0.05),
-                Colors.purpleAccent.withValues(alpha: 0.05),
-              ],
-            ) : null,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.03)
+                : Colors.white.withValues(alpha: 0.8),
+            gradient: homework.type == 'exam' && isDark
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.blueAccent.withValues(alpha: 0.05),
+                      Colors.purpleAccent.withValues(alpha: 0.05),
+                    ],
+                  )
+                : null,
             borderRadius: BorderRadius.circular(36),
             border: Border.all(
-              color: homework.type == 'exam' 
-                  ? Colors.blueAccent.withValues(alpha: 0.5) 
-                  : statusColor.withValues(alpha: 0.3), 
-              width: (homework.status == HomeworkStatus.done || homework.type == 'exam') ? 2 : 1
-            ),
-            boxShadow: homework.type == 'exam' ? [
-              BoxShadow(
-                color: Colors.blueAccent.withValues(alpha: 0.1),
-                blurRadius: 20,
-                spreadRadius: 2,
-              )
-            ] : null,
+                color: homework.type == 'exam'
+                    ? Colors.blueAccent.withValues(alpha: 0.5)
+                    : statusColor.withValues(alpha: 0.3),
+                width: (homework.status == HomeworkStatus.done ||
+                        homework.type == 'exam')
+                    ? 2
+                    : 1),
+            boxShadow: homework.type == 'exam'
+                ? [
+                    BoxShadow(
+                      color: Colors.blueAccent.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    )
+                  ]
+                : null,
           ),
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -420,26 +505,41 @@ class _HomeworkListItem extends StatelessWidget {
                   children: [
                     if (homework.type != 'exam')
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: statusColor.withValues(alpha: 0.3)),
                         ),
                         child: Text(
                           statusLabel.toUpperCase(),
-                          style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5),
+                          style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 10,
+                              letterSpacing: 1.5),
                         ),
                       ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.white, borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                          color: isDark ? Colors.white10 : Colors.white,
+                          borderRadius: BorderRadius.circular(8)),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined, size: 12, color: secondaryTextColor),
+                          Icon(Icons.calendar_today_outlined,
+                              size: 12, color: secondaryTextColor),
                           const SizedBox(width: 6),
-                          Text(homework.startDate, style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                          Text(homework.startDate,
+                              style: TextStyle(
+                                  color: secondaryTextColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5)),
                         ],
                       ),
                     ),
@@ -452,19 +552,32 @@ class _HomeworkListItem extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
-                    color: homework.status == HomeworkStatus.done ? secondaryTextColor : primaryTextColor,
-                    decoration: homework.status == HomeworkStatus.done ? TextDecoration.lineThrough : null,
+                    color: homework.status == HomeworkStatus.done
+                        ? secondaryTextColor
+                        : primaryTextColor,
+                    decoration: homework.status == HomeworkStatus.done
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(homework.subject, style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                Text(homework.subject,
+                    style: TextStyle(
+                        color: secondaryTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold)),
                 Row(
                   children: [
-                    Icon(Icons.person_outline_rounded, size: 14, color: secondaryTextColor.withValues(alpha: 0.8)),
+                    Icon(Icons.person_outline_rounded,
+                        size: 14,
+                        color: secondaryTextColor.withValues(alpha: 0.8)),
                     const SizedBox(width: 6),
                     Text(
                       "Prof: ${homework.teacherName == 'Unknown' ? AppLocalizations.of(context)!.translate('unknown_prof') : homework.teacherName}",
-                      style: TextStyle(color: secondaryTextColor.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: secondaryTextColor.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -474,14 +587,26 @@ class _HomeworkListItem extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.white.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+                    border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.white),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(AppLocalizations.of(context)!.translate('instructions_desc'), style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate('instructions_desc'),
+                          style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1)),
                       const SizedBox(height: 8),
                       Text(
                         homework.description,
@@ -492,13 +617,15 @@ class _HomeworkListItem extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (homework.attachment != null && homework.attachment!.isNotEmpty) ...[
+                      if (homework.attachment != null &&
+                          homework.attachment!.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         GestureDetector(
                           onTap: () async {
                             final url = Uri.parse(homework.attachment!);
                             try {
-                              await launchUrl(url, mode: LaunchMode.externalApplication);
+                              await launchUrl(url,
+                                  mode: LaunchMode.externalApplication);
                             } catch (e) {
                               debugPrint('Error launching URL: $e');
                               // Fallback
@@ -508,18 +635,29 @@ class _HomeworkListItem extends StatelessWidget {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: Colors.blueAccent.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                  color:
+                                      Colors.blueAccent.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.attach_file, color: Colors.blueAccent, size: 16),
+                                const Icon(Icons.attach_file,
+                                    color: Colors.blueAccent, size: 16),
                                 const SizedBox(width: 8),
-                                Text(AppLocalizations.of(context)!.translate('view_attachment') ?? 'Ouvrir la pièce jointe', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                                Text(
+                                    AppLocalizations.of(context)!
+                                            .translate('view_attachment') ??
+                                        'Ouvrir la pièce jointe',
+                                    style: const TextStyle(
+                                        color: Colors.blueAccent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12)),
                               ],
                             ),
                           ),
@@ -528,11 +666,13 @@ class _HomeworkListItem extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // --- ACTION BUTTONS ---
-                
+
                 // Homework (Devoirs): Hide submission for Parents/Students (View Only)
-                if (homework.status != HomeworkStatus.done && !Provider.of<AppState>(context, listen: false).isParent) ...[
+                if (homework.status != HomeworkStatus.done &&
+                    !Provider.of<AppState>(context, listen: false)
+                        .isParent) ...[
                   const SizedBox(height: 32),
                   Row(
                     children: [
@@ -547,7 +687,8 @@ class _HomeworkListItem extends StatelessWidget {
                         const SizedBox(width: 16),
                         _buildActionButton(
                           context,
-                          AppLocalizations.of(context)!.translate('in_progress'),
+                          AppLocalizations.of(context)!
+                              .translate('in_progress'),
                           Icons.pending_actions_rounded,
                           Colors.orangeAccent,
                           () => onStatusUpdate(HomeworkStatus.inProgress),
@@ -559,12 +700,17 @@ class _HomeworkListItem extends StatelessWidget {
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      const Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 16),
+                      const Icon(Icons.verified_rounded,
+                          color: Colors.greenAccent, size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        AppLocalizations.of(context)!.translate('verified_status'), 
-                        style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)
-                      ),
+                          AppLocalizations.of(context)!
+                              .translate('verified_status'),
+                          style: const TextStyle(
+                              color: Colors.greenAccent,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: 1.5)),
                     ],
                   ),
                 ],
@@ -588,127 +734,176 @@ class _HomeworkListItem extends StatelessWidget {
       isScrollControlled: true,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-              ),
-              padding: EdgeInsets.fromLTRB(32, 24, 32, MediaQuery.of(ctx).viewInsets.bottom + 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 48, height: 4,
-                      decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.black12, borderRadius: BorderRadius.circular(10)),
-                    ),
+            builder: (BuildContext context, StateSetter setState) {
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(36)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+                32, 24, 32, MediaQuery.of(ctx).viewInsets.bottom + 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(10)),
                   ),
-                  const SizedBox(height: 32),
-                  const Icon(Icons.cloud_upload_outlined, size: 64, color: Colors.blueAccent),
-                  const SizedBox(height: 16),
-                  Text(
-                    loc.translate('submit_homework_title'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    loc.translate('submit_homework_desc'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  GestureDetector(
-                    onTap: () async {
-                      FilePickerResult? result = await FilePicker.platform.pickFiles(
-                        type: FileType.custom,
-                        allowedExtensions: ['jpg', 'pdf', 'doc', 'png', 'jpeg'],
-                      );
-                      if (result != null) {
-                        setState(() {
-                          pickedFilePath = result.files.single.path;
-                          pickedFileName = result.files.single.name;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.blueAccent.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 1.5),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(pickedFileName != null ? Icons.check_circle_outline : Icons.add_photo_alternate_outlined, 
-                            color: pickedFileName != null ? Colors.green : Colors.blueAccent, size: 32),
-                          const SizedBox(height: 12),
-                          Text(
-                            pickedFileName ?? loc.translate('add_file_hint'), 
-                            style: TextStyle(color: pickedFileName != null ? Colors.green : Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 12),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  ElevatedButton(
-                    onPressed: isUploading ? null : () async {
+                ),
+                const SizedBox(height: 32),
+                const Icon(Icons.cloud_upload_outlined,
+                    size: 64, color: Colors.blueAccent),
+                const SizedBox(height: 16),
+                Text(
+                  loc.translate('submit_homework_title'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  loc.translate('submit_homework_desc'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.black54,
+                      fontSize: 13),
+                ),
+                const SizedBox(height: 32),
+                GestureDetector(
+                  onTap: () async {
+                    FilePickerResult? result =
+                        await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['jpg', 'pdf', 'doc', 'png', 'jpeg'],
+                    );
+                    if (result != null) {
                       setState(() {
-                        isUploading = true;
+                        pickedFilePath = result.files.single.path;
+                        pickedFileName = result.files.single.name;
                       });
-                      
-                      final success = await onStatusUpdate(HomeworkStatus.done, filePath: pickedFilePath);
-                      
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                      
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(loc.translate('homework_sent_success') ?? 'Devoir envoyé avec succès', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            backgroundColor: Colors.greenAccent.shade700,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          )
-                        );
-                      } else {
-                        final errorMsg = context.read<HomeworkViewModel>().errorMessage ?? 'Erreur lors de l\'envoi du devoir';
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Erreur: $errorMsg', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            backgroundColor: Colors.redAccent,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          )
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isUploading ? Colors.blueAccent.withValues(alpha: 0.5) : Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                          color: Colors.blueAccent.withValues(alpha: 0.3),
+                          width: 1.5),
                     ),
-                    child: isUploading 
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(loc.translate('send_finish_button') ?? 'Envoyer et terminer', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1)),
+                    child: Column(
+                      children: [
+                        Icon(
+                            pickedFileName != null
+                                ? Icons.check_circle_outline
+                                : Icons.add_photo_alternate_outlined,
+                            color: pickedFileName != null
+                                ? Colors.green
+                                : Colors.blueAccent,
+                            size: 32),
+                        const SizedBox(height: 12),
+                        Text(
+                          pickedFileName ?? loc.translate('add_file_hint'),
+                          style: TextStyle(
+                              color: pickedFileName != null
+                                  ? Colors.green
+                                  : Colors.blueAccent,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            );
-          }
-        );
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: isUploading
+                      ? null
+                      : () async {
+                          setState(() {
+                            isUploading = true;
+                          });
+
+                          final success = await onStatusUpdate(
+                              HomeworkStatus.done,
+                              filePath: pickedFilePath);
+
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(
+                                  loc.translate('homework_sent_success') ??
+                                      'Devoir envoyé avec succès',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              backgroundColor: Colors.greenAccent.shade700,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ));
+                          } else {
+                            final errorMsg = context
+                                    .read<HomeworkViewModel>()
+                                    .errorMessage ??
+                                'Erreur lors de l\'envoi du devoir';
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Erreur: $errorMsg',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              backgroundColor: Colors.redAccent,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ));
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isUploading
+                        ? Colors.blueAccent.withValues(alpha: 0.5)
+                        : Colors.blueAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: isUploading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Text(
+                          loc.translate('send_finish_button') ??
+                              'Envoyer et terminer',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                              letterSpacing: 1)),
+                ),
+              ],
+            ),
+          );
+        });
       },
     );
   }
 
-  Widget _buildActionButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(BuildContext context, String label, IconData icon,
+      Color color, VoidCallback onTap) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -724,7 +919,12 @@ class _HomeworkListItem extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 8),
-              Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
+              Text(label,
+                  style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      letterSpacing: 0.5)),
             ],
           ),
         ),

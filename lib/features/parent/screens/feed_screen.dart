@@ -51,18 +51,25 @@ class _FeedScreenState extends State<FeedScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: (isDark ? const Color(0xFF1E293B) : Colors.white).withValues(alpha: 0.85),
+                color: (isDark ? const Color(0xFF1E293B) : Colors.white)
+                    .withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+                border:
+                    Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
                 boxShadow: [
-                  BoxShadow(color: color.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 8))
+                  BoxShadow(
+                      color: color.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8))
                 ],
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle),
                     child: Icon(icon, color: color, size: 20),
                   ),
                   const SizedBox(width: 16),
@@ -100,19 +107,31 @@ class _FeedScreenState extends State<FeedScreen> {
       builder: (context) => Consumer<FeedViewModel>(
         builder: (context, vm, child) {
           // Re-fetch the post from VM state
-          final currentPost = vm.posts.firstWhere((p) => p.id == post.id, orElse: () => post);
-          
+          final currentPost =
+              vm.posts.firstWhere((p) => p.id == post.id, orElse: () => post);
+
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF0F172A) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(44)),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 40, offset: const Offset(0, -10))],
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(44)),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 40,
+                    offset: const Offset(0, -10))
+              ],
             ),
             child: Column(
               children: [
                 const SizedBox(height: 12),
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: secondaryTextColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
+                Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: secondaryTextColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2))),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(28, 24, 28, 16),
                   child: Row(
@@ -120,19 +139,33 @@ class _FeedScreenState extends State<FeedScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(AppLocalizations.of(context)!.translate('comment_btn'), style: TextStyle(color: primaryTextColor, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-                          Text("${currentPost.comments} ${AppLocalizations.of(context)!.translate('comments_count')}", style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w900)),
+                          Text(
+                              AppLocalizations.of(context)!
+                                  .translate('comment_btn'),
+                              style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.5)),
+                          Text(
+                              "${currentPost.comments} ${AppLocalizations.of(context)!.translate('comments_count')}",
+                              style: TextStyle(
+                                  color: secondaryTextColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900)),
                         ],
                       ),
                       const Spacer(),
                       IconButton(
-                        onPressed: () => Navigator.pop(context), 
-                        icon: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: secondaryTextColor.withValues(alpha: 0.05), shape: BoxShape.circle),
-                          child: Icon(Icons.close_rounded, color: secondaryTextColor, size: 20)
-                        )
-                      ),
+                          onPressed: () => Navigator.pop(context),
+                          icon: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                  color: secondaryTextColor.withValues(
+                                      alpha: 0.05),
+                                  shape: BoxShape.circle),
+                              child: Icon(Icons.close_rounded,
+                                  color: secondaryTextColor, size: 20))),
                     ],
                   ),
                 ),
@@ -142,9 +175,17 @@ class _FeedScreenState extends State<FeedScreen> {
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_bubble_outline_rounded, size: 48, color: secondaryTextColor.withValues(alpha: 0.3)),
+                            Icon(Icons.chat_bubble_outline_rounded,
+                                size: 48,
+                                color:
+                                    secondaryTextColor.withValues(alpha: 0.3)),
                             const SizedBox(height: 16),
-                            Text(AppLocalizations.of(context)!.translate('first_comment'), style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900)),
+                            Text(
+                                AppLocalizations.of(context)!
+                                    .translate('first_comment'),
+                                style: TextStyle(
+                                    color: secondaryTextColor,
+                                    fontWeight: FontWeight.w900)),
                           ],
                         )
                       : ListView.builder(
@@ -158,30 +199,56 @@ class _FeedScreenState extends State<FeedScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   CircleAvatar(
-                                    radius: 20, 
-                                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.1), 
-                                    child: Text(comment.authorName[0], style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900))
-                                  ),
+                                      radius: 20,
+                                      backgroundColor: Colors.blueAccent
+                                          .withValues(alpha: 0.1),
+                                      child: Text(comment.authorName[0],
+                                          style: const TextStyle(
+                                              color: Colors.blueAccent,
+                                              fontWeight: FontWeight.w900))),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
-                                            Text(comment.authorName, style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 14)),
+                                            Text(comment.authorName,
+                                                style: TextStyle(
+                                                    color: primaryTextColor,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 14)),
                                           ],
                                         ),
                                         const SizedBox(height: 2),
-                                        Text(_formatPostDate(comment.date), style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w700)),
+                                        Text(_formatPostDate(comment.date),
+                                            style: TextStyle(
+                                                color: secondaryTextColor,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700)),
                                         const SizedBox(height: 6),
                                         Container(
                                           padding: const EdgeInsets.all(16),
                                           decoration: BoxDecoration(
-                                            color: secondaryTextColor.withValues(alpha: 0.05),
-                                            borderRadius: const BorderRadius.only(topRight: Radius.circular(20), bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+                                            color: secondaryTextColor
+                                                .withValues(alpha: 0.05),
+                                            borderRadius:
+                                                const BorderRadius.only(
+                                                    topRight:
+                                                        Radius.circular(20),
+                                                    bottomLeft:
+                                                        Radius.circular(20),
+                                                    bottomRight:
+                                                        Radius.circular(20)),
                                           ),
-                                          child: Text(comment.content, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14, height: 1.5)),
+                                          child: Text(comment.content,
+                                              style: TextStyle(
+                                                  color: isDark
+                                                      ? Colors.white70
+                                                      : Colors.black87,
+                                                  fontSize: 14,
+                                                  height: 1.5)),
                                         ),
                                       ],
                                     ),
@@ -193,30 +260,46 @@ class _FeedScreenState extends State<FeedScreen> {
                         ),
                 ),
                 Container(
-                  padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + MediaQuery.of(context).viewInsets.bottom),
+                  padding: EdgeInsets.fromLTRB(24, 20, 24,
+                      24 + MediaQuery.of(context).viewInsets.bottom),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 30, offset: const Offset(0, -10))],
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(32)),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 30,
+                          offset: const Offset(0, -10))
+                    ],
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8), 
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.white.withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: secondaryTextColor.withValues(alpha: 0.1)),
+                            border: Border.all(
+                                color:
+                                    secondaryTextColor.withValues(alpha: 0.1)),
                           ),
                           child: TextField(
                             controller: commentController,
-                            style: TextStyle(color: primaryTextColor, fontSize: 15),
+                            style: TextStyle(
+                                color: primaryTextColor, fontSize: 15),
                             decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.translate('type_comment'), 
-                              hintStyle: TextStyle(color: secondaryTextColor, fontSize: 14, fontWeight: FontWeight.w500), 
-                              border: InputBorder.none
-                            ),
+                                hintText: AppLocalizations.of(context)!
+                                    .translate('type_comment'),
+                                hintStyle: TextStyle(
+                                    color: secondaryTextColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500),
+                                border: InputBorder.none),
                           ),
                         ),
                       ),
@@ -225,21 +308,39 @@ class _FeedScreenState extends State<FeedScreen> {
                         onTap: () {
                           if (commentController.text.trim().isNotEmpty) {
                             final text = commentController.text.trim();
-                            final userName = Provider.of<AppState>(context, listen: false).currentUser?.name ?? "Utilisateur";
-                            viewModel.addComment(currentPost.id, userName, text);
+                            final userName =
+                                Provider.of<AppState>(context, listen: false)
+                                        .currentUser
+                                        ?.name ??
+                                    "Utilisateur";
+                            viewModel.addComment(
+                                currentPost.id, userName, text);
                             commentController.clear();
-                            _showPlatinumSnackBar(AppLocalizations.of(context)!.translate('comment_added'), Icons.chat_bubble_rounded, Colors.greenAccent);
+                            _showPlatinumSnackBar(
+                                AppLocalizations.of(context)!
+                                    .translate('comment_added'),
+                                Icons.chat_bubble_rounded,
+                                Colors.greenAccent);
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.all(14), 
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Colors.blueAccent, Color(0xFF4F46E5)]),
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
-                          ), 
-                          child: const Icon(Icons.send_rounded, color: Colors.white, size: 22)
-                        ),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [
+                                Colors.blueAccent,
+                                Color(0xFF4F46E5)
+                              ]),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.blueAccent
+                                        .withValues(alpha: 0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4))
+                              ],
+                            ),
+                            child: const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 22)),
                       ),
                     ],
                   ),
@@ -259,7 +360,7 @@ class _FeedScreenState extends State<FeedScreen> {
       final diff = now.difference(date);
 
       if (diff.inMinutes < 1) return 'À l\'instant';
-      
+
       return DateFormat("dd MMMM yyyy 'à' HH:mm", 'fr').format(date);
     } catch (e) {
       if (dateStr.toLowerCase() == "à l'instant") return dateStr;
@@ -282,12 +383,22 @@ class _FeedScreenState extends State<FeedScreen> {
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF0F172A) : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(44)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 40, offset: const Offset(0, -10))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 40,
+                offset: const Offset(0, -10))
+          ],
         ),
         child: Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: secondaryTextColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: secondaryTextColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2))),
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 24, 28, 16),
               child: Row(
@@ -295,21 +406,32 @@ class _FeedScreenState extends State<FeedScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(AppLocalizations.of(context)!.translate('likes_title'), 
-                        style: TextStyle(color: primaryTextColor, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-                      Text("${post.likes} ${AppLocalizations.of(context)!.translate('likes_count')}", 
-                        style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w900)),
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate('likes_title'),
+                          style: TextStyle(
+                              color: primaryTextColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5)),
+                      Text(
+                          "${post.likes} ${AppLocalizations.of(context)!.translate('likes_count')}",
+                          style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900)),
                     ],
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: () => Navigator.pop(context), 
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: secondaryTextColor.withValues(alpha: 0.05), shape: BoxShape.circle),
-                      child: Icon(Icons.close_rounded, color: secondaryTextColor, size: 20)
-                    )
-                  ),
+                      onPressed: () => Navigator.pop(context),
+                      icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                              color: secondaryTextColor.withValues(alpha: 0.05),
+                              shape: BoxShape.circle),
+                          child: Icon(Icons.close_rounded,
+                              color: secondaryTextColor, size: 20))),
                 ],
               ),
             ),
@@ -319,10 +441,16 @@ class _FeedScreenState extends State<FeedScreen> {
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.favorite_border_rounded, size: 48, color: secondaryTextColor.withValues(alpha: 0.3)),
+                        Icon(Icons.favorite_border_rounded,
+                            size: 48,
+                            color: secondaryTextColor.withValues(alpha: 0.3)),
                         const SizedBox(height: 16),
-                        Text(AppLocalizations.of(context)!.translate('no_likes_yet'), 
-                          style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900)),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('no_likes_yet'),
+                            style: TextStyle(
+                                color: secondaryTextColor,
+                                fontWeight: FontWeight.w900)),
                       ],
                     )
                   : ListView.builder(
@@ -336,24 +464,37 @@ class _FeedScreenState extends State<FeedScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
-                                backgroundImage: like.userAvatar != null ? CachedNetworkImageProvider(like.userAvatar!) : null,
-                                child: like.userAvatar == null 
-                                  ? Text(like.userName[0], style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900))
-                                  : null,
+                                backgroundColor:
+                                    Colors.blueAccent.withValues(alpha: 0.1),
+                                backgroundImage: like.userAvatar != null
+                                    ? CachedNetworkImageProvider(
+                                        like.userAvatar!)
+                                    : null,
+                                child: like.userAvatar == null
+                                    ? Text(like.userName[0],
+                                        style: const TextStyle(
+                                            color: Colors.blueAccent,
+                                            fontWeight: FontWeight.w900))
+                                    : null,
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: Text(like.userName, 
-                                  style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 16)),
+                                child: Text(like.userName,
+                                    style: TextStyle(
+                                        color: primaryTextColor,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16)),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.redAccent.withValues(alpha: 0.1),
+                                  color:
+                                      Colors.redAccent.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(Icons.favorite_rounded, color: Colors.redAccent, size: 14),
+                                ),
+                                child: const Icon(Icons.favorite_rounded,
+                                    color: Colors.redAccent, size: 14),
                               ),
                             ],
                           ),
@@ -371,7 +512,8 @@ class _FeedScreenState extends State<FeedScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final secondaryTextColor =
+        isDark ? Colors.white60 : const Color(0xFF64748B);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -385,19 +527,27 @@ class _FeedScreenState extends State<FeedScreen> {
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.white.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: secondaryTextColor.withValues(alpha: 0.1)),
+                  border: Border.all(
+                      color: secondaryTextColor.withValues(alpha: 0.1)),
                 ),
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
-                  style: TextStyle(color: primaryTextColor, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: primaryTextColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.translate('search'),
-                    hintStyle: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold),
+                    hintStyle: TextStyle(
+                        color: secondaryTextColor, fontWeight: FontWeight.bold),
                     border: InputBorder.none,
-                    icon: Icon(Icons.search_rounded, color: secondaryTextColor, size: 20),
+                    icon: Icon(Icons.search_rounded,
+                        color: secondaryTextColor, size: 20),
                   ),
                   onChanged: (val) => setState(() => _searchQuery = val),
                 ),
@@ -409,30 +559,43 @@ class _FeedScreenState extends State<FeedScreen> {
                     height: 44,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: secondaryTextColor.withValues(alpha: 0.1)),
+                      border: Border.all(
+                          color: secondaryTextColor.withValues(alpha: 0.1)),
                     ),
-                    child: Image.asset('assets/images/image3.png', fit: BoxFit.contain),
+                    child: Image.asset('assets/images/image3.png',
+                        fit: BoxFit.contain),
                   ),
                   const SizedBox(width: 16),
                   Text(
                     AppLocalizations.of(context)!.translate('news_title'),
-                    style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 22, letterSpacing: -0.8),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: primaryTextColor,
+                        fontSize: 22,
+                        letterSpacing: -0.8),
                   ),
                 ],
               ),
         actions: [
           IconButton(
             icon: Icon(
-              _showSavedOnly ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              _showSavedOnly
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
               color: _showSavedOnly ? Colors.blueAccent : secondaryTextColor,
               size: 26,
             ),
             onPressed: () => setState(() => _showSavedOnly = !_showSavedOnly),
           ),
           IconButton(
-            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded, color: secondaryTextColor, size: 26),
+            icon: Icon(
+                _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                color: secondaryTextColor,
+                size: 26),
             onPressed: () {
               setState(() {
                 if (_isSearching) {
@@ -453,7 +616,8 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Consumer<FeedViewModel>(
           builder: (context, vm, child) {
             if (vm.isLoading && vm.posts.isEmpty) {
-              return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+              return const Center(
+                  child: CircularProgressIndicator(color: Colors.blueAccent));
             }
 
             if (vm.errorMessage != null && vm.posts.isEmpty) {
@@ -461,11 +625,18 @@ class _FeedScreenState extends State<FeedScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline_rounded, size: 64, color: Colors.redAccent.withValues(alpha: 0.5)),
+                    Icon(Icons.error_outline_rounded,
+                        size: 64,
+                        color: Colors.redAccent.withValues(alpha: 0.5)),
                     const SizedBox(height: 16),
-                    Text(vm.errorMessage!, style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900)),
+                    Text(vm.errorMessage!,
+                        style: TextStyle(
+                            color: secondaryTextColor,
+                            fontWeight: FontWeight.w900)),
                     const SizedBox(height: 24),
-                    ElevatedButton(onPressed: vm.fetchPosts, child: const Text("Réessayer")),
+                    ElevatedButton(
+                        onPressed: vm.fetchPosts,
+                        child: const Text("Réessayer")),
                   ],
                 ),
               );
@@ -473,8 +644,9 @@ class _FeedScreenState extends State<FeedScreen> {
 
             final filteredPosts = vm.posts.where((post) {
               final query = _searchQuery.toLowerCase();
-              final matchesSearch = post.content.toLowerCase().startsWith(query) ||
-                  post.authorName.toLowerCase().startsWith(query);
+              final matchesSearch =
+                  post.content.toLowerCase().startsWith(query) ||
+                      post.authorName.toLowerCase().startsWith(query);
               final matchesSaved = !_showSavedOnly || post.isSaved;
               return matchesSearch && matchesSaved;
             }).toList();
@@ -484,11 +656,16 @@ class _FeedScreenState extends State<FeedScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.search_off_rounded, size: 64, color: secondaryTextColor.withValues(alpha: 0.2)),
+                    Icon(Icons.search_off_rounded,
+                        size: 64,
+                        color: secondaryTextColor.withValues(alpha: 0.2)),
                     const SizedBox(height: 16),
                     Text(
                       AppLocalizations.of(context)!.translate('no_results'),
-                      style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 16),
+                      style: TextStyle(
+                          color: secondaryTextColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16),
                     ),
                   ],
                 ),
@@ -496,7 +673,8 @@ class _FeedScreenState extends State<FeedScreen> {
             }
 
             return RefreshIndicator(
-              onRefresh: () => vm.fetchPosts(currentUserName: context.read<AppState>().currentUser?.name),
+              onRefresh: () => vm.fetchPosts(
+                  currentUserName: context.read<AppState>().currentUser?.name),
               color: Colors.blueAccent,
               child: ListView.builder(
                 physics: const BouncingScrollPhysics(),
@@ -512,7 +690,9 @@ class _FeedScreenState extends State<FeedScreen> {
         ),
       ),
     );
-  }  Widget _buildPostCard({
+  }
+
+  Widget _buildPostCard({
     required BuildContext context,
     required PostModel post,
     required FeedViewModel vm,
@@ -528,8 +708,17 @@ class _FeedScreenState extends State<FeedScreen> {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
-        boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.8), blurRadius: 30, offset: const Offset(0, 15))],
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15))
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,10 +730,17 @@ class _FeedScreenState extends State<FeedScreen> {
                 CircleAvatar(
                   radius: 26,
                   backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
-                  backgroundImage: post.authorAvatar != null ? CachedNetworkImageProvider(post.authorAvatar!) : null,
-                  child: post.authorAvatar == null 
-                    ? Text(post.authorName.isNotEmpty ? post.authorName[0] : "?", style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 18))
-                    : null,
+                  backgroundImage: post.authorAvatar != null
+                      ? CachedNetworkImageProvider(post.authorAvatar!)
+                      : null,
+                  child: post.authorAvatar == null
+                      ? Text(
+                          post.authorName.isNotEmpty ? post.authorName[0] : "?",
+                          style: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18))
+                      : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -553,12 +749,20 @@ class _FeedScreenState extends State<FeedScreen> {
                     children: [
                       Text(
                         post.authorName,
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: primaryTextColor, letterSpacing: -0.4),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                            color: primaryTextColor,
+                            letterSpacing: -0.4),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _formatPostDate(post.date),
-                        style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.2),
+                        style: TextStyle(
+                            color: secondaryTextColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2),
                       ),
                     ],
                   ),
@@ -567,12 +771,17 @@ class _FeedScreenState extends State<FeedScreen> {
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: post.isSaved ? Colors.blueAccent.withValues(alpha: 0.1) : Colors.transparent,
+                      color: post.isSaved
+                          ? Colors.blueAccent.withValues(alpha: 0.1)
+                          : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      post.isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                      color: post.isSaved ? Colors.blueAccent : secondaryTextColor,
+                      post.isSaved
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      color:
+                          post.isSaved ? Colors.blueAccent : secondaryTextColor,
                       size: 22,
                     ),
                   ),
@@ -584,17 +793,17 @@ class _FeedScreenState extends State<FeedScreen> {
 
           GestureDetector(
             onTap: () => Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (_) => NewsDetailScreen(news: {
-                'title': post.authorName,
-                'content': post.content,
-                'image': post.imageUrl,
-                'time': _formatPostDate(post.date),
-                'likes': post.likes,
-                'comments_count': post.comments,
-                'category': 'Actualité',
-              }))
-            ),
+                context,
+                MaterialPageRoute(
+                    builder: (_) => NewsDetailScreen(news: {
+                          'title': post.authorName,
+                          'content': post.content,
+                          'image': post.imageUrl,
+                          'time': _formatPostDate(post.date),
+                          'likes': post.likes,
+                          'comments_count': post.comments,
+                          'category': 'Actualité',
+                        }))),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -602,7 +811,11 @@ class _FeedScreenState extends State<FeedScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     post.content,
-                    style: TextStyle(fontSize: 15, color: contentColor, height: 1.6, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontSize: 15,
+                        color: contentColor,
+                        height: 1.6,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
                 if (post.imageUrl != null) ...[
@@ -617,21 +830,34 @@ class _FeedScreenState extends State<FeedScreen> {
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
                           height: 240,
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent)),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white,
+                          child: const Center(
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.blueAccent)),
                         ),
                         errorWidget: (context, url, error) => Container(
                           height: 240,
                           width: double.infinity,
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : const Color(0xFFF1F5F9),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.image_not_supported_rounded, size: 48, color: secondaryTextColor.withValues(alpha: 0.3)),
+                              Icon(Icons.image_not_supported_rounded,
+                                  size: 48,
+                                  color: secondaryTextColor.withValues(
+                                      alpha: 0.3)),
                               const SizedBox(height: 12),
                               Text(
-                                AppLocalizations.of(context)!.translate('image_not_available'),
-                                style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 12),
+                                AppLocalizations.of(context)!
+                                    .translate('image_not_available'),
+                                style: TextStyle(
+                                    color: secondaryTextColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12),
                               ),
                             ],
                           ),
@@ -662,23 +888,29 @@ class _FeedScreenState extends State<FeedScreen> {
                             color: Colors.redAccent,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.favorite, color: Colors.white, size: 10),
+                          child: const Icon(Icons.favorite,
+                              color: Colors.white, size: 10),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           '${post.likes}',
-                          style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
                   )
                 else
                   const SizedBox.shrink(),
-
                 if (post.comments > 0)
                   Text(
                     '${post.comments} ${AppLocalizations.of(context)!.translate('comment_btn')}',
-                    style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: secondaryTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
                   )
                 else
                   const SizedBox.shrink(),
@@ -688,7 +920,11 @@ class _FeedScreenState extends State<FeedScreen> {
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Divider(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), height: 1),
+            child: Divider(
+                color: isDark
+                    ? Colors.white10
+                    : Colors.black.withValues(alpha: 0.05),
+                height: 1),
           ),
 
           // Action Buttons
@@ -699,13 +935,15 @@ class _FeedScreenState extends State<FeedScreen> {
                 Expanded(
                   child: _buildFBActionBtn(
                     context: context,
-                    icon: post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    icon: post.isLiked
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
                     label: AppLocalizations.of(context)!.translate('btn_like'),
                     color: post.isLiked ? Colors.redAccent : secondaryTextColor,
                     onTap: () {
                       final appState = context.read<AppState>();
                       vm.toggleLike(
-                        post, 
+                        post,
                         userName: appState.currentUser?.name,
                         userAvatar: appState.currentUser?.avatarUrl,
                       );
@@ -716,7 +954,8 @@ class _FeedScreenState extends State<FeedScreen> {
                   child: _buildFBActionBtn(
                     context: context,
                     icon: Icons.chat_bubble_outline_rounded,
-                    label: AppLocalizations.of(context)!.translate('comment_btn'),
+                    label:
+                        AppLocalizations.of(context)!.translate('comment_btn'),
                     color: secondaryTextColor,
                     onTap: () => _showCommentsBottomSheet(post),
                   ),
@@ -749,10 +988,10 @@ class _FeedScreenState extends State<FeedScreen> {
               Icon(icon, size: 22, color: color),
               const SizedBox(width: 8),
               Text(
-                label, 
+                label,
                 style: TextStyle(
-                  color: color, 
-                  fontWeight: FontWeight.w700, 
+                  color: color,
+                  fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
               ),
@@ -762,5 +1001,4 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
     );
   }
-
 }

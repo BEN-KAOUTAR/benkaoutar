@@ -13,7 +13,8 @@ class GradesHistoryScreen extends StatelessWidget {
     final pt = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;
 
-    final List<Map<String, dynamic>> history = []; // Will be fetched from the API
+    final List<Map<String, dynamic>> history =
+        []; // Will be fetched from the API
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -27,7 +28,8 @@ class GradesHistoryScreen extends StatelessWidget {
         ),
         title: Text(
           loc.translate('grades_history_title') ?? 'Historique des Saisies',
-          style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
+          style:
+              TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -48,12 +50,18 @@ class GradesHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item, int index, bool isDark, Color pt) {
-    final statusColor = item['status'] == 'Validé' ? Colors.greenAccent : (item['status'] == 'En cours' ? Colors.orangeAccent : Colors.grey);
-    
+  Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item,
+      int index, bool isDark, Color pt) {
+    final statusColor = item['status'] == 'Validé'
+        ? Colors.greenAccent
+        : (item['status'] == 'En cours' ? Colors.orangeAccent : Colors.grey);
+
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => GradesDetailScreen(sessionData: item)));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => GradesDetailScreen(sessionData: item)));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -61,8 +69,17 @@ class GradesHistoryScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
-          boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 10)],
+          border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.white.withValues(alpha: 0.8)),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      blurRadius: 10)
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,17 +89,28 @@ class GradesHistoryScreen extends StatelessWidget {
               children: [
                 Text(
                   item['date'],
-                  style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                  style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 0.5),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.white.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     item['class'],
-                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                    style: TextStyle(
+                        color: isDark ? Colors.white54 : Colors.black54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5),
                   ),
                 ),
               ],
@@ -90,7 +118,8 @@ class GradesHistoryScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               '${item['subject']} - ${item['assignment']}',
-              style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 16),
+              style: TextStyle(
+                  color: pt, fontWeight: FontWeight.w900, fontSize: 16),
             ),
             const SizedBox(height: 16),
             Row(
@@ -99,15 +128,23 @@ class GradesHistoryScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   item['status'].toUpperCase(),
-                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+                  style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1),
                 ),
                 const Spacer(),
-                const Icon(Icons.chevron_right_rounded, color: Colors.blueAccent, size: 20),
+                const Icon(Icons.chevron_right_rounded,
+                    color: Colors.blueAccent, size: 20),
               ],
             ),
           ],
         ),
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: index * 100)).slideY(begin: 0.1);
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: index * 100))
+        .slideY(begin: 0.1);
   }
 }

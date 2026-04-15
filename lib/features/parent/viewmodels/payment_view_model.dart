@@ -22,24 +22,58 @@ class PaymentViewModel extends ChangeNotifier {
 
   // Summary statistics (count each type separately)
   int get paidCount => _monthGroups.where((g) => g.allPaid).length;
-  int get overdueCount => _monthGroups.where((g) => g.overallStatus == PaymentStatus.overdue).length;
-  int get pendingCount => _monthGroups.where((g) => g.overallStatus == PaymentStatus.pending).length;
-  double get progressionRate => _monthGroups.isEmpty ? 0 : (paidCount / _monthGroups.length);
-  
+  int get overdueCount => _monthGroups
+      .where((g) => g.overallStatus == PaymentStatus.overdue)
+      .length;
+  int get pendingCount => _monthGroups
+      .where((g) => g.overallStatus == PaymentStatus.pending)
+      .length;
+  double get progressionRate =>
+      _monthGroups.isEmpty ? 0 : (paidCount / _monthGroups.length);
+
   String get currentMonthName {
     final now = DateTime.now();
-    final months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    final months = [
+      'january',
+      'february',
+      'march',
+      'april',
+      'may',
+      'june',
+      'july',
+      'august',
+      'september',
+      'october',
+      'november',
+      'december'
+    ];
     return months[now.month - 1];
   }
 
   static const List<String> _schoolMonths = [
-    'september', 'october', 'november', 'december',
-    'january', 'february', 'march', 'april', 'may', 'june',
+    'september',
+    'october',
+    'november',
+    'december',
+    'january',
+    'february',
+    'march',
+    'april',
+    'may',
+    'june',
   ];
 
   static const Map<String, int> _monthToNumber = {
-    'september': 9, 'october': 10, 'november': 11, 'december': 12,
-    'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+    'september': 9,
+    'october': 10,
+    'november': 11,
+    'december': 12,
+    'january': 1,
+    'february': 2,
+    'march': 3,
+    'april': 4,
+    'may': 5,
+    'june': 6,
   };
 
   int _getAcademicMonthIndex(int month) {
@@ -83,21 +117,27 @@ class PaymentViewModel extends ChangeNotifier {
       _allPayments = apiPayments;
 
       // Detect active services for this student across the whole year
-      final hasAnyScolarity = apiPayments.any((p) => p.paymentType == PaymentType.scolarity);
-      final hasAnyTransport = apiPayments.any((p) => p.paymentType == PaymentType.transport);
+      final hasAnyScolarity =
+          apiPayments.any((p) => p.paymentType == PaymentType.scolarity);
+      final hasAnyTransport =
+          apiPayments.any((p) => p.paymentType == PaymentType.transport);
 
       _monthGroups = _schoolMonths.map((month) {
         final bool isOverdue = _isMonthOverdue(month);
-        
+
         // Find scolarity payment for this month
-        final scoMatches = apiPayments.where((p) =>
-            p.month.toLowerCase().trim() == month.toLowerCase() &&
-            p.paymentType == PaymentType.scolarity).toList();
-        
+        final scoMatches = apiPayments
+            .where((p) =>
+                p.month.toLowerCase().trim() == month.toLowerCase() &&
+                p.paymentType == PaymentType.scolarity)
+            .toList();
+
         // Find transport payment for this month
-        final traMatches = apiPayments.where((p) =>
-            p.month.toLowerCase().trim() == month.toLowerCase() &&
-            p.paymentType == PaymentType.transport).toList();
+        final traMatches = apiPayments
+            .where((p) =>
+                p.month.toLowerCase().trim() == month.toLowerCase() &&
+                p.paymentType == PaymentType.transport)
+            .toList();
 
         PaymentModel? sco = scoMatches.isNotEmpty ? scoMatches.first : null;
         PaymentModel? tra = traMatches.isNotEmpty ? traMatches.first : null;
@@ -111,22 +151,28 @@ class PaymentViewModel extends ChangeNotifier {
         }
 
         final bool isCurrentMonth = month.toLowerCase() == currentMonthName;
-        
+
         // Create placeholders for active services that are missing from API for this month
         // FORCE both for current month to ensure visibility of unpaid items
         if (sco == null && (hasAnyScolarity || isCurrentMonth)) {
           sco = PaymentModel(
-            id: 'placeholder_sco_$month', month: month, amount: 0,
-            status: isOverdue ? PaymentStatus.overdue : PaymentStatus.pending, 
-            date: '', childIds: [],
+            id: 'placeholder_sco_$month',
+            month: month,
+            amount: 0,
+            status: isOverdue ? PaymentStatus.overdue : PaymentStatus.pending,
+            date: '',
+            childIds: [],
             paymentType: PaymentType.scolarity,
           );
         }
         if (tra == null && (hasAnyTransport || isCurrentMonth)) {
           tra = PaymentModel(
-            id: 'placeholder_tra_$month', month: month, amount: 0,
-            status: isOverdue ? PaymentStatus.overdue : PaymentStatus.pending, 
-            date: '', childIds: [],
+            id: 'placeholder_tra_$month',
+            month: month,
+            amount: 0,
+            status: isOverdue ? PaymentStatus.overdue : PaymentStatus.pending,
+            date: '',
+            childIds: [],
             paymentType: PaymentType.transport,
           );
         }
@@ -151,15 +197,16 @@ class PaymentViewModel extends ChangeNotifier {
 
     try {
       final endpoint = await _apiService.downloadReceipt(paymentId, type);
-      
+
       // Get temporary directory to save the file
       final tempDir = await getTemporaryDirectory();
       final fileName = 'receipt_${paymentId}_$type.pdf';
       final savePath = '${tempDir.path}/$fileName';
-      
+
       // Download the file internally with headers
-      final downloadedPath = await _apiService.downloadInternalFile(endpoint, savePath);
-      
+      final downloadedPath =
+          await _apiService.downloadInternalFile(endpoint, savePath);
+
       if (downloadedPath != null) {
         // Open the file using the local viewer
         final result = await OpenFilex.open(downloadedPath);
@@ -183,7 +230,7 @@ class PaymentViewModel extends ChangeNotifier {
     if (urlString.isEmpty) return false;
     _isDownloading = true;
     notifyListeners();
-    
+
     try {
       final Uri url = Uri.parse(urlString);
       if (await canLaunchUrl(url)) {

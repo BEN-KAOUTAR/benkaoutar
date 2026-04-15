@@ -39,8 +39,10 @@ class ConfirmationDialog extends StatelessWidget {
         title: title,
         message: message,
         onConfirm: onConfirm,
-        confirmLabel: confirmLabel ?? AppLocalizations.of(context)!.translate('confirm_uppercase'),
-        cancelLabel: cancelLabel ?? AppLocalizations.of(context)!.translate('cancel_uppercase'),
+        confirmLabel: confirmLabel ??
+            AppLocalizations.of(context)!.translate('confirm_uppercase'),
+        cancelLabel: cancelLabel ??
+            AppLocalizations.of(context)!.translate('cancel_uppercase'),
         confirmColor: confirmColor,
         icon: icon,
       ),
@@ -51,7 +53,8 @@ class ConfirmationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final secondaryTextColor =
+        isDark ? Colors.white60 : const Color(0xFF64748B);
     final color = confirmColor ?? Colors.redAccent;
 
     return BackdropFilter(
@@ -62,9 +65,14 @@ class ConfirmationDialog extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 20),
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.9),
+            color: isDark
+                ? const Color(0xFF1E293B).withValues(alpha: 0.9)
+                : Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.white),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.2),
@@ -121,7 +129,9 @@ class ConfirmationDialog extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.8),
+                          backgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.03)
+                              : Colors.white.withValues(alpha: 0.8),
                         ),
                         child: Text(
                           cancelLabel,
@@ -165,7 +175,13 @@ class ConfirmationDialog extends StatelessWidget {
               ],
             ),
           ),
-        ).animate().scale(begin: const Offset(0.9, 0.9), curve: Curves.easeOutBack, duration: 400.ms).fadeIn(),
+        )
+            .animate()
+            .scale(
+                begin: const Offset(0.9, 0.9),
+                curve: Curves.easeOutBack,
+                duration: 400.ms)
+            .fadeIn(),
       ),
     );
   }

@@ -26,7 +26,8 @@ class BehaviorHistoryScreen extends StatelessWidget {
         ),
         title: Text(
           loc.translate('behavior_history_title') ?? 'Historique des Rapports',
-          style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
+          style:
+              TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -47,17 +48,27 @@ class BehaviorHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item, int index, bool isDark, Color pt) {
+  Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item,
+      int index, bool isDark, Color pt) {
     final statusColor = item['color'];
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-        boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 10, offset: const Offset(0, 5))],
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5))
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,10 +78,15 @@ class BehaviorHistoryScreen extends StatelessWidget {
             children: [
               Text(
                 item['date'],
-                style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 0.5),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
@@ -82,7 +98,11 @@ class BehaviorHistoryScreen extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       '${item['type'] == 'Positif' ? '+' : '-'}${item['points']}',
-                      style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                      style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5),
                     ),
                   ],
                 ),
@@ -92,12 +112,17 @@ class BehaviorHistoryScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             item['student'],
-            style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 16),
+            style:
+                TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
             item['note'],
-            style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13, height: 1.5, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: isDark ? Colors.white54 : Colors.black54,
+                fontSize: 13,
+                height: 1.5,
+                fontWeight: FontWeight.bold),
           ),
         ],
       ),

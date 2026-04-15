@@ -37,8 +37,8 @@ class NewsPost {
     this.isEvent = false,
     this.eventDate,
     List<NewsComment>? commentList,
-  }) : commentList = commentList ?? [],
-       isLiked = false;
+  })  : commentList = commentList ?? [],
+        isLiked = false;
 }
 
 class NewsComment {
@@ -69,7 +69,7 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
     if (_searchQuery.isEmpty) return _posts;
     return _posts.where((post) {
       return post.content.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-             post.authorName.toLowerCase().contains(_searchQuery.toLowerCase());
+          post.authorName.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
   }
 
@@ -87,7 +87,8 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context)!.translate('news_deleted_success')),
+        content: Text(
+            AppLocalizations.of(context)!.translate('news_deleted_success')),
         backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -96,42 +97,68 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
   }
 
   void _editPost(NewsPost post) {
-    final TextEditingController editController = TextEditingController(text: post.content);
+    final TextEditingController editController =
+        TextEditingController(text: post.content);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
           title: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.edit_note_rounded, color: Colors.blueAccent, size: 24),
+                decoration: BoxDecoration(
+                    color: Colors.blueAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.edit_note_rounded,
+                    color: Colors.blueAccent, size: 24),
               ),
               const SizedBox(width: 16),
-              Text(AppLocalizations.of(context)!.translate('edit_post') ?? 'Modifier', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: isDark ? Colors.white : Colors.black)),
+              Text(
+                  AppLocalizations.of(context)!.translate('edit_post') ??
+                      'Modifier',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      color: isDark ? Colors.white : Colors.black)),
             ],
           ),
           content: TextField(
             controller: editController,
             maxLines: 5,
-            style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 14, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                color: isDark ? Colors.white : Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w600),
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.translate('edit_post_hint'),
-              hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+              hintText:
+                  AppLocalizations.of(context)!.translate('edit_post_hint'),
+              hintStyle:
+                  TextStyle(color: isDark ? Colors.white24 : Colors.black26),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none),
+              fillColor: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.white.withValues(alpha: 0.8),
               filled: true,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(AppLocalizations.of(context)!.translate('cancel_uppercase') ?? 'ANNULER', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w900, fontSize: 12)),
+              child: Text(
+                  AppLocalizations.of(context)!.translate('cancel_uppercase') ??
+                      'ANNULER',
+                  style: const TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -161,9 +188,15 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                 backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(AppLocalizations.of(context)!.translate('save_changes_upper') ?? 'SAUVEGARDER', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+              child: Text(
+                  AppLocalizations.of(context)!
+                          .translate('save_changes_upper') ??
+                      'SAUVEGARDER',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, fontSize: 12)),
             ),
           ],
         );
@@ -184,21 +217,30 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
         return StatefulBuilder(builder: (context, setSheetState) {
           return Container(
             height: MediaQuery.of(context).size.height * 0.75,
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF0F172A) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(32)),
             ),
             child: Column(
               children: [
                 // Handle
                 const SizedBox(height: 12),
                 Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.black12, borderRadius: BorderRadius.circular(2)),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2)),
                 ),
                 const SizedBox(height: 16),
-                Text(AppLocalizations.of(context)!.translate('comments_title'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primaryTextColor)),
+                Text(AppLocalizations.of(context)!.translate('comments_title'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: primaryTextColor)),
                 const Divider(height: 24),
 
                 // Comment List
@@ -207,12 +249,16 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      ...post.commentList.map((c) => _buildCommentTile(c, isDark, primaryTextColor, secondaryTextColor)),
+                      ...post.commentList.map((c) => _buildCommentTile(
+                          c, isDark, primaryTextColor, secondaryTextColor)),
                       if (post.commentList.isEmpty)
                         Center(
                           child: Padding(
                             padding: const EdgeInsets.all(40),
-                            child: Text(AppLocalizations.of(context)!.translate('no_comments_yet'), style: TextStyle(color: secondaryTextColor)),
+                            child: Text(
+                                AppLocalizations.of(context)!
+                                    .translate('no_comments_yet'),
+                                style: TextStyle(color: secondaryTextColor)),
                           ),
                         ),
                     ],
@@ -223,7 +269,11 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.08))),
+                    border: Border(
+                        top: BorderSide(
+                            color: isDark
+                                ? Colors.white10
+                                : Colors.black.withValues(alpha: 0.08))),
                   ),
                   child: Row(
                     children: [
@@ -231,15 +281,20 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.white.withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: TextField(
                             controller: commentController,
-                            style: TextStyle(color: primaryTextColor, fontSize: 13),
+                            style: TextStyle(
+                                color: primaryTextColor, fontSize: 13),
                             decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.translate('write_comment_hint'),
-                              hintStyle: TextStyle(color: secondaryTextColor, fontSize: 13),
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('write_comment_hint'),
+                              hintStyle: TextStyle(
+                                  color: secondaryTextColor, fontSize: 13),
                               border: InputBorder.none,
                             ),
                           ),
@@ -252,10 +307,11 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                           if (text.isNotEmpty) {
                             setState(() {
                               post.commentList.add(NewsComment(
-                                author: AppLocalizations.of(context)!.translate('me_label'), 
-                                text: text, 
-                                time: AppLocalizations.of(context)!.translate('just_now')
-                              ));
+                                  author: AppLocalizations.of(context)!
+                                      .translate('me_label'),
+                                  text: text,
+                                  time: AppLocalizations.of(context)!
+                                      .translate('just_now')));
                               post.comments++;
                             });
                             setSheetState(() {});
@@ -264,8 +320,10 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
-                          child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                          decoration: const BoxDecoration(
+                              color: Colors.blueAccent, shape: BoxShape.circle),
+                          child: const Icon(Icons.send_rounded,
+                              color: Colors.white, size: 18),
                         ),
                       ),
                     ],
@@ -279,7 +337,8 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
     );
   }
 
-  Widget _buildCommentTile(NewsComment comment, bool isDark, Color primaryTextColor, Color secondaryTextColor) {
+  Widget _buildCommentTile(NewsComment comment, bool isDark,
+      Color primaryTextColor, Color secondaryTextColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -288,24 +347,41 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
           CircleAvatar(
             radius: 16,
             backgroundColor: Colors.blueAccent.withValues(alpha: 0.15),
-            child: Text(comment.author[0], style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 12)),
+            child: Text(comment.author[0],
+                style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12)),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white.withValues(alpha: 0.8),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.04)
+                    : Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(comment.author, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: primaryTextColor)),
+                  Text(comment.author,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          color: primaryTextColor)),
                   const SizedBox(height: 4),
-                  Text(comment.text, style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87)),
+                  Text(comment.text,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.white70 : Colors.black87)),
                   const SizedBox(height: 4),
-                  Text(comment.time, style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Text(comment.time,
+                      style: TextStyle(
+                          color: secondaryTextColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -328,42 +404,56 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: _isSearching 
-          ? TextField(
-              controller: _searchController,
-              autofocus: true,
-              style: TextStyle(color: primaryTextColor, fontSize: 16, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.translate('search_posts'),
-                hintStyle: TextStyle(color: secondaryTextColor, fontSize: 14),
-                border: InputBorder.none,
-              ),
-              onChanged: (val) => setState(() => _searchQuery = val),
-            )
-          : Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blueAccent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: TextStyle(
+                    color: primaryTextColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  hintText:
+                      AppLocalizations.of(context)!.translate('search_posts'),
+                  hintStyle: TextStyle(color: secondaryTextColor, fontSize: 14),
+                  border: InputBorder.none,
+                ),
+                onChanged: (val) => setState(() => _searchQuery = val),
+              )
+            : Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.campaign_rounded,
+                        color: Colors.blueAccent, size: 20),
                   ),
-                  child: const Icon(Icons.campaign_rounded, color: Colors.blueAccent, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.translate('news_title'),
-                  style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 20, letterSpacing: -0.5),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.translate('news_title'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: primaryTextColor,
+                        fontSize: 20,
+                        letterSpacing: -0.5),
+                  ),
+                ],
+              ),
         actions: [
           IconButton(
             icon: Icon(Icons.bookmark_border_rounded, color: primaryTextColor),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SavedPostsScreen(allPosts: _posts))),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => SavedPostsScreen(allPosts: _posts))),
           ),
           IconButton(
-            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded, color: primaryTextColor),
+            icon: Icon(
+                _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                color: primaryTextColor),
             onPressed: () {
               setState(() {
                 if (_isSearching) {
@@ -386,25 +476,37 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
             children: [
               _buildSavedHistory(context, isDark),
               Expanded(
-                child: _filteredPosts.isEmpty 
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off_rounded, size: 64, color: secondaryTextColor),
-                        const SizedBox(height: 16),
-                        Text(AppLocalizations.of(context)!.translate('no_results_found'), style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-                    itemCount: _filteredPosts.length,
-                    itemBuilder: (context, index) {
-                      return _buildNewsCard(context, _filteredPosts[index], index, isDark, primaryTextColor, secondaryTextColor);
-                    },
-                  ),
+                child: _filteredPosts.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off_rounded,
+                                size: 64, color: secondaryTextColor),
+                            const SizedBox(height: 16),
+                            Text(
+                                AppLocalizations.of(context)!
+                                    .translate('no_results_found'),
+                                style: TextStyle(
+                                    color: secondaryTextColor,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                        itemCount: _filteredPosts.length,
+                        itemBuilder: (context, index) {
+                          return _buildNewsCard(
+                              context,
+                              _filteredPosts[index],
+                              index,
+                              isDark,
+                              primaryTextColor,
+                              secondaryTextColor);
+                        },
+                      ),
               ),
             ],
           ),
@@ -415,7 +517,7 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
 
   Widget _buildSavedHistory(BuildContext context, bool isDark) {
     if (_isSearching) return const SizedBox.shrink();
-    
+
     final appState = Provider.of<AppState>(context);
     final savedPosts = _posts.where((p) => appState.isPostSaved(p.id)).toList();
     if (savedPosts.isEmpty) return const SizedBox.shrink();
@@ -426,9 +528,12 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
           child: Text(
-            AppLocalizations.of(context)!.translate('saved_history_title'), 
-            style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)
-          ),
+              AppLocalizations.of(context)!.translate('saved_history_title'),
+              style: TextStyle(
+                  color: isDark ? Colors.white24 : Colors.black26,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5)),
         ),
         SizedBox(
           height: 120,
@@ -443,31 +548,45 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                 width: 160,
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
-                  image: post.imageUrl != null ? DecorationImage(
-                    image: NetworkImage(post.imageUrl!), 
-                    fit: BoxFit.cover, 
-                    colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.45), BlendMode.darken)
-                  ) : null,
+                  border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.white),
+                  image: post.imageUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(post.imageUrl!),
+                          fit: BoxFit.cover,
+                          colorFilter: ColorFilter.mode(
+                              Colors.black.withValues(alpha: 0.45),
+                              BlendMode.darken))
+                      : null,
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                     Container(
+                    Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
-                      child: const Icon(Icons.bookmark_rounded, color: Colors.white, size: 10),
+                      decoration: const BoxDecoration(
+                          color: Colors.blueAccent, shape: BoxShape.circle),
+                      child: const Icon(Icons.bookmark_rounded,
+                          color: Colors.white, size: 10),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       post.content,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, height: 1.2),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2),
                     ),
                   ],
                 ),
@@ -480,7 +599,8 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
     );
   }
 
-  Widget _buildNewsCard(BuildContext context, NewsPost post, int index, bool isDark, Color primaryTextColor, Color secondaryTextColor) {
+  Widget _buildNewsCard(BuildContext context, NewsPost post, int index,
+      bool isDark, Color primaryTextColor, Color secondaryTextColor) {
     final appState = Provider.of<AppState>(context);
     final isSaved = appState.isPostSaved(post.id);
     final cardBg = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
@@ -490,10 +610,17 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
-        boxShadow: isDark ? [] : [
-          BoxShadow(color: Colors.white.withValues(alpha: 0.8), blurRadius: 30, offset: const Offset(0, 10))
-        ],
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10))
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,14 +631,17 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
             child: Row(
               children: [
                 Container(
-                  width: 50, height: 50,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     color: Colors.blueAccent.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: Colors.blueAccent.withValues(alpha: 0.2)),
                   ),
                   child: const Center(
-                    child: Icon(Icons.verified_user_rounded, color: Colors.blueAccent, size: 24),
+                    child: Icon(Icons.verified_user_rounded,
+                        color: Colors.blueAccent, size: 24),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -519,14 +649,29 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(AppLocalizations.of(context)!.translate(post.authorName), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primaryTextColor)),
-                      Text(AppLocalizations.of(context)!.translate(post.authorRole), style: TextStyle(color: secondaryTextColor.withValues(alpha: 0.6), fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate(post.authorName),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              color: primaryTextColor)),
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate(post.authorRole),
+                          style: TextStyle(
+                              color: secondaryTextColor.withValues(alpha: 0.6),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5)),
                     ],
                   ),
                 ),
                 IconButton(
                   icon: Icon(
-                    isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                    isSaved
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
                     color: isSaved ? Colors.blueAccent : secondaryTextColor,
                     size: 24,
                   ),
@@ -542,11 +687,12 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
             child: Text(
               post.content,
               style: TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                color: isDark ? Colors.white.withValues(alpha: 0.7) : Colors.black.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w500
-              ),
+                  fontSize: 15,
+                  height: 1.6,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : Colors.black.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w500),
             ),
           ),
 
@@ -565,8 +711,12 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                   fit: BoxFit.cover,
                   errorBuilder: (c, e, s) => Container(
                     height: 240,
-                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
-                    child: Center(child: Icon(Icons.image_not_supported_rounded, color: secondaryTextColor, size: 40)),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.white.withValues(alpha: 0.8),
+                    child: Center(
+                        child: Icon(Icons.image_not_supported_rounded,
+                            color: secondaryTextColor, size: 40)),
                   ),
                 ),
               ),
@@ -579,29 +729,50 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                 Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                    child: Row(
-                      children: [
-                         const Icon(Icons.favorite_rounded, color: Colors.blueAccent, size: 14),
-                         const SizedBox(width: 6),
-                         Text('${post.likes} ${AppLocalizations.of(context)!.translate('likes_count')}', style: const TextStyle(color: Colors.blueAccent, fontSize: 11, fontWeight: FontWeight.w900)),
-                      ],
-                    ),
-                 ),
-                 const SizedBox(width: 8),
-                 Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(10)),
-                    child: Row(
-                      children: [
-                         Icon(Icons.chat_bubble_rounded, color: isDark ? Colors.white38 : Colors.black38, size: 14),
-                         const SizedBox(width: 6),
-                         Text('${post.comments} ${AppLocalizations.of(context)!.translate('comments_count')}', style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11, fontWeight: FontWeight.w900)),
-                      ],
-                    ),
-                 ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: Colors.blueAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.favorite_rounded,
+                          color: Colors.blueAccent, size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                          '${post.likes} ${AppLocalizations.of(context)!.translate('likes_count')}',
+                          style: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.white.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Row(
+                    children: [
+                      Icon(Icons.chat_bubble_rounded,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                          size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                          '${post.comments} ${AppLocalizations.of(context)!.translate('comments_count')}',
+                          style: TextStyle(
+                              color: isDark ? Colors.white38 : Colors.black38,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -616,7 +787,9 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                 Expanded(
                   child: _buildLargeActionBtn(
                     context: context,
-                    icon: post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    icon: post.isLiked
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
                     label: AppLocalizations.of(context)!.translate('like_btn'),
                     color: post.isLiked ? Colors.redAccent : primaryTextColor,
                     onTap: () => _toggleLike(post.id),
@@ -628,7 +801,8 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
                   child: _buildLargeActionBtn(
                     context: context,
                     icon: Icons.chat_bubble_outline_rounded,
-                    label: AppLocalizations.of(context)!.translate('comment_btn'),
+                    label:
+                        AppLocalizations.of(context)!.translate('comment_btn'),
                     color: primaryTextColor,
                     onTap: () => _showComments(post, isDark),
                     isDark: isDark,
@@ -655,16 +829,22 @@ class _SchoolNewsScreenState extends State<SchoolNewsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.7),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.03)
+              : Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+          border: Border.all(
+              color:
+                  isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 20, color: color),
             const SizedBox(width: 10),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 13)),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontWeight: FontWeight.w900, fontSize: 13)),
           ],
         ),
       ),
@@ -682,7 +862,8 @@ class SavedPostsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    final savedPosts = allPosts.where((p) => appState.savedPostIds.contains(p.id)).toList();
+    final savedPosts =
+        allPosts.where((p) => appState.savedPostIds.contains(p.id)).toList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
@@ -694,80 +875,100 @@ class SavedPostsScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: primaryTextColor, size: 20),
+          icon:
+              Icon(Icons.arrow_back_ios_new, color: primaryTextColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('saved_posts'),
-          style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 18),
+          style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: primaryTextColor,
+              fontSize: 18),
         ),
       ),
       body: DeepSpaceBackground(
         showOrbs: false,
         child: SafeArea(
           child: savedPosts.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bookmark_border_rounded, size: 64, color: secondaryTextColor),
-                  const SizedBox(height: 16),
-                  Text(
-                    AppLocalizations.of(context)!.translate('no_posts'),
-                    style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold),
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.bookmark_border_rounded,
+                          size: 64, color: secondaryTextColor),
+                      const SizedBox(height: 16),
+                      Text(
+                        AppLocalizations.of(context)!.translate('no_posts'),
+                        style: TextStyle(
+                            color: secondaryTextColor,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(20),
-              itemCount: savedPosts.length,
-              itemBuilder: (context, index) {
-                final post = savedPosts[index];
-                return _buildSavedItem(context, post, isDark, primaryTextColor, secondaryTextColor);
-              },
-            ),
+                )
+              : ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  itemCount: savedPosts.length,
+                  itemBuilder: (context, index) {
+                    final post = savedPosts[index];
+                    return _buildSavedItem(context, post, isDark,
+                        primaryTextColor, secondaryTextColor);
+                  },
+                ),
         ),
       ),
     );
   }
 
-  Widget _buildSavedItem(BuildContext context, NewsPost post, bool isDark, Color primaryTextColor, Color secondaryTextColor) {
+  Widget _buildSavedItem(BuildContext context, NewsPost post, bool isDark,
+      Color primaryTextColor, Color secondaryTextColor) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
       ),
       child: Row(
         children: [
           if (post.imageUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(post.imageUrl!, width: 80, height: 80, fit: BoxFit.cover),
+              child: Image.network(post.imageUrl!,
+                  width: 80, height: 80, fit: BoxFit.cover),
             ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(post.authorName, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: primaryTextColor)),
+                Text(post.authorName,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: primaryTextColor)),
                 const SizedBox(height: 4),
                 Text(
-                   post.content,
+                  post.content,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: secondaryTextColor, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: secondaryTextColor,
+                      fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
           IconButton(
             icon: const Icon(Icons.bookmark_rounded, color: Colors.blueAccent),
-            onPressed: () => Provider.of<AppState>(context, listen: false).toggleSavePost(post.id),
+            onPressed: () => Provider.of<AppState>(context, listen: false)
+                .toggleSavePost(post.id),
           ),
         ],
       ),

@@ -22,16 +22,23 @@ class ProfileScreen extends StatelessWidget {
     final appState = Provider.of<AppState>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final loc = AppLocalizations.of(context)!;
-    
+
     return Consumer<ProfileViewModel>(
       builder: (context, vm, child) {
         final user = vm.user;
-        if (user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (user == null) {
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
+        }
 
-        final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        final primaryTextColor =
+            isDark ? Colors.white : const Color(0xFF0F172A);
         final secondaryTextColor = const Color(0xFF94A3B8);
-        final glassColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.7);
-        final glassBorder = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
+        final glassColor = isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.7);
+        final glassBorder =
+            isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -46,7 +53,8 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     const SizedBox(height: 10),
-                    _buildUserHeader(context, vm, user, isDark, primaryTextColor, secondaryTextColor),
+                    _buildUserHeader(context, vm, user, isDark,
+                        primaryTextColor, secondaryTextColor),
                     const SizedBox(height: 48),
 
                     // Dark Mode Toggle
@@ -54,9 +62,18 @@ class ProfileScreen extends StatelessWidget {
                       child: SwitchListTile(
                         value: appState.isDarkMode,
                         onChanged: (_) => appState.toggleDarkMode(),
-                        secondary: _buildTileIcon(Icons.dark_mode_rounded, Colors.blueAccent),
-                        title: Text(loc.translate('dark_mode'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primaryTextColor)),
-                        subtitle: Text(loc.translate('optimize_night'), style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w600)),
+                        secondary: _buildTileIcon(
+                            Icons.dark_mode_rounded, Colors.blueAccent),
+                        title: Text(loc.translate('dark_mode'),
+                            style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                color: primaryTextColor)),
+                        subtitle: Text(loc.translate('optimize_night'),
+                            style: TextStyle(
+                                color: secondaryTextColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
                         activeThumbColor: Colors.blueAccent,
                       ),
                       glassColor: glassColor,
@@ -66,11 +83,69 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 16),
 
                     // Profile Sections
-                    _buildProfileTile(context, Icons.person_outline_rounded, loc.translate('personal_info'), loc.translate('personal_info_desc'), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
-                    _buildProfileTile(context, Icons.lock_outline_rounded, loc.translate('security'), 'Mot de passe', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
-                    _buildProfileTile(context, Icons.notifications_none_rounded, loc.translate('notifications_settings'), 'Gérer vos alertes', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
-                    _buildProfileTile(context, Icons.language_rounded, loc.translate('language'), 'Changer la langue', () => _showLanguageSwitcher(context), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
-                    _buildProfileTile(context, Icons.help_outline_rounded, loc.translate('help_support'), 'Centre de support', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())), glassColor, glassBorder, primaryTextColor, secondaryTextColor),
+                    _buildProfileTile(
+                        context,
+                        Icons.person_outline_rounded,
+                        loc.translate('personal_info'),
+                        loc.translate('personal_info_desc'),
+                        () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const PersonalInfoScreen())),
+                        glassColor,
+                        glassBorder,
+                        primaryTextColor,
+                        secondaryTextColor),
+                    _buildProfileTile(
+                        context,
+                        Icons.lock_outline_rounded,
+                        loc.translate('security'),
+                        'Mot de passe',
+                        () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const SecurityScreen())),
+                        glassColor,
+                        glassBorder,
+                        primaryTextColor,
+                        secondaryTextColor),
+                    _buildProfileTile(
+                        context,
+                        Icons.notifications_none_rounded,
+                        loc.translate('notifications_settings'),
+                        'Gérer vos alertes',
+                        () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const NotificationSettingsScreen())),
+                        glassColor,
+                        glassBorder,
+                        primaryTextColor,
+                        secondaryTextColor),
+                    _buildProfileTile(
+                        context,
+                        Icons.language_rounded,
+                        loc.translate('language'),
+                        'Changer la langue',
+                        () => _showLanguageSwitcher(context),
+                        glassColor,
+                        glassBorder,
+                        primaryTextColor,
+                        secondaryTextColor),
+                    _buildProfileTile(
+                        context,
+                        Icons.help_outline_rounded,
+                        loc.translate('help_support'),
+                        'Centre de support',
+                        () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const HelpSupportScreen())),
+                        glassColor,
+                        glassBorder,
+                        primaryTextColor,
+                        secondaryTextColor),
 
                     const SizedBox(height: 48),
                     _buildLogoutButton(context, loc),
@@ -85,18 +160,25 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, AppLocalizations loc, Color textColor, Color glassColor) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, AppLocalizations loc,
+      Color textColor, Color glassColor) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      title: Text(loc.translate('my_profile'), style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 18)),
+      title: Text(loc.translate('my_profile'),
+          style: TextStyle(
+              color: textColor, fontWeight: FontWeight.w900, fontSize: 18)),
       centerTitle: true,
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
         child: GestureDetector(
-          onTap: () => Navigator.canPop(context) ? Navigator.pop(context) : Provider.of<AppState>(context, listen: false).setDashboardIndex(0),
+          onTap: () => Navigator.canPop(context)
+              ? Navigator.pop(context)
+              : Provider.of<AppState>(context, listen: false)
+                  .setDashboardIndex(0),
           child: Container(
-            decoration: BoxDecoration(color: glassColor, shape: BoxShape.circle),
+            decoration:
+                BoxDecoration(color: glassColor, shape: BoxShape.circle),
             child: Icon(Icons.chevron_left_rounded, color: textColor, size: 24),
           ),
         ),
@@ -104,12 +186,14 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUserHeader(BuildContext context, ProfileViewModel vm, UserModel user, bool isDark, Color primary, Color secondary) {
+  Widget _buildUserHeader(BuildContext context, ProfileViewModel vm,
+      UserModel user, bool isDark, Color primary, Color secondary) {
     return Center(
       child: Column(
         children: [
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoScreen())),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const PersonalInfoScreen())),
             child: Stack(
               children: [
                 // Gradient ring + glow
@@ -118,7 +202,11 @@ class ProfileScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFF06B6D4)],
+                      colors: [
+                        Color(0xFF3B82F6),
+                        Color(0xFF8B5CF6),
+                        Color(0xFF06B6D4)
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -136,22 +224,24 @@ class ProfileScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: isDark ? const Color(0xFF0F172A) : Colors.white,
                     ),
-                    child: vm.user?.avatarIndex != null 
-                      ? SpriteAvatar(index: vm.user!.avatarIndex!, size: 100)
-                      : Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.blueAccent.withValues(alpha: 0.15),
-                                Colors.purpleAccent.withValues(alpha: 0.15),
-                              ],
+                    child: vm.user?.avatarIndex != null
+                        ? SpriteAvatar(index: vm.user!.avatarIndex!, size: 100)
+                        : Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.blueAccent.withValues(alpha: 0.15),
+                                  Colors.purpleAccent.withValues(alpha: 0.15),
+                                ],
+                              ),
                             ),
+                            child: Icon(Icons.person_rounded,
+                                color: isDark ? Colors.white38 : Colors.black26,
+                                size: 50),
                           ),
-                          child: Icon(Icons.person_rounded, color: isDark ? Colors.white38 : Colors.black26, size: 50),
-                        ),
                   ),
                 ),
                 // Camera edit badge
@@ -176,25 +266,37 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
+                    child: const Icon(Icons.camera_alt_rounded,
+                        color: Colors.white, size: 14),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Text(user.name, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: primary)),
+          Text(user.name,
+              style: TextStyle(
+                  fontSize: 26, fontWeight: FontWeight.w900, color: primary)),
           const SizedBox(height: 4),
           Text(
-            AppLocalizations.of(context)!.translate(user.role == UserRole.teacher ? 'teacher' : 'parent').toUpperCase(), 
-            style: TextStyle(color: secondary, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)
-          ),
+              AppLocalizations.of(context)!
+                  .translate(
+                      user.role == UserRole.teacher ? 'teacher' : 'parent')
+                  .toUpperCase(),
+              style: TextStyle(
+                  color: secondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2)),
         ],
       ),
     );
   }
 
-  Widget _buildGlassTile({required Widget child, required Color glassColor, required Color glassBorder}) {
+  Widget _buildGlassTile(
+      {required Widget child,
+      required Color glassColor,
+      required Color glassBorder}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
@@ -209,21 +311,40 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildTileIcon(IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(18)),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(18)),
       child: Icon(icon, color: color, size: 22),
     );
   }
 
-  Widget _buildProfileTile(BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap, Color glassColor, Color glassBorder, Color primary, Color secondary) {
+  Widget _buildProfileTile(
+      BuildContext context,
+      IconData icon,
+      String title,
+      String subtitle,
+      VoidCallback onTap,
+      Color glassColor,
+      Color glassBorder,
+      Color primary,
+      Color secondary) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(color: glassColor, borderRadius: BorderRadius.circular(28), border: Border.all(color: glassBorder)),
+      decoration: BoxDecoration(
+          color: glassColor,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: glassBorder)),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         leading: _buildTileIcon(icon, primary),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primary)),
-        subtitle: Text(subtitle, style: TextStyle(color: secondary, fontSize: 13, fontWeight: FontWeight.w600)),
+        title: Text(title,
+            style: TextStyle(
+                fontWeight: FontWeight.w900, fontSize: 16, color: primary)),
+        subtitle: Text(subtitle,
+            style: TextStyle(
+                color: secondary, fontSize: 13, fontWeight: FontWeight.w600)),
         trailing: Icon(Icons.chevron_right_rounded, color: secondary, size: 20),
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.05);
@@ -240,7 +361,11 @@ class ProfileScreen extends StatelessWidget {
             message: 'Êtes-vous sûr de vouloir vous déconnecter ?',
             onConfirm: () {
               Provider.of<AppState>(context, listen: false).logout();
-              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => AuthScreen(key: UniqueKey())), (route) => false);
+              Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => AuthScreen(key: UniqueKey())),
+                  (route) => false);
             },
           );
         },
@@ -248,9 +373,15 @@ class ProfileScreen extends StatelessWidget {
           side: const BorderSide(color: Color(0xFFFF3B30), width: 1.5),
           padding: const EdgeInsets.symmetric(vertical: 20),
           backgroundColor: Colors.redAccent.withValues(alpha: 0.05),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         ),
-        child: Text(loc.translate('logout_btn').toUpperCase(), style: const TextStyle(color: Color(0xFFFF3B30), fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 14)),
+        child: Text(loc.translate('logout_btn').toUpperCase(),
+            style: const TextStyle(
+                color: Color(0xFFFF3B30),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                fontSize: 14)),
       ),
     );
   }
@@ -260,7 +391,8 @@ class ProfileScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       builder: (context) {
         final appState = Provider.of<AppState>(context);
         final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
@@ -269,12 +401,27 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(AppLocalizations.of(context)!.translate('choose_language'), 
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: textColor)),
+              Text(AppLocalizations.of(context)!.translate('choose_language'),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      color: textColor)),
               const SizedBox(height: 24),
-              _buildLanguageOption(context, AppLocalizations.of(context)!.translate('fr_lang'), 'fr', appState.locale.languageCode == 'fr'),
-              _buildLanguageOption(context, AppLocalizations.of(context)!.translate('ar_lang'), 'ar', appState.locale.languageCode == 'ar'),
-              _buildLanguageOption(context, AppLocalizations.of(context)!.translate('en_lang'), 'en', appState.locale.languageCode == 'en'),
+              _buildLanguageOption(
+                  context,
+                  AppLocalizations.of(context)!.translate('fr_lang'),
+                  'fr',
+                  appState.locale.languageCode == 'fr'),
+              _buildLanguageOption(
+                  context,
+                  AppLocalizations.of(context)!.translate('ar_lang'),
+                  'ar',
+                  appState.locale.languageCode == 'ar'),
+              _buildLanguageOption(
+                  context,
+                  AppLocalizations.of(context)!.translate('en_lang'),
+                  'en',
+                  appState.locale.languageCode == 'en'),
               const SizedBox(height: 32),
             ],
           ),
@@ -283,9 +430,10 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLanguageOption(BuildContext context, String label, String code, bool isSelected) {
+  Widget _buildLanguageOption(
+      BuildContext context, String label, String code, bool isSelected) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isSelected 
+    final textColor = isSelected
         ? (isDark ? Colors.white : const Color(0xFF0F172A))
         : (isDark ? Colors.white60 : Colors.black45);
 
@@ -293,18 +441,25 @@ class ProfileScreen extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white, 
-          borderRadius: BorderRadius.circular(10)
-        ),
-        child: Text(code.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, color: textColor, fontSize: 11)),
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(10)),
+        child: Text(code.toUpperCase(),
+            style: TextStyle(
+                fontWeight: FontWeight.w900, color: textColor, fontSize: 11)),
       ),
-      title: Text(label, style: TextStyle(fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold, color: textColor, fontSize: 14)),
-      trailing: isSelected ? Icon(Icons.check_circle_rounded, color: isDark ? Colors.white : const Color(0xFF0F172A)) : null,
+      title: Text(label,
+          style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+              color: textColor,
+              fontSize: 14)),
+      trailing: isSelected
+          ? Icon(Icons.check_circle_rounded,
+              color: isDark ? Colors.white : const Color(0xFF0F172A))
+          : null,
       onTap: () {
         Provider.of<AppState>(context, listen: false).setLocale(Locale(code));
         Navigator.pop(context);
       },
     );
   }
-
 }

@@ -50,7 +50,8 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> sendMessage(String threadId, String content, {String type = 'text'}) async {
+  Future<void> sendMessage(String threadId, String content,
+      {String type = 'text'}) async {
     // Optimistic UI update
     final tempMessage = ChatMessageModel(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
@@ -66,13 +67,14 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final realMessage = await _apiService.sendMessage(threadId, content, type);
+      final realMessage =
+          await _apiService.sendMessage(threadId, content, type);
       // Replace temp message with real message from server
       final index = _activeMessages.indexWhere((m) => m.id == tempMessage.id);
       if (index != -1) {
         _activeMessages[index] = realMessage;
       }
-      
+
       // Update last message in thread list
       final threadIndex = _threads.indexWhere((t) => t.id == threadId);
       if (threadIndex != -1) {

@@ -13,8 +13,10 @@ class HomeworkViewModel extends ChangeNotifier {
   bool _initialized = false;
 
   List<HomeworkModel> get homeworks => _homeworks;
-  List<HomeworkModel> get devoirsList => _homeworks.where((h) => h.type == 'devoir').toList();
-  List<HomeworkModel> get examsList => _homeworks.where((h) => h.type == 'exam').toList();
+  List<HomeworkModel> get devoirsList =>
+      _homeworks.where((h) => h.type == 'devoir').toList();
+  List<HomeworkModel> get examsList =>
+      _homeworks.where((h) => h.type == 'exam').toList();
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -40,20 +42,19 @@ class HomeworkViewModel extends ChangeNotifier {
         _apiService.getHomework(studentId),
         _apiService.getExams(studentId),
       ]);
-      
+
       final combined = [...results[0], ...results[1]];
-      
-      // Data Sync: Overwriting _homeworks ensures that items deleted in backend 
+
+      // Data Sync: Overwriting _homeworks ensures that items deleted in backend
       // (not returned in list) disappear from the UI.
       _homeworks = combined;
-      
+
       // Sort by due date (closest first)
       _homeworks.sort((a, b) {
         if (a.dueDate.isEmpty) return 1;
         if (b.dueDate.isEmpty) return -1;
         return a.dueDate.compareTo(b.dueDate);
       });
-      
     } catch (e) {
       _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
@@ -70,7 +71,7 @@ class HomeworkViewModel extends ChangeNotifier {
 
   Future<void> markAllAsSeen() async {
     if (_homeworks.isEmpty) return;
-    
+
     bool changed = false;
     for (var h in _homeworks) {
       if (_seenAssignmentIds.add(h.id)) {
@@ -80,17 +81,20 @@ class HomeworkViewModel extends ChangeNotifier {
 
     if (changed) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('seen_homework_ids', _seenAssignmentIds.toList());
+      await prefs.setStringList(
+          'seen_homework_ids', _seenAssignmentIds.toList());
       notifyListeners();
     }
   }
 
-  Future<bool> updateStatus(String homeworkId, String studentId, HomeworkStatus newStatus, {String? filePath}) async {
+  Future<bool> updateStatus(
+      String homeworkId, String studentId, HomeworkStatus newStatus,
+      {String? filePath}) async {
     final index = _homeworks.indexWhere((h) => h.id == homeworkId);
     if (index == -1) return false;
 
     final originalStatus = _homeworks[index].status;
-    
+
     // Optimistic UI update
     _homeworks[index] = _homeworks[index].copyWith(status: newStatus);
     notifyListeners();
@@ -98,16 +102,17 @@ class HomeworkViewModel extends ChangeNotifier {
     try {
       final h = _homeworks[index];
       // Sync with API - Use h.id because endpoint expects Assignment ID, and pass studentId
-      final updatedHomework = await _apiService.updateHomeworkStatus(h.id, studentId, newStatus, filePath: filePath);
-      
+      final updatedHomework = await _apiService
+          .updateHomeworkStatus(h.id, studentId, newStatus, filePath: filePath);
+
       // Update with backend response if valid
       _homeworks[index] = _homeworks[index].copyWith(
         submissionId: updatedHomework.submissionId,
       );
-      
+
       // If we transition to 'done', we might want to refresh the list to get new submission IDs
       if (newStatus == HomeworkStatus.done) {
-        // Optional: fetchHomework(currentStudentId); 
+        // Optional: fetchHomework(currentStudentId);
       }
       return true;
     } catch (e) {

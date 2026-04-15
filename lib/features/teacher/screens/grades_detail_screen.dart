@@ -23,7 +23,8 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
   void initState() {
     super.initState();
     isReadOnly = widget.sessionData['status'] == 'Validé';
-    components = _subjectComponents[widget.sessionData['subject']] ?? ['Général'];
+    components =
+        _subjectComponents[widget.sessionData['subject']] ?? ['Général'];
   }
 
   @override
@@ -47,11 +48,13 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
           children: [
             Text(
               '${widget.sessionData['subject']} - ${widget.sessionData['assignment']}',
-              style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 16),
+              style: TextStyle(
+                  color: pt, fontWeight: FontWeight.w900, fontSize: 16),
             ),
             Text(
               widget.sessionData['class'],
-              style: TextStyle(color: st, fontSize: 10, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: st, fontSize: 10, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -59,10 +62,13 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
         actions: [
           if (!isReadOnly)
             IconButton(
-              icon: Icon(Icons.check_circle_outline_rounded, color: Colors.greenAccent),
+              icon: Icon(Icons.check_circle_outline_rounded,
+                  color: Colors.greenAccent),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Modification enregistrée avec succès !', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const SnackBar(
+                      content: Text('Modification enregistrée avec succès !',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
                 );
                 Navigator.pop(context);
               },
@@ -82,9 +88,14 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.03)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+                    border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.white),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
@@ -95,18 +106,35 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
                         physics: const BouncingScrollPhysics(),
                         child: DataTable(
                           columnSpacing: 20,
-                          headingRowColor: WidgetStateProperty.all(isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white.withValues(alpha: 0.5)),
+                          headingRowColor: WidgetStateProperty.all(isDark
+                              ? Colors.white.withValues(alpha: 0.02)
+                              : Colors.white.withValues(alpha: 0.5)),
                           columns: [
-                            DataColumn(label: Text('Élève', style: TextStyle(fontWeight: FontWeight.w900, color: pt, fontSize: 12))),
-                            ...components.map((c) => DataColumn(label: Text(c, style: TextStyle(fontWeight: FontWeight.bold, color: pt, fontSize: 11)))),
+                            DataColumn(
+                                label: Text('Élève',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        color: pt,
+                                        fontSize: 12))),
+                            ...components.map((c) => DataColumn(
+                                label: Text(c,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: pt,
+                                        fontSize: 11)))),
                           ],
                           rows: students.map((student) {
                             return DataRow(
                               cells: [
-                                DataCell(Text(student.name, style: TextStyle(fontWeight: FontWeight.bold, color: pt, fontSize: 12))),
+                                DataCell(Text(student.name,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: pt,
+                                        fontSize: 12))),
                                 ...components.map((c) => DataCell(
-                                  _buildGradeInput(isReadOnly, isDark, pt, st),
-                                )),
+                                      _buildGradeInput(
+                                          isReadOnly, isDark, pt, st),
+                                    )),
                               ],
                             );
                           }).toList(),
@@ -125,7 +153,9 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
   }
 
   Widget _buildStatusBadge(String status) {
-    final statusColor = status == 'Validé' ? Colors.greenAccent : (status == 'En cours' ? Colors.orangeAccent : Colors.grey);
+    final statusColor = status == 'Validé'
+        ? Colors.greenAccent
+        : (status == 'En cours' ? Colors.orangeAccent : Colors.grey);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -140,7 +170,11 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
           const SizedBox(width: 8),
           Text(
             status.toUpperCase(),
-            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+            style: TextStyle(
+                color: statusColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1),
           ),
         ],
       ),
@@ -149,7 +183,9 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
 
   Widget _buildGradeInput(bool readOnly, bool isDark, Color pt, Color st) {
     if (readOnly) {
-      return Text('16.5', style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 13));
+      return Text('16.5',
+          style:
+              TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 13));
     }
 
     return Container(
@@ -158,7 +194,10 @@ class _GradesDetailScreenState extends State<GradesDetailScreen> {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1)),
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.1)),
       ),
       child: TextField(
         textAlign: TextAlign.center,

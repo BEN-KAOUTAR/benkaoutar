@@ -45,7 +45,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     ];
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
       body: Stack(
         children: [
           IndexedStack(
@@ -57,7 +58,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             right: 24,
             bottom: 24,
             child: _buildBottomNav(isDark),
-          ).animate().slideY(begin: 1, duration: const Duration(milliseconds: 800), curve: Curves.easeOutExpo),
+          ).animate().slideY(
+              begin: 1,
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeOutExpo),
         ],
       ),
     );
@@ -66,9 +70,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Widget _buildBottomNav(bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        boxShadow: isDark ? [] : [
-          BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.1), blurRadius: 30, offset: const Offset(0, 10))
-        ],
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.1),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10))
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
@@ -77,23 +86,38 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: isDark 
+              color: isDark
                   ? const Color(0xFF0F172A).withValues(alpha: 0.7)
                   : Colors.white.withValues(alpha: 0.9),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white, 
-                width: 1
-              ),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white,
+                  width: 1),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildNavItem(Icons.grid_view_rounded, AppLocalizations.of(context)!.translate('home'), 0, isDark),
-                _buildNavItem(Icons.feed_rounded, AppLocalizations.of(context)!.translate('feed_nav'), 1, isDark),
-                _buildNavItem(Icons.chat_bubble_rounded, AppLocalizations.of(context)!.translate('chat'), 2, isDark),
-                _buildNavItem(Icons.analytics_rounded, AppLocalizations.of(context)!.translate('stats'), 3, isDark),
-                _buildNavItem(Icons.person_rounded, AppLocalizations.of(context)!.translate('profile_nav'), 4, isDark),
+                _buildNavItem(Icons.grid_view_rounded,
+                    AppLocalizations.of(context)!.translate('home'), 0, isDark),
+                _buildNavItem(
+                    Icons.feed_rounded,
+                    AppLocalizations.of(context)!.translate('feed_nav'),
+                    1,
+                    isDark),
+                _buildNavItem(Icons.chat_bubble_rounded,
+                    AppLocalizations.of(context)!.translate('chat'), 2, isDark),
+                _buildNavItem(
+                    Icons.analytics_rounded,
+                    AppLocalizations.of(context)!.translate('stats'),
+                    3,
+                    isDark),
+                _buildNavItem(
+                    Icons.person_rounded,
+                    AppLocalizations.of(context)!.translate('profile_nav'),
+                    4,
+                    isDark),
               ],
             ),
           ),
@@ -115,8 +139,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive 
-              ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white) 
+          color: isActive
+              ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -143,7 +167,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 margin: const EdgeInsets.only(top: 4),
                 width: 4,
                 height: 4,
-                decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                    color: Colors.blueAccent, shape: BoxShape.circle),
               ),
           ],
         ),
@@ -159,46 +184,48 @@ class _TeacherHome extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = Provider.of<AppState>(context).currentUser!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: DeepSpaceBackground(
         showOrbs: true,
         child: SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(context, user, isDark),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 40),
-                        Text(
-                          AppLocalizations.of(context)!.translate('key_indicators'), 
-                          style: TextStyle(
-                            color: isDark ? Colors.white24 : Colors.black26, 
-                            fontSize: 10, 
-                            fontWeight: FontWeight.w900, 
-                            letterSpacing: 1.5
-                          )
-                        ).animate().fadeIn(delay: const Duration(milliseconds: 200)),
-                        const SizedBox(height: 16),
-                        _buildStatsRow(context, isDark),
-                        const SizedBox(height: 20),
-                        _buildActionsGrid(context, isDark),
-                        const SizedBox(height: 12),
-                        _buildClassesList(context, isDark),
-                        const SizedBox(height: 120),
-                      ],
-                    ),
+          child: Column(
+            children: [
+              _buildHeader(context, user, isDark),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 40),
+                      Text(
+                              AppLocalizations.of(context)!
+                                  .translate('key_indicators'),
+                              style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white24 : Colors.black26,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5))
+                          .animate()
+                          .fadeIn(delay: const Duration(milliseconds: 200)),
+                      const SizedBox(height: 16),
+                      _buildStatsRow(context, isDark),
+                      const SizedBox(height: 20),
+                      _buildActionsGrid(context, isDark),
+                      const SizedBox(height: 12),
+                      _buildClassesList(context, isDark),
+                      const SizedBox(height: 120),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
       ),
     );
   }
@@ -215,7 +242,8 @@ class _TeacherHome extends StatelessWidget {
           Row(
             children: [
               GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ProfileScreen())),
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
@@ -243,8 +271,11 @@ class _TeacherHome extends StatelessWidget {
                         ? SpriteAvatar(index: user.avatarIndex!, size: 40)
                         : CircleAvatar(
                             radius: 20,
-                            backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
-                            child: Icon(Icons.person_rounded, color: isDark ? Colors.white38 : Colors.black26, size: 20),
+                            backgroundColor:
+                                Colors.blueAccent.withValues(alpha: 0.1),
+                            child: Icon(Icons.person_rounded,
+                                color: isDark ? Colors.white38 : Colors.black26,
+                                size: 20),
                           ),
                   ),
                 ),
@@ -253,17 +284,29 @@ class _TeacherHome extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(AppLocalizations.of(context)!.translate('hello_upper'), style: TextStyle(color: secondaryColor, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
+                  Text(AppLocalizations.of(context)!.translate('hello_upper'),
+                      style: TextStyle(
+                          color: secondaryColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
+                          letterSpacing: 1.5)),
                   const SizedBox(height: 6),
                   Text(
                     user.name,
-                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -0.5),
+                    style: TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 26,
+                        letterSpacing: -0.5),
                   ),
                 ],
               ),
             ],
           ).animate().fadeIn().slideX(begin: -0.1),
-          _buildNotificationIcon(context, isDark).animate().fadeIn().slideX(begin: 0.1),
+          _buildNotificationIcon(context, isDark)
+              .animate()
+              .fadeIn()
+              .slideX(begin: 0.1),
         ],
       ),
     );
@@ -271,20 +314,36 @@ class _TeacherHome extends StatelessWidget {
 
   Widget _buildNotificationIcon(BuildContext context, bool isDark) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const NotificationsScreen())),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.8),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.03)
+              : Colors.white.withValues(alpha: 0.8),
           shape: BoxShape.circle,
-          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+          border: Border.all(
+              color:
+                  isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
         ),
         child: Stack(
           children: [
-            Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white : const Color(0xFF0F172A), size: 24),
+            Icon(Icons.notifications_none_rounded,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                size: 24),
             Positioned(
-              right: 2, top: 2,
-              child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.redAccent, blurRadius: 4)])),
+              right: 2,
+              top: 2,
+              child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.redAccent, blurRadius: 4)
+                      ])),
             ),
           ],
         ),
@@ -297,44 +356,104 @@ class _TeacherHome extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('students'), Icons.groups_rounded, Colors.blueAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 300)).slideY(begin: 0.1)),
+            Expanded(
+                child: _buildStatCard(
+                        '--',
+                        AppLocalizations.of(context)!.translate('students'),
+                        Icons.groups_rounded,
+                        Colors.blueAccent,
+                        isDark)
+                    .animate()
+                    .fadeIn(delay: const Duration(milliseconds: 300))
+                    .slideY(begin: 0.1)),
             const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('absent'), Icons.person_off_rounded, Colors.redAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 400)).slideY(begin: 0.1)),
+            Expanded(
+                child: _buildStatCard(
+                        '--',
+                        AppLocalizations.of(context)!.translate('absent'),
+                        Icons.person_off_rounded,
+                        Colors.redAccent,
+                        isDark)
+                    .animate()
+                    .fadeIn(delay: const Duration(milliseconds: 400))
+                    .slideY(begin: 0.1)),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('correction'), Icons.pending_actions_rounded, Colors.amberAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 500)).slideY(begin: 0.1)),
+            Expanded(
+                child: _buildStatCard(
+                        '--',
+                        AppLocalizations.of(context)!.translate('correction'),
+                        Icons.pending_actions_rounded,
+                        Colors.amberAccent,
+                        isDark)
+                    .animate()
+                    .fadeIn(delay: const Duration(milliseconds: 500))
+                    .slideY(begin: 0.1)),
             const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('--', AppLocalizations.of(context)!.translate('new_homework'), Icons.assignment_rounded, Colors.greenAccent, isDark).animate().fadeIn(delay: const Duration(milliseconds: 600)).slideY(begin: 0.1)),
+            Expanded(
+                child: _buildStatCard(
+                        '--',
+                        AppLocalizations.of(context)!.translate('new_homework'),
+                        Icons.assignment_rounded,
+                        Colors.greenAccent,
+                        isDark)
+                    .animate()
+                    .fadeIn(delay: const Duration(milliseconds: 600))
+                    .slideY(begin: 0.1)),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String value, String label, IconData icon, Color color, bool isDark) {
+  Widget _buildStatCard(
+      String value, String label, IconData icon, Color color, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.6),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.03)
+            : Colors.white.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-        boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 20, offset: const Offset(0, 10))],
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10))
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(height: 20),
-          Text(value, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -1)),
+          Text(value,
+              style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 26,
+                  letterSpacing: -1)),
           const SizedBox(height: 2),
-          Text(label.toUpperCase(), style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+          Text(label.toUpperCase(),
+              style: TextStyle(
+                  color: isDark ? Colors.white24 : Colors.black26,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5)),
         ],
       ),
     );
@@ -344,15 +463,12 @@ class _TeacherHome extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppLocalizations.of(context)!.translate('quick_actions'), 
-          style: TextStyle(
-            color: isDark ? Colors.white24 : Colors.black26, 
-            fontSize: 10, 
-            fontWeight: FontWeight.w900, 
-            letterSpacing: 1.5
-          )
-        ),
+        Text(AppLocalizations.of(context)!.translate('quick_actions'),
+            style: TextStyle(
+                color: isDark ? Colors.white24 : Colors.black26,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5)),
         const SizedBox(height: 8),
         GridView.count(
           crossAxisCount: 3,
@@ -362,20 +478,88 @@ class _TeacherHome extends StatelessWidget {
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
           children: [
-            _buildActionIcon(context, Icons.how_to_reg_rounded, AppLocalizations.of(context)!.translate('roll_call'), Colors.blueAccent, const AttendanceScreen(), isDark).animate().fadeIn(delay: const Duration(milliseconds: 400)).scale(begin: const Offset(0.8, 0.8)),
-            _buildActionIcon(context, Icons.menu_book_rounded, AppLocalizations.of(context)!.translate('report_cards'), Colors.purpleAccent, const GradeEntryScreen(), isDark).animate().fadeIn(delay: const Duration(milliseconds: 500)).scale(begin: const Offset(0.8, 0.8)),
-            _buildActionIcon(context, Icons.psychology_rounded, AppLocalizations.of(context)!.translate('behavior'), Colors.amberAccent, const TeacherBehaviorScreen(), isDark).animate().fadeIn(delay: const Duration(milliseconds: 600)).scale(begin: const Offset(0.8, 0.8)),
-            _buildActionIcon(context, Icons.assignment_rounded, AppLocalizations.of(context)!.translate('devoirs_evaluations'), Colors.orangeAccent, const TeacherHomeworkScreen(), isDark).animate().fadeIn(delay: const Duration(milliseconds: 700)).scale(begin: const Offset(0.8, 0.8)),
-            _buildActionIcon(context, Icons.assignment_turned_in_rounded, AppLocalizations.of(context)!.translate('examens'), Colors.redAccent, const AddExamScreen(), isDark).animate().fadeIn(delay: const Duration(milliseconds: 750)).scale(begin: const Offset(0.8, 0.8)),
-            _buildActionIcon(context, Icons.calendar_today_rounded, AppLocalizations.of(context)!.translate('timetable'), Colors.tealAccent, const TeacherTimetableScreen(), isDark).animate().fadeIn(delay: const Duration(milliseconds: 800)).scale(begin: const Offset(0.8, 0.8)),
-            _buildActionIcon(context, Icons.local_activity_rounded, AppLocalizations.of(context)!.translate('activities'), Colors.indigoAccent, const AddActivityScreen(), isDark).animate().fadeIn(delay: const Duration(milliseconds: 900)).scale(begin: const Offset(0.8, 0.8)),
+            _buildActionIcon(
+                    context,
+                    Icons.how_to_reg_rounded,
+                    AppLocalizations.of(context)!.translate('roll_call'),
+                    Colors.blueAccent,
+                    const AttendanceScreen(),
+                    isDark)
+                .animate()
+                .fadeIn(delay: const Duration(milliseconds: 400))
+                .scale(begin: const Offset(0.8, 0.8)),
+            _buildActionIcon(
+                    context,
+                    Icons.menu_book_rounded,
+                    AppLocalizations.of(context)!.translate('report_cards'),
+                    Colors.purpleAccent,
+                    const GradeEntryScreen(),
+                    isDark)
+                .animate()
+                .fadeIn(delay: const Duration(milliseconds: 500))
+                .scale(begin: const Offset(0.8, 0.8)),
+            _buildActionIcon(
+                    context,
+                    Icons.psychology_rounded,
+                    AppLocalizations.of(context)!.translate('behavior'),
+                    Colors.amberAccent,
+                    const TeacherBehaviorScreen(),
+                    isDark)
+                .animate()
+                .fadeIn(delay: const Duration(milliseconds: 600))
+                .scale(begin: const Offset(0.8, 0.8)),
+            _buildActionIcon(
+                    context,
+                    Icons.assignment_rounded,
+                    AppLocalizations.of(context)!
+                        .translate('devoirs_evaluations'),
+                    Colors.orangeAccent,
+                    const TeacherHomeworkScreen(),
+                    isDark)
+                .animate()
+                .fadeIn(delay: const Duration(milliseconds: 700))
+                .scale(begin: const Offset(0.8, 0.8)),
+            _buildActionIcon(
+                    context,
+                    Icons.assignment_turned_in_rounded,
+                    AppLocalizations.of(context)!.translate('examens'),
+                    Colors.redAccent,
+                    const AddExamScreen(),
+                    isDark)
+                .animate()
+                .fadeIn(delay: const Duration(milliseconds: 750))
+                .scale(begin: const Offset(0.8, 0.8)),
+            _buildActionIcon(
+                    context,
+                    Icons.calendar_today_rounded,
+                    AppLocalizations.of(context)!.translate('timetable'),
+                    Colors.tealAccent,
+                    const TeacherTimetableScreen(),
+                    isDark)
+                .animate()
+                .fadeIn(delay: const Duration(milliseconds: 800))
+                .scale(begin: const Offset(0.8, 0.8)),
+            _buildActionIcon(
+                    context,
+                    Icons.local_activity_rounded,
+                    AppLocalizations.of(context)!.translate('activities'),
+                    Colors.indigoAccent,
+                    const AddActivityScreen(),
+                    isDark)
+                .animate()
+                .fadeIn(delay: const Duration(milliseconds: 900))
+                .scale(begin: const Offset(0.8, 0.8)),
           ],
         ),
       ],
-    ).animate().fadeIn(delay: const Duration(milliseconds: 300)).slideY(begin: 0.05);
+    )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 300))
+        .slideY(begin: 0.05);
   }
 
-  Widget _buildActionIcon(BuildContext context, IconData icon, String label, Color color, Widget? screen, bool isDark) {
+  Widget _buildActionIcon(BuildContext context, IconData icon, String label,
+      Color color, Widget? screen, bool isDark) {
     return GestureDetector(
       onTap: () {
         if (screen != null) {
@@ -387,17 +571,32 @@ class _TeacherHome extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.6),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : Colors.white.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-              boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 20, offset: const Offset(0, 10))],
+              border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.white),
+              boxShadow: isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10))
+                    ],
             ),
             child: Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 6),
           Text(
             label,
-            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 11, fontWeight: FontWeight.w900),
+            style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black54,
+                fontSize: 11,
+                fontWeight: FontWeight.w900),
             textAlign: TextAlign.center,
           ),
         ],
@@ -410,47 +609,75 @@ class _TeacherHome extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppLocalizations.of(context)!.translate('active_classes'), 
-          style: TextStyle(
-            color: isDark ? Colors.white24 : Colors.black26, 
-            fontSize: 10, 
-            fontWeight: FontWeight.w900, 
-            letterSpacing: 1.5
-          )
-        ),
+        Text(AppLocalizations.of(context)!.translate('active_classes'),
+            style: TextStyle(
+                color: isDark ? Colors.white24 : Colors.black26,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5)),
         const SizedBox(height: 12),
         ...[
           if (classes.isNotEmpty)
-            _buildClassItem(context, classes[0].name, '${classes[0].studentCount}${AppLocalizations.of(context)!.translate('students_count_suffix')}', 0.85, Colors.blueAccent, isDark, classes[0]),
+            _buildClassItem(
+                context,
+                classes[0].name,
+                '${classes[0].studentCount}${AppLocalizations.of(context)!.translate('students_count_suffix')}',
+                0.85,
+                Colors.blueAccent,
+                isDark,
+                classes[0]),
           if (classes.length > 1)
-            _buildClassItem(context, classes[1].name, '${classes[1].studentCount}${AppLocalizations.of(context)!.translate('students_count_suffix')}', 0.92, Colors.greenAccent, isDark, classes[1]),
+            _buildClassItem(
+                context,
+                classes[1].name,
+                '${classes[1].studentCount}${AppLocalizations.of(context)!.translate('students_count_suffix')}',
+                0.92,
+                Colors.greenAccent,
+                isDark,
+                classes[1]),
         ],
       ],
     );
   }
 
-  Widget _buildClassItem(BuildContext context, String name, String count, double progress, Color color, bool isDark, ClassModel? classModel) {
+  Widget _buildClassItem(BuildContext context, String name, String count,
+      double progress, Color color, bool isDark, ClassModel? classModel) {
     return GestureDetector(
       onTap: () {
         if (classModel != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => StudentListScreen(classModel: classModel)));
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => StudentListScreen(classModel: classModel)));
         }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.6),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.03)
+              : Colors.white.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-          boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 20, offset: const Offset(0, 10))],
+          border: Border.all(
+              color:
+                  isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10))
+                ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16)),
               child: Icon(Icons.school_rounded, color: color, size: 24),
             ),
             const SizedBox(width: 16),
@@ -458,15 +685,27 @@ class _TeacherHome extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 16)),
-                  Text(count.toUpperCase(), style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                  Text(name,
+                      style: TextStyle(
+                          color:
+                              isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16)),
+                  Text(count.toUpperCase(),
+                      style: TextStyle(
+                          color: isDark ? Colors.white24 : Colors.black26,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5)),
                   const SizedBox(height: 16),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
-                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.white,
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                     ),
                   ),
@@ -474,23 +713,26 @@ class _TeacherHome extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.chat_bubble_outline_rounded, color: color, size: 22),
+              icon: Icon(Icons.chat_bubble_outline_rounded,
+                  color: color, size: 22),
               onPressed: () {
-                 if (classModel != null) {
-                   Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                       builder: (_) => ChatDetailScreen(
-                         name: classModel.name,
-                         avatarUrl: 'https://img.icons8.com/clouds/150/000000/groups.png',
-                         classModel: classModel,
-                       ),
-                     ),
-                   );
-                 }
+                if (classModel != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatDetailScreen(
+                        name: classModel.name,
+                        avatarUrl:
+                            'https://img.icons8.com/clouds/150/000000/groups.png',
+                        classModel: classModel,
+                      ),
+                    ),
+                  );
+                }
               },
             ),
-            Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white24 : Colors.black26, size: 22),
+            Icon(Icons.chevron_right_rounded,
+                color: isDark ? Colors.white24 : Colors.black26, size: 22),
           ],
         ),
       ),

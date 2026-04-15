@@ -70,13 +70,13 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Performance :  ${AppLocalizations.of(context)!.translate('academic_summary')}',
+                  Text(
+                      'Performance :  ${AppLocalizations.of(context)!.translate('academic_summary')}',
                       style: TextStyle(
                           color: primaryTextColor,
                           fontWeight: FontWeight.w900,
                           fontSize: 18,
                           letterSpacing: -0.5)),
-                  
                 ],
               ),
             ),
@@ -723,7 +723,7 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
               .animate()
               .fadeIn(delay: 400.ms),
           const SizedBox(height: 24),
-          _buildEvolutionChart(isDark, s1Spots, s2Spots)
+          _buildEvolutionChart(isDark, s1Spots, s2Spots, vm, currentKey)
               .animate()
               .fadeIn(delay: 500.ms)
               .slideY(begin: 0.1),
@@ -827,8 +827,21 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSimpleStat(AppLocalizations.of(context)!.translate('rank'),
-                  '--/--', Colors.orangeAccent, isDark),
-              _buildSimpleStat('Tendance', '+0.5', Colors.greenAccent, isDark),
+                  () {
+                final rank = vm.getOverallRank();
+                final size = vm.getOverallClassSize();
+                if (rank == null) return '--';
+                return size != null ? '$rank/$size' : '$rank';
+              }(), Colors.orangeAccent, isDark),
+              () {
+                final trend = vm.getGeneralTrend();
+                final trendStr =
+                    (trend >= 0 ? '+' : '') + trend.toStringAsFixed(1);
+                final trendColor =
+                    trend >= 0 ? Colors.greenAccent : Colors.redAccent;
+                return _buildSimpleStat(
+                    'Tendance', trendStr, trendColor, isDark);
+              }(),
             ],
           ),
         ],
@@ -858,8 +871,8 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
     );
   }
 
-  Widget _buildEvolutionChart(
-      bool isDark, List<FlSpot> s1Spots, List<FlSpot> s2Spots) {
+  Widget _buildEvolutionChart(bool isDark, List<FlSpot> s1Spots,
+      List<FlSpot> s2Spots, SuiviViewModel vm, String subjectId) {
     if (s1Spots.isEmpty && s2Spots.isEmpty) return const SizedBox(height: 220);
 
     final combinedSpots = [...s1Spots, ...s2Spots];
@@ -908,11 +921,15 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                   if (index >= 0 &&
                       index < combinedSpots.length &&
                       v == index) {
-                    final dIndex =
-                        index >= s1Count ? (index - s1Count + 1) : (index + 1);
+                    final semester = index >= s1Count ? "2" : "1";
+                    final pointIndex =
+                        index >= s1Count ? (index - s1Count) : index;
+                    final label =
+                        vm.getLabelForPoint(subjectId, semester, pointIndex);
+
                     return Padding(
                         padding: const EdgeInsets.only(top: 10),
-                        child: Text('D$dIndex',
+                        child: Text(label,
                             style: TextStyle(
                                 color: isDark ? Colors.white24 : Colors.black26,
                                 fontWeight: FontWeight.w900,
@@ -1541,8 +1558,9 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                 itemCount: 35,
                 itemBuilder: (context, index) {
                   final dayNum = index - offset + 1;
-                  if (dayNum < 1 || dayNum > daysInMonth)
+                  if (dayNum < 1 || dayNum > daysInMonth) {
                     return const SizedBox.shrink();
+                  }
 
                   final currentDayDate = DateTime(realYear, realMonth, dayNum);
                   final attendance = vm.getAttendanceForDate(currentDayDate);
@@ -2616,11 +2634,12 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                                               // Try common key variations
                                               final translated =
                                                   local.translate(rawStatus);
-                                              if (translated == rawStatus)
+                                              if (translated == rawStatus) {
                                                 return local
                                                     .translate(
                                                         '${rawStatus}_label')
                                                     .toUpperCase();
+                                              }
                                               return translated.toUpperCase();
                                             })(),
                                             style: TextStyle(
@@ -2917,9 +2936,7 @@ class _HistoryRowItemState extends State<_HistoryRowItem> {
     final hLabel = h.title ?? AppLocalizations.of(context)!.translate(h.type);
     final title =
         "$hLabel${h.semester != null ? ' (Semestre ${h.semester})' : ''}";
-    final normalizedGrade =
-        (h.grade / (h.maxGrade > 0 ? h.maxGrade : 20.0)) * 10.0;
-    final score = '${normalizedGrade.toStringAsFixed(1)}/10';
+    final score = '${h.grade.toStringAsFixed(1)}/${h.maxGrade.toInt()}';
     final hasComponents = h.components != null && h.components!.isNotEmpty;
 
     return AnimatedContainer(
@@ -3018,7 +3035,7 @@ class _HistoryRowItemState extends State<_HistoryRowItem> {
                             ),
                           ),
                           Text(
-                            '${((c.grade / (c.maxGrade > 0 ? c.maxGrade : 20.0)) * 10.0).toStringAsFixed(1)}/10',
+                            '${c.grade.toStringAsFixed(1)}/${c.maxGrade.toInt()}',
                             style: TextStyle(
                                 color: primaryTextColor,
                                 fontWeight: FontWeight.bold,

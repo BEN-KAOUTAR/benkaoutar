@@ -51,7 +51,11 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
           icon: Icon(Icons.close_rounded, color: primaryTextColor, size: 28),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(AppLocalizations.of(context)!.translate('new_homework'), style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 18)),
+        title: Text(AppLocalizations.of(context)!.translate('new_homework'),
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: primaryTextColor,
+                fontSize: 18)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -62,8 +66,16 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
               child: _isPublishing
-                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: primaryTextColor))
-                : Text(AppLocalizations.of(context)!.translate('publish'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1)),
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: primaryTextColor))
+                  : Text(AppLocalizations.of(context)!.translate('publish'),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          letterSpacing: 1)),
             ),
           ),
         ],
@@ -83,9 +95,19 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
                     Expanded(
                       child: _buildDropdown(
                         context,
-                        AppLocalizations.of(context)!.translate('subject_label'),
+                        AppLocalizations.of(context)!
+                            .translate('subject_label'),
                         _selectedSubject,
-                        ['math', 'french_sub', 'science', 'history_geo', 'english', 'physics', 'arabic', 'sport'],
+                        [
+                          'math',
+                          'french_sub',
+                          'science',
+                          'history_geo',
+                          'english',
+                          'physics',
+                          'arabic',
+                          'sport'
+                        ],
                         (val) => setState(() => _selectedSubject = val!),
                         isSubject: true,
                       ),
@@ -106,69 +128,138 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
                 const SizedBox(height: 32),
 
                 // Title
-                Text(AppLocalizations.of(context)!.translate('homework_title_label'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: secondaryTextColor, letterSpacing: 1.5)),
+                Text(
+                    AppLocalizations.of(context)!
+                        .translate('homework_title_label'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        color: secondaryTextColor,
+                        letterSpacing: 1.5)),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _titleController,
-                  style: TextStyle(color: primaryTextColor, fontSize: 15, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: primaryTextColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.translate('homework_title_hint'),
-                    hintStyle: TextStyle(color: secondaryTextColor, fontSize: 14),
+                    hintText: AppLocalizations.of(context)!
+                        .translate('homework_title_hint'),
+                    hintStyle:
+                        TextStyle(color: secondaryTextColor, fontSize: 14),
                     filled: true,
-                    fillColor: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.blueAccent)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.03)
+                        : Colors.white,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                            color: isDark ? Colors.white10 : Colors.black12)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                            color: isDark ? Colors.white10 : Colors.black12)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Colors.blueAccent)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 18),
                   ),
                 ),
 
                 const SizedBox(height: 32),
 
                 // Description
-                Text(AppLocalizations.of(context)!.translate('instructions_desc'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: secondaryTextColor, letterSpacing: 1.5)),
+                Text(
+                    AppLocalizations.of(context)!
+                        .translate('instructions_desc'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        color: secondaryTextColor,
+                        letterSpacing: 1.5)),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _descriptionController,
                   maxLines: 5,
-                  style: TextStyle(color: primaryTextColor.withValues(alpha: 0.8), fontSize: 14, height: 1.6, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: primaryTextColor.withValues(alpha: 0.8),
+                      fontSize: 14,
+                      height: 1.6,
+                      fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.translate('instructions_hint'),
-                    hintStyle: TextStyle(color: secondaryTextColor, fontSize: 14),
+                    hintText: AppLocalizations.of(context)!
+                        .translate('instructions_hint'),
+                    hintStyle:
+                        TextStyle(color: secondaryTextColor, fontSize: 14),
                     filled: true,
-                    fillColor: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.blueAccent)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.02)
+                        : Colors.white,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                            color: isDark ? Colors.white10 : Colors.black12)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                            color: isDark ? Colors.white10 : Colors.black12)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(color: Colors.blueAccent)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 20),
                   ),
                 ),
 
                 const SizedBox(height: 32),
 
                 // Deadline
-                Text(AppLocalizations.of(context)!.translate('submission_date'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: secondaryTextColor, letterSpacing: 1.5)),
+                Text(AppLocalizations.of(context)!.translate('submission_date'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        color: secondaryTextColor,
+                        letterSpacing: 1.5)),
                 const SizedBox(height: 12),
                 GestureDetector(
                   onTap: _selectDate,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 18),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white, 
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.03)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-                      boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 10)],
+                      border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white),
+                      boxShadow: isDark
+                          ? []
+                          : [
+                              BoxShadow(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  blurRadius: 10)
+                            ],
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today_rounded, size: 20, color: Colors.blueAccent),
+                        const Icon(Icons.calendar_today_rounded,
+                            size: 20, color: Colors.blueAccent),
                         const SizedBox(width: 16),
                         Text(
                           '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: primaryTextColor),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                              color: primaryTextColor),
                         ),
                         const Spacer(),
-                        Icon(Icons.keyboard_arrow_down_rounded, color: secondaryTextColor),
+                        Icon(Icons.keyboard_arrow_down_rounded,
+                            color: secondaryTextColor),
                       ],
                     ),
                   ),
@@ -177,21 +268,41 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
                 const SizedBox(height: 48),
 
                 // Attachments
-                Text(AppLocalizations.of(context)!.translate('attachments'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: secondaryTextColor, letterSpacing: 1.5)),
+                Text(AppLocalizations.of(context)!.translate('attachments'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        color: secondaryTextColor,
+                        letterSpacing: 1.5)),
                 const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 40),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.01) : Colors.white.withValues(alpha: 0.5),
-                    border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.1), style: BorderStyle.solid),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.01)
+                        : Colors.white.withValues(alpha: 0.5),
+                    border: Border.all(
+                        color: isDark
+                            ? Colors.white10
+                            : Colors.black.withValues(alpha: 0.1),
+                        style: BorderStyle.solid),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
                     children: [
-                      Icon(Icons.cloud_upload_outlined, color: secondaryTextColor.withValues(alpha: 0.5), size: 40),
+                      Icon(Icons.cloud_upload_outlined,
+                          color: secondaryTextColor.withValues(alpha: 0.5),
+                          size: 40),
                       const SizedBox(height: 16),
-                      Text(AppLocalizations.of(context)!.translate('upload_doc_hint'), style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate('upload_doc_hint'),
+                          style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5)),
                     ],
                   ),
                 ),
@@ -205,7 +316,9 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
     );
   }
 
-  Widget _buildDropdown(BuildContext context, String label, String value, List<String> items, Function(String?) onChanged, {bool isSubject = false}) {
+  Widget _buildDropdown(BuildContext context, String label, String value,
+      List<String> items, Function(String?) onChanged,
+      {bool isSubject = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black26;
@@ -213,26 +326,40 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: secondaryTextColor, letterSpacing: 1)),
+        Text(label,
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: secondaryTextColor,
+                letterSpacing: 1)),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white, 
+            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.white),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
               isExpanded: true,
               dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-              icon: Icon(Icons.keyboard_arrow_down_rounded, color: secondaryTextColor),
-              style: TextStyle(fontSize: 14, color: primaryTextColor, fontWeight: FontWeight.w900),
+              icon: Icon(Icons.keyboard_arrow_down_rounded,
+                  color: secondaryTextColor),
+              style: TextStyle(
+                  fontSize: 14,
+                  color: primaryTextColor,
+                  fontWeight: FontWeight.w900),
               items: items.map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
-                  child: Text(isSubject ? AppLocalizations.of(context)!.translate(value) : value),
+                  child: Text(isSubject
+                      ? AppLocalizations.of(context)!.translate(value)
+                      : value),
                 );
               }).toList(),
               onChanged: onChanged,
@@ -253,19 +380,19 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: isDark 
-              ? const ColorScheme.dark(
-                  primary: Colors.blueAccent,
-                  onPrimary: Colors.white,
-                  surface: Color(0xFF1E293B),
-                  onSurface: Colors.white,
-                )
-              : const ColorScheme.light(
-                  primary: Colors.blueAccent,
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: Color(0xFF0F172A),
-                ),
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: Colors.blueAccent,
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E293B),
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: Colors.blueAccent,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Color(0xFF0F172A),
+                  ),
           ),
           child: child!,
         );
@@ -283,10 +410,15 @@ class _AddHomeworkScreenState extends State<AddHomeworkScreen> {
         setState(() => _isPublishing = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('homework_published'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+            content: Text(
+                AppLocalizations.of(context)!.translate('homework_published'),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.white)),
+            backgroundColor:
+                isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         Navigator.pop(context);

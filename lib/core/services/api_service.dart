@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
@@ -42,13 +41,23 @@ class ApiService {
     if (d is Map) {
       // Try common wrapper keys in priority order
       for (final key in [
-        'data', 'result', 'results', 'list', 'items',
-        'attendances', 'attendance', 'records',
-        'grades', 'notes', 'exams',
-        'absences', 'sessions',
+        'data',
+        'result',
+        'results',
+        'list',
+        'items',
+        'attendances',
+        'attendance',
+        'records',
+        'grades',
+        'notes',
+        'exams',
+        'absences',
+        'sessions',
       ]) {
         if (d.containsKey(key) && d[key] is List) {
-          debugPrint('[API] Extracted list from key "$key" (${(d[key] as List).length} items)');
+          debugPrint(
+              '[API] Extracted list from key "$key" (${(d[key] as List).length} items)');
           return d[key];
         }
       }
@@ -111,7 +120,8 @@ class ApiService {
 
   Future<bool> likePost(String id) async {
     try {
-      final response = await _dio.post('/news/$id/like'); // Updated from /posts to /news
+      final response =
+          await _dio.post('/news/$id/like'); // Updated from /posts to /news
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       rethrow;
@@ -120,7 +130,8 @@ class ApiService {
 
   Future<CommentModel> addComment(String postId, String content) async {
     try {
-      final response = await _dio.post('/news/$postId/comments', data: { // Updated to plural /comments
+      final response = await _dio.post('/news/$postId/comments', data: {
+        // Updated to plural /comments
         'content': content,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -147,19 +158,28 @@ class ApiService {
   Future<List<GradeModel>> getGrades(String studentId) async {
     List<GradeModel> allGrades = [];
     final endpoints = ['/notes/my-results', '/exams/my-results'];
-    
+
     for (final endpoint in endpoints) {
       try {
         final response = await _dio.get(endpoint);
-        debugPrint('[Grades] $endpoint → status=${response.statusCode}, type=${response.data.runtimeType}');
+        debugPrint(
+            '[Grades] $endpoint → status=${response.statusCode}, type=${response.data.runtimeType}');
         if (response.statusCode == 200) {
           final raw = _handleResponseData(response);
           if (raw is List && raw.isNotEmpty) {
-            debugPrint('[Grades] $endpoint → ${raw.length} items, first keys=${raw.first is Map ? (raw.first as Map).keys.toList() : "?"}');
-            final parsed = raw.map((json) {
-              try { return GradeModel.fromJson(json as Map<String, dynamic>); }
-              catch (e) { debugPrint('[Grades] parse error: $e'); return null; }
-            }).whereType<GradeModel>().toList();
+            debugPrint(
+                '[Grades] $endpoint → ${raw.length} items, first keys=${raw.first is Map ? (raw.first as Map).keys.toList() : "?"}');
+            final parsed = raw
+                .map((json) {
+                  try {
+                    return GradeModel.fromJson(json as Map<String, dynamic>);
+                  } catch (e) {
+                    debugPrint('[Grades] parse error: $e');
+                    return null;
+                  }
+                })
+                .whereType<GradeModel>()
+                .toList();
             allGrades.addAll(parsed);
           } else {
             debugPrint('[Grades] $endpoint → empty or non-list: $raw');
@@ -181,24 +201,35 @@ class ApiService {
 
   Future<List<AttendanceRecord>> getAbsences(String studentId) async {
     final endpoints = ['/attendances/me', '/attendances/student/me'];
-    
+
     for (final endpoint in endpoints) {
       try {
         final response = await _dio.get(endpoint);
-        debugPrint('[Absences] $endpoint → status=${response.statusCode}, type=${response.data.runtimeType}');
+        debugPrint(
+            '[Absences] $endpoint → status=${response.statusCode}, type=${response.data.runtimeType}');
         if (response.statusCode == 200) {
           final raw = _handleResponseData(response);
           if (raw is List) {
             debugPrint('[Absences] $endpoint → ${raw.length} items');
             if (raw.isNotEmpty) {
-              debugPrint('[Absences] First item keys: ${raw.first is Map ? (raw.first as Map).keys.toList() : "?"}');
+              debugPrint(
+                  '[Absences] First item keys: ${raw.first is Map ? (raw.first as Map).keys.toList() : "?"}');
             }
-            return raw.map((json) {
-              try { return AttendanceRecord.fromJson(json as Map<String, dynamic>); }
-              catch (e) { debugPrint('[Absences] parse error: $e'); return null; }
-            }).whereType<AttendanceRecord>().toList();
+            return raw
+                .map((json) {
+                  try {
+                    return AttendanceRecord.fromJson(
+                        json as Map<String, dynamic>);
+                  } catch (e) {
+                    debugPrint('[Absences] parse error: $e');
+                    return null;
+                  }
+                })
+                .whereType<AttendanceRecord>()
+                .toList();
           } else {
-            debugPrint('[Absences] $endpoint → non-list response: ${raw.runtimeType} → $raw');
+            debugPrint(
+                '[Absences] $endpoint → non-list response: ${raw.runtimeType} → $raw');
           }
         }
       } catch (e) {
@@ -206,8 +237,9 @@ class ApiService {
         // Continue trying next endpoint
       }
     }
-    
-    debugPrint('[Absences] All endpoints failed or returned empty — returning empty list');
+
+    debugPrint(
+        '[Absences] All endpoints failed or returned empty — returning empty list');
     return [];
   }
 
@@ -237,18 +269,20 @@ class ApiService {
           mediaType = MediaType('image', 'png');
         }
 
-        // Web compatibility: Use fromBytes if available (always for Web picker). 
+        // Web compatibility: Use fromBytes if available (always for Web picker).
         // Chrome fails with UnimplementedError if trying fromFile.
         if (fileBytes != null && fileBytes.isNotEmpty) {
-          attachment = MultipartFile.fromBytes(fileBytes, filename: fileName, contentType: mediaType);
+          attachment = MultipartFile.fromBytes(fileBytes,
+              filename: fileName, contentType: mediaType);
         } else if (filePath != null && filePath.isNotEmpty) {
-          attachment = await MultipartFile.fromFile(filePath, filename: fileName, contentType: mediaType);
+          attachment = await MultipartFile.fromFile(filePath,
+              filename: fileName, contentType: mediaType);
         }
       }
 
       final payload = <String, dynamic>{
         'reason': reason,
-        'motif': reason, 
+        'motif': reason,
         'justificationReason': reason,
         'justificationText': reason,
         'justifiedByStudent': true,
@@ -260,41 +294,39 @@ class ApiService {
       final formDataMap = <String, dynamic>{};
       payload.forEach((k, v) => formDataMap[k] = v.toString());
       final formData = FormData.fromMap(formDataMap);
-      
+
       if (attachment != null) {
         formData.files.add(MapEntry('attachment', attachment));
       } else if (oldAttachmentUrl != null && oldAttachmentUrl.isNotEmpty) {
         formData.fields.add(MapEntry('attachment', oldAttachmentUrl));
       }
 
-      final response = await _dio.put(
-        '/attendances/$attendanceId/justify', 
-        data: formData,
-        onSendProgress: onProgress,
-        options: Options(
-          sendTimeout: const Duration(seconds: 45),
-          receiveTimeout: const Duration(seconds: 45),
-          contentType: 'multipart/form-data',
-          headers: {'Accept': 'application/json'},
-        )
-      );
+      final response = await _dio.put('/attendances/$attendanceId/justify',
+          data: formData,
+          onSendProgress: onProgress,
+          options: Options(
+            sendTimeout: const Duration(seconds: 45),
+            receiveTimeout: const Duration(seconds: 45),
+            contentType: 'multipart/form-data',
+            headers: {'Accept': 'application/json'},
+          ));
 
       // --- SECONDARY SYNC ---
-      // Force update the record using standard JSON PUT just in case the /justify multipart route 
+      // Force update the record using standard JSON PUT just in case the /justify multipart route
       // fails to map the boolean or reason fields in Node.js
       try {
-         await _dio.put(
-            '/attendances/$attendanceId',
-            data: payload, // Sending as raw application/json
-         );
+        await _dio.put(
+          '/attendances/$attendanceId',
+          data: payload, // Sending as raw application/json
+        );
       } catch (e) {
-         print('Secondary JSON sync failed, proceeding anyway: $e');
+        print('Secondary JSON sync failed, proceeding anyway: $e');
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.data is Map) {
           if (response.data['success'] == false) {
-             throw Exception(response.data['message'] ?? 'Erreur Serveur');
+            throw Exception(response.data['message'] ?? 'Erreur Serveur');
           }
           final responseData = response.data['data'];
           if (responseData != null && responseData is Map<String, dynamic>) {
@@ -319,7 +351,8 @@ class ApiService {
   Future<List<HomeworkModel>> getHomework(String studentId) async {
     try {
       // Swagger: /assignments is the correct route for student assignments
-      final response = await _dio.get('/assignments', queryParameters: {'studentId': studentId});
+      final response = await _dio
+          .get('/assignments', queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         final List data = _handleResponseData(response);
         return data.map((json) => HomeworkModel.fromJson(json)).toList();
@@ -333,7 +366,8 @@ class ApiService {
   Future<List<HomeworkModel>> getExams(String studentId) async {
     try {
       // Swagger: /exams is the correct route for exams
-      final response = await _dio.get('/exams', queryParameters: {'studentId': studentId});
+      final response =
+          await _dio.get('/exams', queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         final List data = _handleResponseData(response);
         return data.map((json) {
@@ -348,43 +382,62 @@ class ApiService {
     }
   }
 
-  Future<HomeworkModel> updateHomeworkStatus(String id, String studentId, HomeworkStatus status, {String? filePath}) async {
-    print('DEBUG: Updating homework $id to status $status for student $studentId');
+  Future<HomeworkModel> updateHomeworkStatus(
+      String id, String studentId, HomeworkStatus status,
+      {String? filePath}) async {
+    print(
+        'DEBUG: Updating homework $id to status $status for student $studentId');
     try {
       if (status == HomeworkStatus.done) {
         final formData = FormData();
-        formData.fields.add(const MapEntry('text', 'Terminé depuis l\'application'));
-        
+        formData.fields
+            .add(const MapEntry('text', 'Terminé depuis l\'application'));
+
         if (filePath != null && filePath.isNotEmpty) {
           final fileName = filePath.split('/').last;
           print('DEBUG: Attaching file $fileName from $filePath');
-          formData.files.add(MapEntry('files', await MultipartFile.fromFile(filePath, filename: fileName)));
+          formData.files.add(MapEntry('files',
+              await MultipartFile.fromFile(filePath, filename: fileName)));
         }
-        
+
         print('DEBUG: Sending POST to /assignments/$id/submit');
         final response = await _dio.post(
-          '/assignments/$id/submit', 
+          '/assignments/$id/submit',
           data: formData,
         );
         print('DEBUG: Response status: ${response.statusCode}');
         print('DEBUG: Response body: ${response.data}');
-        
+
         // Accept any 2xx success code
-        if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        if (response.statusCode != null &&
+            response.statusCode! >= 200 &&
+            response.statusCode! < 300) {
           try {
             return HomeworkModel.fromJson(response.data);
           } catch (e) {
             print('DEBUG: Error parsing response: $e');
-            return HomeworkModel(id: id, subject: '', title: '', description: '', dueDate: '', status: HomeworkStatus.done);
+            return HomeworkModel(
+                id: id,
+                subject: '',
+                title: '',
+                description: '',
+                dueDate: '',
+                status: HomeworkStatus.done);
           }
         }
       } else {
         // If the status is 'inProgress', we don't call the API because there's no endpoint
         // and we want to keep the local state without triggering a rollback.
         print('DEBUG: Status $status is local-only, skipping API call');
-        return HomeworkModel(id: id, subject: '', title: '', description: '', dueDate: '', status: status);
+        return HomeworkModel(
+            id: id,
+            subject: '',
+            title: '',
+            description: '',
+            dueDate: '',
+            status: status);
       }
-      throw Exception('Failed to update homework: status code ${status}');
+      throw Exception('Failed to update homework: status code $status');
     } catch (e) {
       print('DEBUG: updateHomeworkStatus Error: $e');
       if (e is DioException) {
@@ -416,107 +469,158 @@ class ApiService {
           if (data.containsKey('student') && data['student'] is Map) {
             final s = data['student'];
             if (s['user'] is Map) {
-              globalStudentName = s['user']['fullName']?.toString() ?? s['user']['name']?.toString();
+              globalStudentName = s['user']['fullName']?.toString() ??
+                  s['user']['name']?.toString();
             }
-            globalStudentName ??= s['fullName']?.toString() ?? s['name']?.toString();
+            globalStudentName ??=
+                s['fullName']?.toString() ?? s['name']?.toString();
             // Class might be nested in student
             if (s['class'] is Map) {
-              globalClassName = (s['class'] as Map)['name']?.toString() ?? (s['class'] as Map)['label']?.toString();
+              globalClassName = (s['class'] as Map)['name']?.toString() ??
+                  (s['class'] as Map)['label']?.toString();
             } else if (s['classe'] is Map) {
-              globalClassName = (s['classe'] as Map)['name']?.toString() ?? (s['classe'] as Map)['label']?.toString();
+              globalClassName = (s['classe'] as Map)['name']?.toString() ??
+                  (s['classe'] as Map)['label']?.toString();
             } else if (s['group'] is Map) {
-              globalClassName = (s['group'] as Map)['name']?.toString() ?? (s['group'] as Map)['label']?.toString();
+              globalClassName = (s['group'] as Map)['name']?.toString() ??
+                  (s['group'] as Map)['label']?.toString();
             } else if (s['affectation'] is Map) {
               final aff = s['affectation'];
               if (aff['class'] is Map) {
                 globalClassName = aff['class']['name']?.toString();
-              } else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
-              else if (aff['group'] is Map) globalClassName = aff['group']['name']?.toString();
+              } else if (aff['classe'] is Map)
+                globalClassName = aff['classe']['name']?.toString();
+              else if (aff['group'] is Map)
+                globalClassName = aff['group']['name']?.toString();
             }
-            globalClassName ??= s['className']?.toString() ?? s['level']?.toString();
-            if (globalClassName == null && s['classe'] is String) globalClassName = s['classe'].toString();
-            if (globalClassName == null && s['class'] is String) globalClassName = s['class'].toString();
+            globalClassName ??=
+                s['className']?.toString() ?? s['level']?.toString();
+            if (globalClassName == null && s['classe'] is String) {
+              globalClassName = s['classe'].toString();
+            }
+            if (globalClassName == null && s['class'] is String) {
+              globalClassName = s['class'].toString();
+            }
           }
           // Also check data['user']
-          if (globalStudentName == null && data.containsKey('user') && data['user'] is Map) {
-            globalStudentName = data['user']['fullName']?.toString() ?? data['user']['name']?.toString();
+          if (globalStudentName == null &&
+              data.containsKey('user') &&
+              data['user'] is Map) {
+            globalStudentName = data['user']['fullName']?.toString() ??
+                data['user']['name']?.toString();
           }
           if (globalClassName == null) {
             if (data['class'] is Map) {
-              globalClassName = (data['class'] as Map)['name']?.toString() ?? (data['class'] as Map)['label']?.toString();
+              globalClassName = (data['class'] as Map)['name']?.toString() ??
+                  (data['class'] as Map)['label']?.toString();
             } else if (data['classe'] is Map) {
-              globalClassName = (data['classe'] as Map)['name']?.toString() ?? (data['classe'] as Map)['label']?.toString();
+              globalClassName = (data['classe'] as Map)['name']?.toString() ??
+                  (data['classe'] as Map)['label']?.toString();
             } else if (data['group'] is Map) {
-              globalClassName = (data['group'] as Map)['name']?.toString() ?? (data['group'] as Map)['label']?.toString();
+              globalClassName = (data['group'] as Map)['name']?.toString() ??
+                  (data['group'] as Map)['label']?.toString();
             } else if (data['affectation'] is Map) {
               final aff = data['affectation'];
               if (aff['class'] is Map) {
                 globalClassName = aff['class']['name']?.toString();
-              } else if (aff['classe'] is Map) globalClassName = aff['classe']['name']?.toString();
-              else if (aff['group'] is Map) globalClassName = aff['group']['name']?.toString();
+              } else if (aff['classe'] is Map)
+                globalClassName = aff['classe']['name']?.toString();
+              else if (aff['group'] is Map)
+                globalClassName = aff['group']['name']?.toString();
             }
-            globalClassName ??= data['className']?.toString() ?? data['level']?.toString() ?? data['groupName']?.toString();
-            if (globalClassName == null && data['classe'] is String) globalClassName = data['classe'].toString();
-            if (globalClassName == null && data['class'] is String) globalClassName = data['class'].toString();
+            globalClassName ??= data['className']?.toString() ??
+                data['level']?.toString() ??
+                data['groupName']?.toString();
+            if (globalClassName == null && data['classe'] is String) {
+              globalClassName = data['classe'].toString();
+            }
+            if (globalClassName == null && data['class'] is String) {
+              globalClassName = data['class'].toString();
+            }
           }
 
           // Check nested structures (e.g. data['space']['payments'])
           if (data.containsKey('space') && data['space'] is Map) {
             final space = data['space'];
             print('[PaymentAPI] Space keys: ${(space as Map).keys.toList()}');
-            history = space['history'] ?? space['payments'] ?? space['invoices'] ?? space['dues'] ?? space['scolarity'] ?? [];
-            
+            history = space['history'] ??
+                space['payments'] ??
+                space['invoices'] ??
+                space['dues'] ??
+                space['scolarity'] ??
+                [];
+
             // Student info may also be in space
-            if (globalStudentName == null && space.containsKey('student') && space['student'] is Map) {
+            if (globalStudentName == null &&
+                space.containsKey('student') &&
+                space['student'] is Map) {
               final s = space['student'];
               if (s['user'] is Map) {
-                globalStudentName = s['user']['fullName']?.toString() ?? s['user']['name']?.toString();
+                globalStudentName = s['user']['fullName']?.toString() ??
+                    s['user']['name']?.toString();
               }
-              globalStudentName ??= s['fullName']?.toString() ?? s['name']?.toString();
+              globalStudentName ??=
+                  s['fullName']?.toString() ?? s['name']?.toString();
               if (globalClassName == null) {
-                if (s['class'] is Map) globalClassName = (s['class'] as Map)['name']?.toString();
-                if (s['group'] is Map) globalClassName ??= (s['group'] as Map)['name']?.toString();
+                if (s['class'] is Map) {
+                  globalClassName = (s['class'] as Map)['name']?.toString();
+                }
+                if (s['group'] is Map) {
+                  globalClassName ??= (s['group'] as Map)['name']?.toString();
+                }
                 globalClassName ??= s['className']?.toString();
               }
             }
           }
           if (history.isEmpty) {
-            history = data['history'] ?? data['payments'] ?? data['invoices'] ?? data['scolarity'] ?? data['dues'] ?? [];
+            history = data['history'] ??
+                data['payments'] ??
+                data['invoices'] ??
+                data['scolarity'] ??
+                data['dues'] ??
+                [];
           }
-          if (history.isEmpty && data.containsKey('data') && data['data'] is List) {
+          if (history.isEmpty &&
+              data.containsKey('data') &&
+              data['data'] is List) {
             history = data['data'];
           }
         }
 
         if (history.isNotEmpty) {
-          print('[PaymentAPI] First item keys: ${(history[0] as Map).keys.toList()}');
-          print('[PaymentAPI] Global studentName=$globalStudentName, className=$globalClassName');
+          print(
+              '[PaymentAPI] First item keys: ${(history[0] as Map).keys.toList()}');
+          print(
+              '[PaymentAPI] Global studentName=$globalStudentName, className=$globalClassName');
         }
-        
-        return history.map((json) {
-          try {
-            final payment = PaymentModel.fromJson(json);
-            // Inject global student/class if missing from individual item
-            return PaymentModel(
-              id: payment.id,
-              month: payment.month,
-              amount: payment.amount,
-              status: payment.status,
-              date: payment.date,
-              invoiceUrl: payment.invoiceUrl,
-              childIds: payment.childIds,
-              invoiceNumber: payment.invoiceNumber,
-              studentName: payment.studentName ?? globalStudentName,
-              className: payment.className ?? globalClassName,
-              paymentMethod: payment.paymentMethod,
-              year: payment.year,
-              paymentType: payment.paymentType,
-            );
-          } catch (e) {
-            print('Error parsing payment item: $e');
-            return null;
-          }
-        }).whereType<PaymentModel>().toList();
+
+        return history
+            .map((json) {
+              try {
+                final payment = PaymentModel.fromJson(json);
+                // Inject global student/class if missing from individual item
+                return PaymentModel(
+                  id: payment.id,
+                  month: payment.month,
+                  amount: payment.amount,
+                  status: payment.status,
+                  date: payment.date,
+                  invoiceUrl: payment.invoiceUrl,
+                  childIds: payment.childIds,
+                  invoiceNumber: payment.invoiceNumber,
+                  studentName: payment.studentName ?? globalStudentName,
+                  className: payment.className ?? globalClassName,
+                  paymentMethod: payment.paymentMethod,
+                  year: payment.year,
+                  paymentType: payment.paymentType,
+                );
+              } catch (e) {
+                print('Error parsing payment item: $e');
+                return null;
+              }
+            })
+            .whereType<PaymentModel>()
+            .toList();
       }
       throw Exception('Failed to load payments');
     } catch (e) {
@@ -531,7 +635,8 @@ class ApiService {
         savePath,
         onReceiveProgress: (count, total) {
           if (total != -1) {
-            print('[PaymentAPI] Download progress: ${(count / total * 100).toStringAsFixed(0)}%');
+            print(
+                '[PaymentAPI] Download progress: ${(count / total * 100).toStringAsFixed(0)}%');
           }
         },
       );
@@ -550,13 +655,15 @@ class ApiService {
       // Return relative endpoint for internal download or direct absolute URL for external.
       String normalizedType = type.toLowerCase();
       String category = 'receipts'; // Default
-      
-      if (normalizedType.contains('invoice') || normalizedType.contains('scolarit')) {
+
+      if (normalizedType.contains('invoice') ||
+          normalizedType.contains('scolarit')) {
         category = 'invoices';
-      } else if (normalizedType.contains('receipt') || normalizedType.contains('transport')) {
+      } else if (normalizedType.contains('receipt') ||
+          normalizedType.contains('transport')) {
         category = 'receipts';
       }
-      
+
       return '/payments/student/me/$category/$paymentId/download';
     } catch (e) {
       rethrow;
@@ -597,7 +704,8 @@ class ApiService {
     }
   }
 
-  Future<ChatMessageModel> sendMessage(String threadId, String content, String type) async {
+  Future<ChatMessageModel> sendMessage(
+      String threadId, String content, String type) async {
     try {
       // Swagger: /messages/:id/reply
       final response = await _dio.post('/messages/$threadId/reply', data: {
@@ -617,7 +725,8 @@ class ApiService {
 
   Future<BusLocationModel> getBusLocation(String studentId) async {
     try {
-      final response = await _dio.get('/transport/bus-location', queryParameters: {'studentId': studentId});
+      final response = await _dio.get('/transport/bus-location',
+          queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         return BusLocationModel.fromJson(response.data);
       }
@@ -627,12 +736,16 @@ class ApiService {
     }
   }
 
-  Future<List<LocationHistoryRecord>> getLocationHistory(String studentId) async {
+  Future<List<LocationHistoryRecord>> getLocationHistory(
+      String studentId) async {
     try {
-      final response = await _dio.get('/transport/history', queryParameters: {'studentId': studentId});
+      final response = await _dio
+          .get('/transport/history', queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         final List data = response.data;
-        return data.map((json) => LocationHistoryRecord.fromJson(json)).toList();
+        return data
+            .map((json) => LocationHistoryRecord.fromJson(json))
+            .toList();
       }
       throw Exception('Failed to load location history');
     } catch (e) {
@@ -703,7 +816,6 @@ class ApiService {
     }
   }
 
-
   // --- DASHBOARD ---
 
   Future<List<StudentModel>> getChildren() async {
@@ -712,7 +824,7 @@ class ApiService {
       final response = await _dio.get('/payments/student/me/space');
       if (response.statusCode == 200) {
         final dataMap = _handleResponseData(response);
-        
+
         // The demo API might return a single student or multiple.
         if (dataMap is Map) {
           final studentJson = dataMap['student'];
@@ -720,9 +832,11 @@ class ApiService {
             return [StudentModel.fromJson(studentJson as Map<String, dynamic>)];
           }
         } else if (dataMap is List) {
-          return dataMap.map((s) => StudentModel.fromJson(s as Map<String, dynamic>)).toList();
+          return dataMap
+              .map((s) => StudentModel.fromJson(s as Map<String, dynamic>))
+              .toList();
         }
-        
+
         return [];
       }
       throw Exception('Failed to load children data');
@@ -753,7 +867,7 @@ class ApiService {
       ]);
 
       final List<Map<String, dynamic>> activities = [];
-      
+
       // Map Posts (News)
       final posts = results[0] as List<PostModel>;
       for (var post in posts) {
@@ -803,10 +917,10 @@ class ApiService {
           return (b['date'] as String).compareTo(a['date'] as String);
         }
       });
-      
+
       return activities.take(10).toList();
     } catch (e) {
-      return []; 
+      return [];
     }
   }
 
@@ -844,7 +958,8 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getBehaviorHistory(String studentId) async {
+  Future<List<Map<String, dynamic>>> getBehaviorHistory(
+      String studentId) async {
     try {
       final response = await _dio.get('/students/$studentId/behavior/history');
       if (response.statusCode == 200) {
@@ -879,11 +994,92 @@ class ApiService {
     }
   }
 
+  // Get all events from /events endpoint
+  Future<List<EventModel>> getEvents() async {
+    try {
+      final response = await _dio.get('/events');
+      if (response.statusCode == 200) {
+        final List data = _handleResponseData(response);
+        return data.map((json) => EventModel.fromJson(json)).toList();
+      }
+      throw Exception('Failed to load events');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Get single event details
+  Future<EventModel> getEventDetails(String eventId) async {
+    try {
+      final response = await _dio.get('/events/$eventId');
+      if (response.statusCode == 200) {
+        return EventModel.fromJson(response.data);
+      }
+      throw Exception('Failed to load event details');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Delete event
+  Future<bool> deleteEvent(String eventId) async {
+    try {
+      final response = await _dio.delete('/events/$eventId');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      debugPrint('Error deleting event: $e');
+      rethrow;
+    }
+  }
+
+  // Respond to event (yes/no/maybe)
+  Future<EventModel?> respondToEventNew(String eventId, String status) async {
+    try {
+      final response = await _dio.put(
+        '/events/$eventId/respond',
+        data: {'status': status},
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // First try to extract updated event from response
+        final data = response.data;
+        if (data is Map) {
+          // Try to extract event from common wrapper keys
+          final eventData = data['data'] ?? data['event'] ?? data;
+          if (eventData is Map && eventData.containsKey('id')) {
+            try {
+              return EventModel.fromJson(Map<String, dynamic>.from(eventData));
+            } catch (e) {
+              debugPrint('Error parsing event from response: $e');
+            }
+          }
+        }
+
+        // If response doesn't contain full event, fetch it fresh to get persisted status
+        try {
+          final eventResponse = await _dio.get('/events/$eventId');
+          if (eventResponse.statusCode == 200) {
+            final eventData = eventResponse.data;
+            if (eventData is Map) {
+              return EventModel.fromJson(Map<String, dynamic>.from(eventData));
+            }
+          }
+        } catch (e) {
+          debugPrint('Error fetching updated event: $e');
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error responding to event: $e');
+      return null;
+    }
+  }
+
   // --- SECURITY & GEOFENCING ---
 
   Future<Map<String, dynamic>> getSecurityStatus(String studentId) async {
     try {
-      final response = await _dio.get('/security/status', queryParameters: {'studentId': studentId});
+      final response = await _dio
+          .get('/security/status', queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         return response.data;
       }
@@ -895,7 +1091,8 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getSecurityAlerts(String studentId) async {
     try {
-      final response = await _dio.get('/security/alerts', queryParameters: {'studentId': studentId});
+      final response = await _dio
+          .get('/security/alerts', queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(response.data);
       }
@@ -909,28 +1106,56 @@ class ApiService {
 
   Future<List<TimetableSessionModel>> getTimetable(String studentId) async {
     try {
-      final response = await _dio.get('/schedules/my-schedule-student', queryParameters: {'studentId': studentId});
+      final response = await _dio.get('/schedules/my-schedule-student',
+          queryParameters: {'studentId': studentId});
       if (response.statusCode == 200) {
         final List data = _handleResponseData(response);
-        
+
         return data.map((item) {
-          final Map<String, dynamic> mapped = Map<String, dynamic>.from(item as Map);
-          
-          final dayRaw = (mapped['dayOfWeek'] ?? mapped['day'] ?? mapped['day_index'] ?? '').toString().toLowerCase();
+          final Map<String, dynamic> mapped =
+              Map<String, dynamic>.from(item as Map);
+
+          final dayRaw = (mapped['dayOfWeek'] ??
+                  mapped['day'] ??
+                  mapped['day_index'] ??
+                  '')
+              .toString()
+              .toLowerCase();
           int dayIndex = 0;
-          if (dayRaw == '1' || dayRaw.contains('mon') || dayRaw.contains('lun')) dayIndex = 0;
-          else if (dayRaw == '2' || dayRaw.contains('tue') || dayRaw.contains('mar')) dayIndex = 1;
-          else if (dayRaw == '3' || dayRaw.contains('wed') || dayRaw.contains('mer')) dayIndex = 2;
-          else if (dayRaw == '4' || dayRaw.contains('thu') || dayRaw.contains('jeu')) dayIndex = 3;
-          else if (dayRaw == '5' || dayRaw.contains('fri') || dayRaw.contains('ven')) dayIndex = 4;
-          else if (dayRaw == '6' || dayRaw.contains('sat') || dayRaw.contains('sam')) dayIndex = 5;
-          else if (dayRaw == '0' || dayRaw.contains('sun') || dayRaw.contains('dim')) dayIndex = 6;
+          if (dayRaw == '1' ||
+              dayRaw.contains('mon') ||
+              dayRaw.contains('lun')) {
+            dayIndex = 0;
+          } else if (dayRaw == '2' ||
+              dayRaw.contains('tue') ||
+              dayRaw.contains('mar'))
+            dayIndex = 1;
+          else if (dayRaw == '3' ||
+              dayRaw.contains('wed') ||
+              dayRaw.contains('mer'))
+            dayIndex = 2;
+          else if (dayRaw == '4' ||
+              dayRaw.contains('thu') ||
+              dayRaw.contains('jeu'))
+            dayIndex = 3;
+          else if (dayRaw == '5' ||
+              dayRaw.contains('fri') ||
+              dayRaw.contains('ven'))
+            dayIndex = 4;
+          else if (dayRaw == '6' ||
+              dayRaw.contains('sat') ||
+              dayRaw.contains('sam'))
+            dayIndex = 5;
+          else if (dayRaw == '0' ||
+              dayRaw.contains('sun') ||
+              dayRaw.contains('dim'))
+            dayIndex = 6;
           else if (int.tryParse(dayRaw) != null) {
             dayIndex = (int.parse(dayRaw) - 1).clamp(0, 5);
           } else {
             try {
               final dt = DateTime.parse(dayRaw);
-              dayIndex = dt.weekday - 1; 
+              dayIndex = dt.weekday - 1;
             } catch (_) {}
           }
 
@@ -941,7 +1166,7 @@ class ApiService {
           } else if (mapped['subject'] is String) {
             subject = mapped['subject'];
           }
-          
+
           String teacher = 'Teacher';
           if (mapped['teacher'] is Map) {
             final user = mapped['teacher']['user'];
@@ -951,7 +1176,7 @@ class ApiService {
               teacher = 'Teacher';
             }
           }
-          
+
           return TimetableSessionModel(
             dayIndex: dayIndex,
             time: time,
@@ -969,25 +1194,45 @@ class ApiService {
     }
   }
 
+  Future<bool> respondToEvent(String id, String response,
+      {bool isPost = false}) async {
+    try {
+      // API strictly defines PUT /events/{id}/respond
+      final res =
+          await _dio.put('/events/$id/respond', data: {'status': response});
+      return res.statusCode == 200 || res.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error responding to event: $e');
+      return false;
+    }
+  }
+
   // --- ERROR HANDLING HELPER ---
   String getLocalizedErrorMessage(dynamic error) {
     if (error is DioException) {
-      if (error.type == DioExceptionType.connectionError || 
+      if (error.type == DioExceptionType.connectionError ||
           error.type == DioExceptionType.connectionTimeout) {
         return 'server_down_or_no_internet';
       }
-      
+
       final status = error.response?.statusCode;
       final data = error.response?.data;
-      if (data is Map && data.containsKey('message') && data['message'] != null) {
+      if (data is Map &&
+          data.containsKey('message') &&
+          data['message'] != null) {
         return data['message'].toString();
       }
       switch (status) {
-        case 401: return 'unauthorized';
-        case 403: return 'forbidden';
-        case 404: return 'resource_not_found';
-        case 500: return 'internal_server_error';
-        default: return 'something_went_wrong';
+        case 401:
+          return 'unauthorized';
+        case 403:
+          return 'forbidden';
+        case 404:
+          return 'resource_not_found';
+        case 500:
+          return 'internal_server_error';
+        default:
+          return 'something_went_wrong';
       }
     }
     return 'unknown_error';

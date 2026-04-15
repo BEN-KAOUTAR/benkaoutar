@@ -19,7 +19,7 @@ class LocationViewModel extends ChangeNotifier {
 
   void startTracking(String studentId) {
     fetchLocationData(studentId);
-    
+
     // Polling every 10 seconds for live bus updates
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
@@ -42,7 +42,7 @@ class LocationViewModel extends ChangeNotifier {
         _apiService.getBusLocation(studentId),
         _apiService.getLocationHistory(studentId),
       ]);
-      
+
       _currentLocation = results[0] as BusLocationModel;
       _history = results[1] as List<LocationHistoryRecord>;
     } catch (e) {

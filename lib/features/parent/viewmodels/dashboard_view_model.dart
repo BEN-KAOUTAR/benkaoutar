@@ -18,31 +18,172 @@ class DashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> get todayAgenda => _todayAgenda;
   List<Map<String, dynamic>> _subjectAverages = [];
   List<Map<String, dynamic>> get subjectAverages => _subjectAverages;
+  List<dynamic> _upcomingEvents = [];
+  List<dynamic> get upcomingEvents => _upcomingEvents;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  int _currentEventIndex = 0;
+  int get currentEventIndex => _currentEventIndex;
+
+  void setCurrentEventIndex(int index) {
+    _currentEventIndex = index;
+    notifyListeners();
+  }
+
+  Future<bool> submitParticipation(dynamic item, String response) async {
+    final String id = item.id;
+    final bool isPost = item is PostModel;
+
+    final success =
+        await _apiService.respondToEvent(id, response, isPost: isPost);
+
+    if (success) {
+      // Update local state
+      final index = _upcomingEvents.indexWhere((e) => e.id == id);
+      if (index != -1) {
+        if (isPost) {
+          _upcomingEvents[index] = (_upcomingEvents[index] as PostModel)
+              .copyWith(participationStatus: response);
+        } else {
+          _upcomingEvents[index] = (_upcomingEvents[index] as EventModel)
+              .copyWith(participationStatus: response);
+        }
+        notifyListeners();
+      }
+    }
+    return success;
+  }
+
   Future<void> init() async {
-    await Future.wait([
-      fetchChildren(),
-      fetchStats(),
-      fetchTodayAgenda(), // New: Fetch today's context first
+    // 1. Fetch children first to get their IDs
+    await fetchChildren();
+
+    // 2. Determine if we should fetch stats (skip for student role to avoid 403)
+    bool isStudent = false;
+    try {
+      final profile = await _apiService.getProfile();
+      isStudent = profile.role.toString().contains('student') ||
+          profile.role == UserRole.parent && profile.childrenIds.isEmpty;
+      // Note: In this app, sometimes students use the parent dashboard logic if they are self-managed.
+    } catch (_) {}
+
+    // 3. Fetch everything else in parallel using the child ID where needed
+    final tasks = [
+      fetchTodayAgenda(),
       fetchActivities(),
       fetchSubjectAverages(),
-    ]);
+      fetchUpcomingEvents(),
+    ];
+
+    if (!isStudent) {
+      tasks.add(fetchStats());
+    }
+
+    await Future.wait(tasks);
+  }
+
+  bool _isSameDay(dynamic dateA, DateTime dateB) {
+    if (dateA == null) return false;
+    DateTime? dtA;
+    if (dateA is DateTime) {
+      dtA = dateA;
+    } else if (dateA is String) {
+      if (dateA.isEmpty) return false;
+      dtA = DateTime.tryParse(dateA);
+      // Fallback for common school board formats
+      if (dtA == null) {
+        final cleanDate =
+            dateA.split(' ')[0].replaceAll(RegExp(r'[^\d/-]'), '');
+        if (cleanDate.contains('/')) {
+          final parts = cleanDate.split('/');
+          if (parts.length == 3) {
+            if (parts[2].length == 4) {
+              dtA = DateTime.tryParse(
+                  "${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}");
+            } else if (parts[0].length == 4) {
+              dtA = DateTime.tryParse(
+                  "${parts[0]}-${parts[1].padLeft(2, '0')}-${parts[2].padLeft(2, '0')}");
+            }
+          }
+        } else if (cleanDate.contains('-')) {
+          final parts = cleanDate.split('-');
+          if (parts.length == 3 &&
+              parts[0].length != 4 &&
+              parts[2].length == 4) {
+            dtA = DateTime.tryParse(
+                "${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}");
+          }
+        }
+      }
+    }
+    if (dtA == null) return false;
+    return dtA.year == dateB.year &&
+        dtA.month == dateB.month &&
+        dtA.day == dateB.day;
+  }
+
+  bool _isFutureOrToday(dynamic dateA, DateTime dateB) {
+    if (dateA == null) return false;
+    DateTime? dtA;
+    if (dateA is DateTime) {
+      dtA = dateA;
+    } else if (dateA is String) {
+      if (dateA.isEmpty) return false;
+      dtA = DateTime.tryParse(dateA);
+      if (dtA == null) {
+        final cleanDate =
+            dateA.split(' ')[0].replaceAll(RegExp(r'[^\d/-]'), '');
+        if (cleanDate.contains('/')) {
+          final parts = cleanDate.split('/');
+          if (parts.length == 3) {
+            if (parts[2].length == 4) {
+              dtA = DateTime.tryParse(
+                  "${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}");
+            } else if (parts[0].length == 4) {
+              dtA = DateTime.tryParse(
+                  "${parts[0]}-${parts[1].padLeft(2, '0')}-${parts[2].padLeft(2, '0')}");
+            }
+          }
+        } else if (cleanDate.contains('-')) {
+          final parts = cleanDate.split('-');
+          if (parts.length == 3 &&
+              parts[0].length != 4 &&
+              parts[2].length == 4) {
+            dtA = DateTime.tryParse(
+                "${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}");
+          }
+        }
+      }
+    }
+    if (dtA == null) return false;
+    final normalizedA = DateTime(dtA.year, dtA.month, dtA.day);
+    final normalizedB = DateTime(dateB.year, dateB.month, dateB.day);
+    return normalizedA.isAtSameMomentAs(normalizedB) ||
+        normalizedA.isAfter(normalizedB);
   }
 
   Future<void> fetchTodayAgenda() async {
     try {
       final now = DateTime.now();
-      final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       final dayOfWeekIndex = now.weekday - 1; // 0=Mon, ..., 6=Sun
+      final studentId = _children.isNotEmpty ? _children[0].id : 'me';
 
       final results = await Future.wait([
-        _apiService.getTimetable('me').catchError((_) => <TimetableSessionModel>[]),
-        _apiService.getGrades('me').catchError((_) => <GradeModel>[]),
-        _apiService.getAbsences('me').catchError((_) => <AttendanceRecord>[]),
-        _apiService.getHomework('me').catchError((_) => <HomeworkModel>[]),
-        _apiService.getCalendarEvents(studentId: 'me', month: now.month, year: now.year).catchError((_) => <EventModel>[]),
+        _apiService
+            .getTimetable(studentId)
+            .catchError((_) => <TimetableSessionModel>[]),
+        _apiService.getGrades(studentId).catchError((_) => <GradeModel>[]),
+        _apiService
+            .getAbsences(studentId)
+            .catchError((_) => <AttendanceRecord>[]),
+        _apiService.getHomework(studentId).catchError((_) => <HomeworkModel>[]),
+        _apiService
+            .getCalendarEvents(
+                studentId: studentId, month: now.month, year: now.year)
+            .catchError((_) => <EventModel>[]),
+        _apiService.getExams(studentId).catchError((_) => <HomeworkModel>[]),
+        _apiService.getPosts().catchError((_) => <PostModel>[]),
       ]);
 
       final List<Map<String, dynamic>> agenda = [];
@@ -54,8 +195,9 @@ class DashboardViewModel extends ChangeNotifier {
           agenda.add({
             'type': 'session',
             'title': s.subject,
-            'content': '${s.time} - ${s.room} (Prof. ${s.teacher})',
+            'content': 'Prof. ${s.teacher}',
             'time': s.time,
+            'location': s.room.isNotEmpty ? s.room : null,
             'icon': Icons.schedule_rounded,
             'color': Colors.blueAccent,
             'date_raw': now,
@@ -63,16 +205,16 @@ class DashboardViewModel extends ChangeNotifier {
         }
       }
 
-      // 2. Add Exams (Grades from today)
-      final exams = results[1] as List<GradeModel>;
-      for (var e in exams) {
-        if (e.date.contains(todayStr)) {
+      // 2. Add Exams / Results available today
+      final resultsAvailable = results[1] as List<GradeModel>;
+      for (var e in resultsAvailable) {
+        if (_isSameDay(e.date, now)) {
           agenda.add({
-            'type': 'exam',
-            'title': 'Examen: ${e.subject}',
-            'content': e.title ?? 'Évaluation prévue',
+            'type': 'exam_result',
+            'title': 'Résultat Examen: ${e.subject}',
+            'content': '${e.grade}/${e.maxGrade.toInt()} - ${e.title ?? ""}',
             'date': 'Aujourd\'hui',
-            'icon': Icons.assignment_rounded,
+            'icon': Icons.assignment_turned_in_rounded,
             'color': Colors.purpleAccent,
             'date_raw': now,
           });
@@ -82,14 +224,16 @@ class DashboardViewModel extends ChangeNotifier {
       // 3. Add Absences / Attendance today
       final absences = results[2] as List<AttendanceRecord>;
       for (var ab in absences) {
-        if (ab.date.contains(todayStr)) {
+        if (_isSameDay(ab.date, now)) {
           final isAbsence = ab.status.toLowerCase().contains('absent');
           agenda.add({
             'type': 'absence',
             'title': isAbsence ? 'Absence Détectée' : 'Retard Détecté',
             'content': '${ab.subjectName ?? "Session"} - ${ab.status}',
             'date': 'Aujourd\'hui',
-            'icon': isAbsence ? Icons.event_busy_rounded : Icons.history_toggle_off_rounded,
+            'icon': isAbsence
+                ? Icons.event_busy_rounded
+                : Icons.history_toggle_off_rounded,
             'color': isAbsence ? Colors.redAccent : Colors.orangeAccent,
             'date_raw': now,
           });
@@ -99,10 +243,10 @@ class DashboardViewModel extends ChangeNotifier {
       // 4. Add Homework (Due Today)
       final homeworks = results[3] as List<HomeworkModel>;
       for (var h in homeworks) {
-        if (h.dueDate.contains(todayStr)) {
+        if (_isSameDay(h.dueDate, now)) {
           agenda.add({
             'type': 'homework',
-            'title': 'Devoir à rendre: ${h.subject}',
+            'title': 'Devoir: ${h.subject}',
             'content': h.title,
             'date': 'Aujourd\'hui',
             'icon': Icons.menu_book_rounded,
@@ -112,15 +256,34 @@ class DashboardViewModel extends ChangeNotifier {
         }
       }
 
-      // 5. Add Calendar Events (Today)
+      // 5. Add Upcoming exams scheduled for today
+      final upcomingExams = results[5] as List<HomeworkModel>;
+      for (var ex in upcomingExams) {
+        if (_isSameDay(ex.dueDate, now)) {
+          agenda.add({
+            'type': 'exam',
+            'title': 'EXAMEN: ${ex.subject}',
+            'content': ex.title,
+            'time': 'Aujourd\'hui',
+            'icon': Icons.notification_important_rounded,
+            'color': Colors.redAccent,
+            'date_raw': now,
+          });
+        }
+      }
+
+      // 6. Add Calendar Events (Today)
       final events = results[4] as List<EventModel>;
       for (var ev in events) {
-        if (ev.date.contains(todayStr)) {
+        if (_isSameDay(ev.date, now)) {
           agenda.add({
             'type': 'event',
             'title': ev.title,
-            'content': ev.description.isNotEmpty ? ev.description : 'Événement scolaire',
-            'time': ev.time.isNotEmpty ? ev.time : null,
+            'content': ev.description.isNotEmpty
+                ? ev.description
+                : 'Événement scolaire',
+            'time': ev.time.isNotEmpty ? ev.time : 'À définir',
+            'location': (ev.location?.isNotEmpty ?? false) ? ev.location : null,
             'icon': Icons.event_available_rounded,
             'color': Colors.indigoAccent,
             'date_raw': now,
@@ -128,10 +291,26 @@ class DashboardViewModel extends ChangeNotifier {
         }
       }
 
+      // 7. Add Event Posts (Today fallback)
+      final newsPosts = results[6] as List<PostModel>;
+      for (var p in newsPosts) {
+        if (p.isEvent && _isSameDay(p.eventDate ?? p.date, now)) {
+          agenda.add({
+            'type': 'event',
+            'title': p.title.isNotEmpty ? p.title : 'Événement',
+            'content': p.content,
+            'time': 'Aujourd\'hui',
+            'icon': Icons.event_note_rounded,
+            'color': p.isUrgent ? Colors.redAccent : Colors.indigoAccent,
+            'date_raw': now,
+          });
+        }
+      }
+
       // Sort by time if it exists (for sessions)
       agenda.sort((a, b) {
-        final timeA = a['time'] ?? '00:00';
-        final timeB = b['time'] ?? '00:00';
+        final timeA = a['time']?.toString() ?? '00:00';
+        final timeB = b['time']?.toString() ?? '00:00';
         return timeA.compareTo(timeB);
       });
 
@@ -139,6 +318,109 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Error fetching today agenda: $e');
+    }
+  }
+
+  Future<void> fetchUpcomingEvents() async {
+    try {
+      final now = DateTime.now();
+      final studentId = _children.isNotEmpty ? _children[0].id : 'me';
+
+      // Concurrent fetch for calendar events, upcoming exams, AND urgent posts
+      final results = await Future.wait([
+        _apiService
+            .getCalendarEvents(
+              studentId: studentId,
+              month: now.month,
+              year: now.year,
+            )
+            .catchError((_) => <EventModel>[]),
+        _apiService
+            .getCalendarEvents(
+              studentId: studentId,
+              month: DateTime(now.year, now.month + 1, 1).month,
+              year: DateTime(now.year, now.month + 1, 1).year,
+            )
+            .catchError((_) => <EventModel>[]),
+        _apiService.getExams(studentId).catchError((_) => <HomeworkModel>[]),
+        _apiService.getPosts().catchError((_) => <PostModel>[]),
+      ]);
+
+      final calendarEvents = [
+        ...(results[0] as List<EventModel>),
+        ...(results[1] as List<EventModel>)
+      ];
+      final exams = results[2] as List<HomeworkModel>;
+      final posts = results[3] as List<PostModel>;
+
+      final List<dynamic> allUpcoming = [];
+
+      // 1. Filter and Add Calendar Events (School Calendar)
+      allUpcoming
+          .addAll(calendarEvents.where((e) => _isFutureOrToday(e.date, now)));
+
+      // 2. Filter and Add News Posts that are explicitly marked as events
+      final eventPosts = posts.where(
+          (p) => p.isEvent && _isFutureOrToday(p.eventDate ?? p.date, now));
+      allUpcoming.addAll(eventPosts);
+
+      // 3. Add a temporary Mock event for verification if NONE found (testing purpose as requested)
+      if (allUpcoming.isEmpty) {
+        allUpcoming.add(EventModel(
+          id: 'mock_test',
+          title: 'Réunion Parents-Professeurs',
+          description:
+              'Discussion sur les progrès académiques du deuxième semestre.',
+          date: DateTime.now().add(const Duration(days: 2)).toIso8601String(),
+          time: '17:00',
+          type: 'meeting',
+          location: 'Salle de conférence A',
+        ));
+      }
+
+      // sort all by date & importance (urgent posts first)
+      allUpcoming.sort((a, b) {
+        // Importance first (isUrgent)
+        bool isUrgentA = false;
+        if (a is PostModel) isUrgentA = a.isUrgent;
+
+        bool isUrgentB = false;
+        if (b is PostModel) isUrgentB = b.isUrgent;
+
+        if (isUrgentA && !isUrgentB) return -1;
+        if (!isUrgentA && isUrgentB) return 1;
+
+        // Then by Date
+        DateTime? dtA;
+        if (a is EventModel) {
+          dtA = DateTime.tryParse(a.date);
+        } else if (a is HomeworkModel)
+          dtA = DateTime.tryParse(a.dueDate);
+        else if (a is PostModel) dtA = DateTime.tryParse(a.eventDate ?? a.date);
+
+        DateTime? dtB;
+        if (b is EventModel) {
+          dtB = DateTime.tryParse(b.date);
+        } else if (b is HomeworkModel)
+          dtB = DateTime.tryParse(b.dueDate);
+        else if (b is PostModel) dtB = DateTime.tryParse(b.eventDate ?? b.date);
+
+        if (dtA != null && dtB != null) return dtA.compareTo(dtB);
+        if (dtA != null) return -1;
+        if (dtB != null) return 1;
+        return 0;
+      });
+
+      _upcomingEvents = allUpcoming;
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching upcoming dashboard events: $e');
+    } finally {
+      // After fetching, ensure index is valid
+      if (_currentEventIndex >= _upcomingEvents.length) {
+        _currentEventIndex = 0;
+      }
     }
   }
 
@@ -159,11 +441,12 @@ class DashboardViewModel extends ChangeNotifier {
 
   Future<void> fetchStats() async {
     try {
-      await _apiService.getDashboardStats();
-      // Stats are fetched to populate any server-side cache or aggregated data
+      final stats = await _apiService.getDashboardStats();
+      if (stats.isEmpty) return;
       notifyListeners();
     } catch (e) {
-      // Handle silently
+      // Handle silently (403 or other)
+      debugPrint('Dashboard stats skipped or forbidden: $e');
     }
   }
 
@@ -208,12 +491,14 @@ class DashboardViewModel extends ChangeNotifier {
 
   List<GradeModel>? _cachedGrades;
 
-  Future<void> fetchSubjectAverages({String? semester, bool forceRefresh = false}) async {
+  Future<void> fetchSubjectAverages(
+      {String? semester, bool forceRefresh = false}) async {
     try {
       if (forceRefresh || _cachedGrades == null) {
-        _cachedGrades = await _apiService.getGrades('me');
+        final studentId = _children.isNotEmpty ? _children[0].id : 'me';
+        _cachedGrades = await _apiService.getGrades(studentId);
       }
-      
+
       final grades = _cachedGrades ?? [];
       if (grades.isEmpty) {
         _subjectAverages = [];
@@ -226,7 +511,8 @@ class DashboardViewModel extends ChangeNotifier {
           ? grades
           : grades.where((g) {
               final s = g.semester.toString().toUpperCase().replaceAll('S', '');
-              final target = semester.toString().toUpperCase().replaceAll('S', '');
+              final target =
+                  semester.toString().toUpperCase().replaceAll('S', '');
               return s == target;
             }).toList();
 
@@ -242,7 +528,8 @@ class DashboardViewModel extends ChangeNotifier {
           subjectScores[g.subject] = [];
         }
         // Normalize to a 10-point scale: (grade / maxGrade) * 10
-        final normalizedGrade = (g.grade / (g.maxGrade > 0 ? g.maxGrade : 20.0)) * 10.0;
+        final normalizedGrade =
+            (g.grade / (g.maxGrade > 0 ? g.maxGrade : 10.0)) * 10.0;
         subjectScores[g.subject]!.add(normalizedGrade);
       }
 
@@ -250,7 +537,8 @@ class DashboardViewModel extends ChangeNotifier {
       int index = 0;
       for (var subject in subjectScores.keys) {
         final scores = subjectScores[subject]!;
-        final average = scores.fold(0.0, (sum, score) => sum + score) / scores.length;
+        final average =
+            scores.fold(0.0, (sum, score) => sum + score) / scores.length;
         _subjectAverages.add({
           'index': index++,
           'subject': subject,
@@ -263,7 +551,8 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchEvolution(String studentId, String year, String semester) async {
+  Future<void> fetchEvolution(
+      String studentId, String year, String semester) async {
     try {
       _evolutionData = await _apiService.getGradeEvolution(
         studentId: studentId,

@@ -24,10 +24,13 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   void initState() {
     super.initState();
     final appState = Provider.of<AppState>(context, listen: false);
-    _nameController = TextEditingController(text: appState.currentUser?.name ?? '');
-    _emailController = TextEditingController(text: appState.currentUser?.email ?? '');
+    _nameController =
+        TextEditingController(text: appState.currentUser?.name ?? '');
+    _emailController =
+        TextEditingController(text: appState.currentUser?.email ?? '');
     _dobController = TextEditingController(text: '-- / -- / ----');
-    _phoneController = TextEditingController(text: appState.currentUser?.phone ?? '');
+    _phoneController =
+        TextEditingController(text: appState.currentUser?.phone ?? '');
     _tempAvatarIndex = appState.currentUser?.avatarIndex;
   }
 
@@ -44,7 +47,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white54 : Colors.black54;
 
@@ -56,11 +59,15 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         elevation: 0,
         title: Text(
           'Informations Personnelles',
-          style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 18),
+          style: TextStyle(
+              color: primaryTextColor,
+              fontWeight: FontWeight.w900,
+              fontSize: 18),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: primaryTextColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -72,7 +79,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -84,7 +92,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                               onTap: () => AvatarSelectorModal.show(
                                 context,
                                 initialIndex: _tempAvatarIndex,
-                                onSelect: (index) => setState(() => _tempAvatarIndex = index),
+                                onSelect: (index) =>
+                                    setState(() => _tempAvatarIndex = index),
                               ),
                               child: Stack(
                                 children: [
@@ -93,13 +102,18 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: const LinearGradient(
-                                        colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFF06B6D4)],
+                                        colors: [
+                                          Color(0xFF3B82F6),
+                                          Color(0xFF8B5CF6),
+                                          Color(0xFF06B6D4)
+                                        ],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                                          color: const Color(0xFF3B82F6)
+                                              .withValues(alpha: 0.3),
                                           blurRadius: 20,
                                           offset: const Offset(0, 6),
                                         ),
@@ -109,10 +123,14 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                       padding: const EdgeInsets.all(3),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                        color: isDark
+                                            ? const Color(0xFF0F172A)
+                                            : Colors.white,
                                       ),
                                       child: _tempAvatarIndex != null
-                                          ? SpriteAvatar(index: _tempAvatarIndex!, size: 100)
+                                          ? SpriteAvatar(
+                                              index: _tempAvatarIndex!,
+                                              size: 100)
                                           : Container(
                                               width: 100,
                                               height: 100,
@@ -120,12 +138,20 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                                 shape: BoxShape.circle,
                                                 gradient: LinearGradient(
                                                   colors: [
-                                                    Colors.blueAccent.withValues(alpha: 0.15),
-                                                    Colors.purpleAccent.withValues(alpha: 0.15),
+                                                    Colors.blueAccent
+                                                        .withValues(
+                                                            alpha: 0.15),
+                                                    Colors.purpleAccent
+                                                        .withValues(
+                                                            alpha: 0.15),
                                                   ],
                                                 ),
                                               ),
-                                              child: Icon(Icons.person_rounded, color: isDark ? Colors.white38 : Colors.black26, size: 50),
+                                              child: Icon(Icons.person_rounded,
+                                                  color: isDark
+                                                      ? Colors.white38
+                                                      : Colors.black26,
+                                                  size: 50),
                                             ),
                                     ),
                                   ),
@@ -136,21 +162,28 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
-                                          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                                          colors: [
+                                            Color(0xFF3B82F6),
+                                            Color(0xFF8B5CF6)
+                                          ],
                                         ),
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                          color: isDark
+                                              ? const Color(0xFF0F172A)
+                                              : Colors.white,
                                           width: 3,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                                            color: Colors.blueAccent
+                                                .withValues(alpha: 0.3),
                                             blurRadius: 8,
                                           ),
                                         ],
                                       ),
-                                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 14),
+                                      child: const Icon(Icons.edit_rounded,
+                                          color: Colors.white, size: 14),
                                     ),
                                   ),
                                 ],
@@ -159,7 +192,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                             const SizedBox(height: 12),
                             Text(
                               'Photo de Profil',
-                              style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: secondaryTextColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -175,7 +211,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                         readOnly: true,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       _buildField(
                         context: context,
                         label: 'Adresse Email',
@@ -217,29 +253,42 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   builder: (context, vm, child) => SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: vm.isUpdating ? null : () async {
-                        await vm.updateProfile(
-                          phone: _phoneController.text,
-                          avatarIndex: _tempAvatarIndex,
-                        );
-                        if (mounted && vm.errorMessage == null) {
-                          Navigator.pop(context);
-                        } else if (mounted && vm.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(vm.errorMessage!), backgroundColor: Colors.redAccent),
-                          );
-                        }
-                      },
+                      onPressed: vm.isUpdating
+                          ? null
+                          : () async {
+                              await vm.updateProfile(
+                                phone: _phoneController.text,
+                                avatarIndex: _tempAvatarIndex,
+                              );
+                              if (mounted && vm.errorMessage == null) {
+                                Navigator.pop(context);
+                              } else if (mounted && vm.errorMessage != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(vm.errorMessage!),
+                                      backgroundColor: Colors.redAccent),
+                                );
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 20),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
                         elevation: 0,
                       ),
-                      child: vm.isUpdating 
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('SAUVEGARDER', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 13)),
+                      child: vm.isUpdating
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2))
+                          : const Text('SAUVEGARDER',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                  fontSize: 13)),
                     ),
                   ),
                 ),
@@ -263,10 +312,13 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
-    
+
     // Premium Glass Colors
-    final glassColor = isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.7);
-    final glassBorder = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+    final glassColor = isDark
+        ? Colors.white.withValues(alpha: 0.03)
+        : Colors.white.withValues(alpha: 0.7);
+    final glassBorder =
+        isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,11 +328,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: secondaryTextColor, 
-              fontSize: 11, 
-              fontWeight: FontWeight.w900, 
-              letterSpacing: 0.5
-            ),
+                color: secondaryTextColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5),
           ),
         ),
         Container(
@@ -292,7 +343,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           ),
           child: Row(
             children: [
-              Icon(icon, color: isDark ? Colors.white24 : Colors.black26, size: 20),
+              Icon(icon,
+                  color: isDark ? Colors.white24 : Colors.black26, size: 20),
               const SizedBox(width: 16),
               Expanded(
                 child: TextField(
@@ -301,7 +353,9 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   keyboardType: keyboardType,
                   cursorColor: Colors.blueAccent,
                   style: TextStyle(
-                    color: readOnly ? (isDark ? Colors.white54 : Colors.black54) : primaryTextColor,
+                    color: readOnly
+                        ? (isDark ? Colors.white54 : Colors.black54)
+                        : primaryTextColor,
                     fontWeight: FontWeight.w900,
                     fontSize: 15,
                   ),
@@ -312,11 +366,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   ),
                 ),
               ),
-              Icon(
-                trailingIcon, 
-                color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.1), 
-                size: 18
-              ),
+              Icon(trailingIcon,
+                  color: isDark
+                      ? Colors.white12
+                      : Colors.black.withValues(alpha: 0.1),
+                  size: 18),
             ],
           ),
         ),

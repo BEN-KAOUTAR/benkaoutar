@@ -45,16 +45,25 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.white, shape: BoxShape.circle),
-                child: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 16),
+                decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : Colors.white,
+                    shape: BoxShape.circle),
+                child: Icon(Icons.arrow_back_ios_new_rounded,
+                    color: primaryTextColor, size: 16),
               ),
               onPressed: () => Navigator.pop(context),
             ),
-            title: Text(loc.translate('behavior_summary'), style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 20, letterSpacing: -0.5)),
+            title: Text(loc.translate('behavior_summary'),
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: primaryTextColor,
+                    fontSize: 20,
+                    letterSpacing: -0.5)),
             centerTitle: true,
             actions: [
               IconButton(
-                icon: Icon(Icons.help_outline_rounded, color: secondaryTextColor),
+                icon:
+                    Icon(Icons.help_outline_rounded, color: secondaryTextColor),
                 onPressed: () {},
               ),
             ],
@@ -62,49 +71,62 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
           body: DeepSpaceBackground(
             showOrbs: true,
             child: SafeArea(
-              child: Builder(
-                builder: (context) {
-                  if (vm.isLoading && vm.history.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (vm.errorMessage != null && vm.history.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline_rounded, size: 64, color: Colors.blueAccent.withValues(alpha: 0.2)),
-                          const SizedBox(height: 16),
-                          Text(loc.translate(vm.errorMessage!), style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 16)),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () => vm.fetchBehaviorData(widget.student.id),
-                            child: Text(loc.translate('retry')),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildPlatinumScore(context, isDark, vm.summary),
-                    const SizedBox(height: 48),
-                    _buildEvolutionChart(context, isDark, vm.summary['weekly_evolution'] ?? []),
-                    const SizedBox(height: 48),
-                    _buildAppreciationSection(context, isDark, vm.summary['appreciation']),
-                    const SizedBox(height: 48),
-                    Text(loc.translate('recent_history').toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: secondaryTextColor, letterSpacing: 2)),
-                    const SizedBox(height: 24),
-                    _buildBehaviorTimeline(context, isDark, vm.history),
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              );
-              }
-            ),
+              child: Builder(builder: (context) {
+                if (vm.isLoading && vm.history.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (vm.errorMessage != null && vm.history.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline_rounded,
+                            size: 64,
+                            color: Colors.blueAccent.withValues(alpha: 0.2)),
+                        const SizedBox(height: 16),
+                        Text(loc.translate(vm.errorMessage!),
+                            style: TextStyle(
+                                color: secondaryTextColor,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16)),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () =>
+                              vm.fetchBehaviorData(widget.student.id),
+                          child: Text(loc.translate('retry')),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPlatinumScore(context, isDark, vm.summary),
+                      const SizedBox(height: 48),
+                      _buildEvolutionChart(context, isDark,
+                          vm.summary['weekly_evolution'] ?? []),
+                      const SizedBox(height: 48),
+                      _buildAppreciationSection(
+                          context, isDark, vm.summary['appreciation']),
+                      const SizedBox(height: 48),
+                      Text(loc.translate('recent_history').toUpperCase(),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                              color: secondaryTextColor,
+                              letterSpacing: 2)),
+                      const SizedBox(height: 24),
+                      _buildBehaviorTimeline(context, isDark, vm.history),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                );
+              }),
             ),
           ),
         );
@@ -112,7 +134,8 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
     );
   }
 
-  Widget _buildPlatinumScore(BuildContext context, bool isDark, Map<String, dynamic> summary) {
+  Widget _buildPlatinumScore(
+      BuildContext context, bool isDark, Map<String, dynamic> summary) {
     final loc = AppLocalizations.of(context)!;
     final score = summary['score'] ?? 0;
     final delta = summary['delta'] ?? 0;
@@ -126,9 +149,14 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
         child: Container(
           padding: const EdgeInsets.all(36),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.white),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -136,21 +164,49 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(loc.translate('global_score').toUpperCase(), style: TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  Text(loc.translate('global_score').toUpperCase(),
+                      style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2)),
                   const SizedBox(height: 12),
-                  Text('$score', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 56, letterSpacing: -3)),
+                  Text('$score',
+                      style: TextStyle(
+                          color:
+                              isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 56,
+                          letterSpacing: -3)),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: delta >= 0 ? Colors.greenAccent.withValues(alpha: 0.1) : Colors.redAccent.withValues(alpha: 0.1), 
-                      borderRadius: BorderRadius.circular(12)
-                    ),
+                        color: delta >= 0
+                            ? Colors.greenAccent.withValues(alpha: 0.1)
+                            : Colors.redAccent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       children: [
-                        Icon(delta >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded, color: delta >= 0 ? Colors.greenAccent : Colors.redAccent, size: 14),
+                        Icon(
+                            delta >= 0
+                                ? Icons.trending_up_rounded
+                                : Icons.trending_down_rounded,
+                            color: delta >= 0
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
+                            size: 14),
                         const SizedBox(width: 6),
-                        Text('${delta >= 0 ? "+" : ""}$delta ${loc.translate('this_week')}', style: TextStyle(color: delta >= 0 ? Colors.greenAccent : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                        Text(
+                            '${delta >= 0 ? "+" : ""}$delta ${loc.translate('this_week')}',
+                            style: TextStyle(
+                                color: delta >= 0
+                                    ? Colors.greenAccent
+                                    : Colors.redAccent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5)),
                       ],
                     ),
                   ),
@@ -158,9 +214,11 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
               ),
               Column(
                 children: [
-                  _buildMiniStat(loc.translate('congratulations'), '$congratulations', Colors.indigoAccent),
+                  _buildMiniStat(loc.translate('congratulations'),
+                      '$congratulations', Colors.indigoAccent),
                   const SizedBox(height: 16),
-                  _buildMiniStat(loc.translate('warnings'), '$warnings', Colors.orangeAccent),
+                  _buildMiniStat(loc.translate('warnings'), '$warnings',
+                      Colors.orangeAccent),
                 ],
               ),
             ],
@@ -181,14 +239,22 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 18)),
-          Text(label.toUpperCase(), style: TextStyle(color: color, fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w900, fontSize: 18)),
+          Text(label.toUpperCase(),
+              style: TextStyle(
+                  color: color,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5)),
         ],
       ),
     );
   }
 
-  Widget _buildEvolutionChart(BuildContext context, bool isDark, List evolution) {
+  Widget _buildEvolutionChart(
+      BuildContext context, bool isDark, List evolution) {
     final loc = AppLocalizations.of(context)!;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
 
@@ -198,7 +264,11 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(loc.translate('weekly_points_evolution'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primaryTextColor)),
+            Text(loc.translate('weekly_points_evolution'),
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: primaryTextColor)),
             _buildChartTabs(isDark),
           ],
         ),
@@ -213,9 +283,12 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
               titlesData: FlTitlesData(
-                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -230,7 +303,12 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
                       if (val.toInt() < days.length) {
                         return Padding(
                           padding: const EdgeInsets.only(top: 12),
-                          child: Text(days[val.toInt()], style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 9, fontWeight: FontWeight.w900)),
+                          child: Text(days[val.toInt()],
+                              style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white38 : Colors.black38,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900)),
                         );
                       }
                       return const SizedBox();
@@ -246,7 +324,9 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
   }
 
   List<BarChartGroupData> _generateBarGroups(bool isDark, List evolution) {
-    final values = evolution.isEmpty ? [0.0, 0.0, 0.0, 0.0, 0.0] : evolution.map((v) => (v['value'] as num).toDouble()).toList();
+    final values = evolution.isEmpty
+        ? [0.0, 0.0, 0.0, 0.0, 0.0]
+        : evolution.map((v) => (v['value'] as num).toDouble()).toList();
     return List.generate(values.length, (i) {
       return BarChartGroupData(
         x: i,
@@ -254,7 +334,10 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
           BarChartRodData(
             toY: values[i],
             gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.blueAccent.withValues(alpha: 0.3)],
+              colors: [
+                Colors.blueAccent,
+                Colors.blueAccent.withValues(alpha: 0.3)
+              ],
               begin: Alignment.bottomCenter,
               end: Alignment.topCenter,
             ),
@@ -263,7 +346,8 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
               toY: 20,
-              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+              color:
+                  isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
             ),
           ),
         ],
@@ -281,8 +365,10 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
       ),
       child: Row(
         children: [
-          _buildTabButton(loc.translate('week_short'), _selectedTab == 0, () => setState(() => _selectedTab = 0)),
-          _buildTabButton(loc.translate('month_short'), _selectedTab == 1, () => setState(() => _selectedTab = 1)),
+          _buildTabButton(loc.translate('week_short'), _selectedTab == 0,
+              () => setState(() => _selectedTab = 0)),
+          _buildTabButton(loc.translate('month_short'), _selectedTab == 1,
+              () => setState(() => _selectedTab = 1)),
         ],
       ),
     );
@@ -298,23 +384,36 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
           color: isSelected ? Colors.blueAccent : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontWeight: FontWeight.w900, fontSize: 10)),
+        child: Text(label,
+            style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey,
+                fontWeight: FontWeight.w900,
+                fontSize: 10)),
       ),
     );
   }
 
-  Widget _buildAppreciationSection(BuildContext context, bool isDark, Map<String, dynamic>? appreciation) {
+  Widget _buildAppreciationSection(
+      BuildContext context, bool isDark, Map<String, dynamic>? appreciation) {
     final loc = AppLocalizations.of(context)!;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final content = appreciation?['content'] ?? loc.translate('no_appreciation_yet');
-    final teacherName = appreciation?['teacher_name'] ?? loc.translate('teacher');
-    final teacherRole = appreciation?['teacher_role'] ?? loc.translate('main_teacher');
-    final teacherAvatar = appreciation?['teacher_avatar'] ?? 'https://i.pravatar.cc/150?u=teacher';
+    final content =
+        appreciation?['content'] ?? loc.translate('no_appreciation_yet');
+    final teacherName =
+        appreciation?['teacher_name'] ?? loc.translate('teacher');
+    final teacherRole =
+        appreciation?['teacher_role'] ?? loc.translate('main_teacher');
+    final teacherAvatar = appreciation?['teacher_avatar'] ??
+        'https://i.pravatar.cc/150?u=teacher';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(loc.translate('general_appreciation'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primaryTextColor)),
+        Text(loc.translate('general_appreciation'),
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: primaryTextColor)),
         const SizedBox(height: 24),
         ClipRRect(
           borderRadius: BorderRadius.circular(32),
@@ -323,9 +422,14 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
             child: Container(
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.8),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.white),
               ),
               child: Column(
                 children: [
@@ -334,14 +438,21 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.1), shape: BoxShape.circle),
-                        child: const Icon(Icons.format_quote_rounded, color: Colors.blueAccent, size: 24),
+                        decoration: BoxDecoration(
+                            color: Colors.blueAccent.withValues(alpha: 0.1),
+                            shape: BoxShape.circle),
+                        child: const Icon(Icons.format_quote_rounded,
+                            color: Colors.blueAccent, size: 24),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Text(
                           content,
-                          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13, height: 1.6, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black87,
+                              fontSize: 13,
+                              height: 1.6,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -349,17 +460,29 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      CircleAvatar(radius: 16, backgroundImage: NetworkImage(teacherAvatar)),
+                      CircleAvatar(
+                          radius: 16,
+                          backgroundImage: NetworkImage(teacherAvatar)),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(teacherName, style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 13)),
-                          Text(teacherRole, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.w900, fontSize: 10)),
+                          Text(teacherName,
+                              style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13)),
+                          Text(teacherRole,
+                              style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white38 : Colors.black38,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10)),
                         ],
                       ),
                       const Spacer(),
-                      const Icon(Icons.verified_rounded, color: Colors.blueAccent, size: 20),
+                      const Icon(Icons.verified_rounded,
+                          color: Colors.blueAccent, size: 20),
                     ],
                   ),
                 ],
@@ -371,7 +494,8 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
     ).animate().fadeIn(delay: 400.ms);
   }
 
-  Widget _buildBehaviorTimeline(BuildContext context, bool isDark, List<Map<String, dynamic>> history) {
+  Widget _buildBehaviorTimeline(
+      BuildContext context, bool isDark, List<Map<String, dynamic>> history) {
     return Column(
       children: history.asMap().entries.map((entry) {
         final item = entry.value;
@@ -396,19 +520,27 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
 
   IconData _getIconForType(String? type) {
     switch (type) {
-      case 'positive': return Icons.star_rounded;
-      case 'negative': return Icons.report_problem_rounded;
-      case 'bonus': return Icons.emoji_events_rounded;
-      default: return Icons.info_rounded;
+      case 'positive':
+        return Icons.star_rounded;
+      case 'negative':
+        return Icons.report_problem_rounded;
+      case 'bonus':
+        return Icons.emoji_events_rounded;
+      default:
+        return Icons.info_rounded;
     }
   }
 
   Color _getColorForType(String? type) {
     switch (type) {
-      case 'positive': return Colors.amberAccent;
-      case 'negative': return Colors.redAccent;
-      case 'bonus': return Colors.greenAccent;
-      default: return Colors.blueAccent;
+      case 'positive':
+        return Colors.amberAccent;
+      case 'negative':
+        return Colors.redAccent;
+      case 'bonus':
+        return Colors.greenAccent;
+      default:
+        return Colors.blueAccent;
     }
   }
 
@@ -436,12 +568,20 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle, border: Border.all(color: color.withValues(alpha: 0.2))),
+                decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color.withValues(alpha: 0.2))),
                 child: Icon(icon, color: color, size: 20),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 2, color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white, margin: const EdgeInsets.symmetric(vertical: 4)),
+                  child: Container(
+                      width: 2,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.white,
+                      margin: const EdgeInsets.symmetric(vertical: 4)),
                 ),
             ],
           ),
@@ -451,9 +591,14 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
               margin: const EdgeInsets.only(bottom: 24),
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.02)
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.white.withValues(alpha: 0.8)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,20 +606,45 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: primaryTextColor))),
-                      Text(points, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 13)),
+                      Expanded(
+                          child: Text(title,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                  color: primaryTextColor))),
+                      Text(points,
+                          style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13)),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(date, style: TextStyle(color: secondaryTextColor, fontSize: 10, fontWeight: FontWeight.w900)),
+                  Text(date,
+                      style: TextStyle(
+                          color: secondaryTextColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900)),
                   const SizedBox(height: 16),
-                  Text(desc, style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 13, height: 1.5, fontWeight: FontWeight.bold)),
+                  Text(desc,
+                      style: TextStyle(
+                          color: isDark ? Colors.white60 : Colors.black54,
+                          fontSize: 13,
+                          height: 1.5,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      CircleAvatar(radius: 10, backgroundImage: NetworkImage(teacherAvatar ?? 'https://i.pravatar.cc/150?u=$teacher')),
+                      CircleAvatar(
+                          radius: 10,
+                          backgroundImage: NetworkImage(teacherAvatar ??
+                              'https://i.pravatar.cc/150?u=$teacher')),
                       const SizedBox(width: 8),
-                      Text(teacher, style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w900, fontSize: 11)),
+                      Text(teacher,
+                          style: TextStyle(
+                              color: primaryTextColor,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11)),
                     ],
                   ),
                 ],

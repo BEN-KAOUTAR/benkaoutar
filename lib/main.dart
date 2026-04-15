@@ -9,6 +9,7 @@ import 'features/parent/viewmodels/homework_view_model.dart';
 import 'features/parent/viewmodels/payment_view_model.dart';
 import 'features/parent/viewmodels/chat_view_model.dart';
 import 'features/parent/viewmodels/location_view_model.dart';
+import 'features/parent/viewmodels/event_view_model.dart';
 import 'features/common/viewmodels/notification_view_model.dart';
 import 'features/common/viewmodels/profile_view_model.dart';
 import 'features/parent/viewmodels/dashboard_view_model.dart';
@@ -36,6 +37,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PaymentViewModel()),
         ChangeNotifierProvider(create: (_) => ChatViewModel()),
         ChangeNotifierProvider(create: (_) => LocationViewModel()),
+        ChangeNotifierProvider(create: (_) => EventViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
         ChangeNotifierProvider(
           create: (context) => ProfileViewModel(
@@ -59,7 +61,7 @@ class IkenasApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ikenas',

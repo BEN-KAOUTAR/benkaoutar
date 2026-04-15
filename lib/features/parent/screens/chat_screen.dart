@@ -38,7 +38,8 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final secondaryTextColor =
+        isDark ? Colors.white60 : const Color(0xFF64748B);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -53,15 +54,21 @@ class _ChatScreenState extends State<ChatScreen> {
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
-                  style: TextStyle(color: primaryTextColor, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: primaryTextColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.translate('search_hint'),
+                    hintText:
+                        AppLocalizations.of(context)!.translate('search_hint'),
                     hintStyle: TextStyle(color: secondaryTextColor),
                     border: InputBorder.none,
                   ),
@@ -75,16 +82,24 @@ class _ChatScreenState extends State<ChatScreen> {
                     height: 44,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: secondaryTextColor.withValues(alpha: 0.1)),
+                      border: Border.all(
+                          color: secondaryTextColor.withValues(alpha: 0.1)),
                     ),
-                    child: Image.asset('assets/images/image3.png', fit: BoxFit.contain),
+                    child: Image.asset('assets/images/image3.png',
+                        fit: BoxFit.contain),
                   ),
                   const SizedBox(width: 16),
                   Text(
                     AppLocalizations.of(context)!.translate('messaging_title'),
-                    style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 22, letterSpacing: -0.8),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: primaryTextColor,
+                        fontSize: 22,
+                        letterSpacing: -0.8),
                   ),
                 ],
               ),
@@ -103,8 +118,13 @@ class _ChatScreenState extends State<ChatScreen> {
             },
             icon: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.white, shape: BoxShape.circle),
-              child: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded, color: primaryTextColor, size: 22),
+              decoration: BoxDecoration(
+                  color: isDark ? Colors.white10 : Colors.white,
+                  shape: BoxShape.circle),
+              child: Icon(
+                  _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                  color: primaryTextColor,
+                  size: 22),
             ),
           ),
           const SizedBox(width: 12),
@@ -121,47 +141,70 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Consumer<ChatViewModel>(
                   builder: (context, vm, child) {
                     if (vm.isLoadingThreads && vm.threads.isEmpty) {
-                      return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+                      return const Center(
+                          child: CircularProgressIndicator(
+                              color: Colors.blueAccent));
                     }
                     if (vm.errorMessage != null && vm.threads.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.error_outline_rounded, size: 64, color: secondaryTextColor.withValues(alpha: 0.2)),
+                            Icon(Icons.error_outline_rounded,
+                                size: 64,
+                                color:
+                                    secondaryTextColor.withValues(alpha: 0.2)),
                             const SizedBox(height: 16),
-                            Text(AppLocalizations.of(context)!.translate(vm.errorMessage!), style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 16)),
+                            Text(
+                                AppLocalizations.of(context)!
+                                    .translate(vm.errorMessage!),
+                                style: TextStyle(
+                                    color: secondaryTextColor,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16)),
                             const SizedBox(height: 24),
                             ElevatedButton(
                               onPressed: () => vm.fetchThreads(),
-                              child: Text(AppLocalizations.of(context)!.translate('retry')),
+                              child: Text(AppLocalizations.of(context)!
+                                  .translate('retry')),
                             ),
                           ],
                         ),
                       );
                     }
 
-                      final threads = vm.threads.where((ChatThreadModel t) {
-                        final query = _searchQuery.toLowerCase();
-                        bool matchesName = t.contactName.toLowerCase().contains(query);
-                        bool matchesMessage = t.lastMessage.toLowerCase().contains(query);
-                        bool matchesSearch = query.isEmpty || matchesName || matchesMessage;
-                        
-                        final isGroupType = t.contactRole == 'GROUPE';
-                        final matchesTab = (_selectedTab == 0 && !isGroupType) || (_selectedTab == 1 && isGroupType);
-                        return matchesSearch && matchesTab;
-                      }).toList();
+                    final threads = vm.threads.where((ChatThreadModel t) {
+                      final query = _searchQuery.toLowerCase();
+                      bool matchesName =
+                          t.contactName.toLowerCase().contains(query);
+                      bool matchesMessage =
+                          t.lastMessage.toLowerCase().contains(query);
+                      bool matchesSearch =
+                          query.isEmpty || matchesName || matchesMessage;
+
+                      final isGroupType = t.contactRole == 'GROUPE';
+                      final matchesTab = (_selectedTab == 0 && !isGroupType) ||
+                          (_selectedTab == 1 && isGroupType);
+                      return matchesSearch && matchesTab;
+                    }).toList();
 
                     if (threads.isEmpty) {
-                       return Center(
+                      return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_bubble_outline_rounded, size: 64, color: secondaryTextColor.withValues(alpha: 0.2)),
+                            Icon(Icons.chat_bubble_outline_rounded,
+                                size: 64,
+                                color:
+                                    secondaryTextColor.withValues(alpha: 0.2)),
                             const SizedBox(height: 16),
                             Text(
-                              AppLocalizations.of(context)!.translate('no_conversations'),
-                              style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.w900, fontSize: 16),
+                              AppLocalizations.of(context)!
+                                  .translate('no_conversations'),
+                              style: TextStyle(
+                                  color: secondaryTextColor,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16),
                             ),
                           ],
                         ),
@@ -195,21 +238,32 @@ class _ChatScreenState extends State<ChatScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: primaryTextColor.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
-          _buildTabItem(context, 0, AppLocalizations.of(context)!.translate('direct_messages'), Icons.chat_outlined),
+          _buildTabItem(
+              context,
+              0,
+              AppLocalizations.of(context)!.translate('direct_messages'),
+              Icons.chat_outlined),
           const SizedBox(width: 6),
-          _buildTabItem(context, 1, AppLocalizations.of(context)!.translate('group_messages'), Icons.groups_outlined),
+          _buildTabItem(
+              context,
+              1,
+              AppLocalizations.of(context)!.translate('group_messages'),
+              Icons.groups_outlined),
         ],
       ),
     );
   }
 
-  Widget _buildTabItem(BuildContext context, int index, String label, IconData icon) {
+  Widget _buildTabItem(
+      BuildContext context, int index, String label, IconData icon) {
     bool isSelected = _selectedTab == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -220,19 +274,36 @@ class _ChatScreenState extends State<ChatScreen> {
           duration: 300.ms,
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? (isDark ? Colors.blueAccent.withValues(alpha: 0.2) : Colors.blueAccent) : Colors.transparent,
+            color: isSelected
+                ? (isDark
+                    ? Colors.blueAccent.withValues(alpha: 0.2)
+                    : Colors.blueAccent)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
-            boxShadow: isSelected && !isDark ? [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))] : [],
+            boxShadow: isSelected && !isDark
+                ? [
+                    BoxShadow(
+                        color: Colors.blueAccent.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4))
+                  ]
+                : [],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: isSelected ? Colors.white : (isDark ? Colors.white38 : Colors.black38)),
+              Icon(icon,
+                  size: 18,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white38 : Colors.black38)),
               const SizedBox(width: 10),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : (isDark ? Colors.white38 : Colors.black38),
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white38 : Colors.black38),
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
                   letterSpacing: -0.2,
@@ -270,10 +341,21 @@ class _ChatThreadTile extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.8),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : Colors.white.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(36),
-              border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-              boxShadow: [if (!isDark) BoxShadow(color: Colors.white.withValues(alpha: 0.8), blurRadius: 20, offset: const Offset(0, 10))],
+              border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.white),
+              boxShadow: [
+                if (!isDark)
+                  BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10))
+              ],
             ),
             child: Row(
               children: [
@@ -282,37 +364,61 @@ class _ChatThreadTile extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle, 
-                        gradient: LinearGradient(colors: [
-                          thread.contactRole == 'GROUPE' ? Colors.orangeAccent.withValues(alpha: 0.5) : Colors.blueAccent.withValues(alpha: 0.5), 
-                          Colors.purpleAccent.withValues(alpha: 0.2)
-                        ])
-                      ),
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(colors: [
+                            thread.contactRole == 'GROUPE'
+                                ? Colors.orangeAccent.withValues(alpha: 0.5)
+                                : Colors.blueAccent.withValues(alpha: 0.5),
+                            Colors.purpleAccent.withValues(alpha: 0.2)
+                          ])),
                       child: thread.contactRole == 'GROUPE'
-                        ? Container(
-                            width: 60, height: 60,
-                            decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.transparent),
-                            child: const Icon(Icons.groups_rounded, size: 30, color: Colors.orangeAccent),
-                          )
-                        : CircleAvatar(
-                            radius: 30,
-                            backgroundImage: NetworkImage(thread.avatarUrl ?? 'https://i.pravatar.cc/150?u=${thread.contactName}'),
-                            backgroundColor: isDark ? Colors.white10 : Colors.white,
-                          ),
+                          ? Container(
+                              width: 60,
+                              height: 60,
+                              decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.transparent),
+                              child: const Icon(Icons.groups_rounded,
+                                  size: 30, color: Colors.orangeAccent),
+                            )
+                          : CircleAvatar(
+                              radius: 30,
+                              backgroundImage: NetworkImage(thread.avatarUrl ??
+                                  'https://i.pravatar.cc/150?u=${thread.contactName}'),
+                              backgroundColor:
+                                  isDark ? Colors.white10 : Colors.white,
+                            ),
                     ),
                     if (thread.unreadCount > 0)
                       Positioned(
-                        right: 0, top: 0,
+                        right: 0,
+                        top: 0,
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: Colors.blueAccent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: isDark ? const Color(0xFF0F172A) : Colors.white, width: 2),
-                            boxShadow: [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.4), blurRadius: 8)],
+                            border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF0F172A)
+                                    : Colors.white,
+                                width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                  color:
+                                      Colors.blueAccent.withValues(alpha: 0.4),
+                                  blurRadius: 8)
+                            ],
                           ),
-                          child: Text('${thread.unreadCount}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
-                        ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 1.seconds),
+                          child: Text('${thread.unreadCount}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900)),
+                        ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                            begin: const Offset(1, 1),
+                            end: const Offset(1.1, 1.1),
+                            duration: 1.seconds),
                       ),
                   ],
                 ),
@@ -324,8 +430,22 @@ class _ChatThreadTile extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(child: Text(thread.contactName, style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 17, letterSpacing: -0.5), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                          Text(thread.lastTime, style: TextStyle(color: thread.unreadCount > 0 ? Colors.blueAccent : secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w900)),
+                          Expanded(
+                              child: Text(thread.contactName,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color: primaryTextColor,
+                                      fontSize: 17,
+                                      letterSpacing: -0.5),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis)),
+                          Text(thread.lastTime,
+                              style: TextStyle(
+                                  color: thread.unreadCount > 0
+                                      ? Colors.blueAccent
+                                      : secondaryTextColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900)),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -338,20 +458,35 @@ class _ChatThreadTile extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: thread.unreadCount > 0 ? primaryTextColor : secondaryTextColor,
+                                color: thread.unreadCount > 0
+                                    ? primaryTextColor
+                                    : secondaryTextColor,
                                 fontSize: 14,
-                                fontWeight: thread.unreadCount > 0 ? FontWeight.w900 : FontWeight.bold,
+                                fontWeight: thread.unreadCount > 0
+                                    ? FontWeight.w900
+                                    : FontWeight.bold,
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.white, borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : Colors.white,
+                                borderRadius: BorderRadius.circular(12)),
                             child: Text(
-                              thread.contactRole == 'GROUPE' ? AppLocalizations.of(context)!.translate('class_tab_label') : thread.contactRole.toUpperCase(), 
-                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1)
-                            ),
+                                thread.contactRole == 'GROUPE'
+                                    ? AppLocalizations.of(context)!
+                                        .translate('class_tab_label')
+                                    : thread.contactRole.toUpperCase(),
+                                style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black54,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1)),
                           ),
                         ],
                       ),
@@ -405,13 +540,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _sendMessage() {
     final content = _controller.text.trim();
     if (content.isEmpty) return;
-    
+
     context.read<ChatViewModel>().sendMessage(widget.thread.id, content);
     _controller.clear();
-    
+
     Future.delayed(300.ms, () {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: 300.ms, curve: Curves.easeOut);
+        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+            duration: 300.ms, curve: Curves.easeOut);
       }
     });
   }
@@ -436,17 +572,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ),
         title: Row(
           children: [
-             CircleAvatar(
-                radius: 18,
-                backgroundImage: NetworkImage(widget.thread.avatarUrl ?? 'https://i.pravatar.cc/150?u=${widget.thread.contactName}'),
-              ),
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(widget.thread.avatarUrl ??
+                  'https://i.pravatar.cc/150?u=${widget.thread.contactName}'),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.thread.contactName, style: TextStyle(color: primaryTextColor, fontSize: 16, fontWeight: FontWeight.w900)),
-                  Text(widget.thread.contactRole, style: TextStyle(color: primaryTextColor.withValues(alpha: 0.5), fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text(widget.thread.contactName,
+                      style: TextStyle(
+                          color: primaryTextColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900)),
+                  Text(widget.thread.contactRole,
+                      style: TextStyle(
+                          color: primaryTextColor.withValues(alpha: 0.5),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -461,20 +606,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               child: Consumer<ChatViewModel>(
                 builder: (context, vm, child) {
                   if (vm.isLoadingMessages) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+                    return const Center(
+                        child: CircularProgressIndicator(
+                            color: Colors.blueAccent));
                   }
                   if (vm.errorMessage != null && vm.activeMessages.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline_rounded, size: 48, color: primaryTextColor.withValues(alpha: 0.2)),
+                          Icon(Icons.error_outline_rounded,
+                              size: 48,
+                              color: primaryTextColor.withValues(alpha: 0.2)),
                           const SizedBox(height: 16),
-                          Text(AppLocalizations.of(context)!.translate(vm.errorMessage!), style: TextStyle(color: primaryTextColor.withValues(alpha: 0.5), fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text(
+                              AppLocalizations.of(context)!
+                                  .translate(vm.errorMessage!),
+                              style: TextStyle(
+                                  color:
+                                      primaryTextColor.withValues(alpha: 0.5),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14)),
                           const SizedBox(height: 16),
                           TextButton(
                             onPressed: () => vm.fetchMessages(widget.thread.id),
-                            child: Text(AppLocalizations.of(context)!.translate('retry')),
+                            child: Text(AppLocalizations.of(context)!
+                                .translate('retry')),
                           ),
                         ],
                       ),
@@ -510,7 +667,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black12),
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black12),
       ),
       child: Row(
         children: [
@@ -519,8 +678,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               controller: _controller,
               style: TextStyle(color: primaryTextColor),
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.translate('input_message_hint'),
-                hintStyle: TextStyle(color: primaryTextColor.withValues(alpha: 0.4)),
+                hintText: AppLocalizations.of(context)!
+                    .translate('input_message_hint'),
+                hintStyle:
+                    TextStyle(color: primaryTextColor.withValues(alpha: 0.4)),
                 border: InputBorder.none,
               ),
             ),
@@ -549,11 +710,14 @@ class _MessageBubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isMe 
-            ? Colors.blueAccent 
-            : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05)),
+          color: isMe
+              ? Colors.blueAccent
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
@@ -566,12 +730,20 @@ class _MessageBubble extends StatelessWidget {
           children: [
             Text(
               message.content,
-              style: TextStyle(color: isMe ? Colors.white : (isDark ? Colors.white : Colors.black), fontSize: 15),
+              style: TextStyle(
+                  color: isMe
+                      ? Colors.white
+                      : (isDark ? Colors.white : Colors.black),
+                  fontSize: 15),
             ),
             const SizedBox(height: 4),
             Text(
               message.time,
-              style: TextStyle(color: isMe ? Colors.white.withValues(alpha: 0.6) : (isDark ? Colors.white38 : Colors.black38), fontSize: 10),
+              style: TextStyle(
+                  color: isMe
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : (isDark ? Colors.white38 : Colors.black38),
+                  fontSize: 10),
             ),
           ],
         ),

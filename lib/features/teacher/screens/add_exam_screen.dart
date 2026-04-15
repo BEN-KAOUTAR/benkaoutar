@@ -20,8 +20,20 @@ class _AddExamScreenState extends State<AddExamScreen> {
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
 
-  final List<String> _evaluationTypes = ['type_quiz', 'type_exam', 'type_project', 'type_control'];
-  final List<String> _subjects = ['subj_math', 'subj_french', 'subj_arabic', 'subj_hist_geo', 'subj_science', 'subj_sport'];
+  final List<String> _evaluationTypes = [
+    'type_quiz',
+    'type_exam',
+    'type_project',
+    'type_control'
+  ];
+  final List<String> _subjects = [
+    'subj_math',
+    'subj_french',
+    'subj_arabic',
+    'subj_hist_geo',
+    'subj_science',
+    'subj_sport'
+  ];
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -57,7 +69,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
       // Simulate submission
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.translate('announcement_published')),
+          content: Text(AppLocalizations.of(context)!
+              .translate('announcement_published')),
           backgroundColor: Colors.greenAccent,
         ),
       );
@@ -80,12 +93,16 @@ class _AddExamScreenState extends State<AddExamScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: primaryTextColor, size: 20),
+          icon:
+              Icon(Icons.arrow_back_ios_new, color: primaryTextColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           loc.translate('examens'),
-          style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 18),
+          style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: primaryTextColor,
+              fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -101,7 +118,6 @@ class _AddExamScreenState extends State<AddExamScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  
                   _buildSectionHeader(loc.translate('class_label'), isDark),
                   _buildDropdown(
                     value: _selectedClass,
@@ -110,9 +126,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                     onChanged: (val) => setState(() => _selectedClass = val),
                     isDark: isDark,
                   ),
-
                   const SizedBox(height: 24),
-                  
                   _buildSectionHeader(loc.translate('subject_label'), isDark),
                   _buildDropdown(
                     value: _selectedSubject,
@@ -121,10 +135,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
                     onChanged: (val) => setState(() => _selectedSubject = val),
                     isDark: isDark,
                   ),
-
                   const SizedBox(height: 24),
-                  
-                  _buildSectionHeader(loc.translate('evaluation_type_label'), isDark),
+                  _buildSectionHeader(
+                      loc.translate('evaluation_type_label'), isDark),
                   _buildDropdown(
                     value: _selectedType,
                     items: _evaluationTypes,
@@ -132,19 +145,19 @@ class _AddExamScreenState extends State<AddExamScreen> {
                     onChanged: (val) => setState(() => _selectedType = val),
                     isDark: isDark,
                   ),
-
                   const SizedBox(height: 24),
-
                   Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSectionHeader(loc.translate('date_label'), isDark),
+                            _buildSectionHeader(
+                                loc.translate('date_label'), isDark),
                             _buildPickerTile(
                               icon: Icons.calendar_today_rounded,
-                              label: DateFormat('dd/MM/yyyy').format(_selectedDate),
+                              label: DateFormat('dd/MM/yyyy')
+                                  .format(_selectedDate),
                               onTap: _pickDate,
                               isDark: isDark,
                             ),
@@ -156,7 +169,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSectionHeader(loc.translate('hour_label'), isDark),
+                            _buildSectionHeader(
+                                loc.translate('hour_label'), isDark),
                             _buildPickerTile(
                               icon: Icons.access_time_rounded,
                               label: _selectedTime.format(context),
@@ -168,9 +182,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 48),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -179,16 +191,19 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 20),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
                         elevation: 0,
                       ),
                       child: Text(
                         loc.translate('validate_upper'),
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                            letterSpacing: 1),
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 40),
                 ],
               ),
@@ -224,22 +239,34 @@ class _AddExamScreenState extends State<AddExamScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(hint, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 14)),
+          hint: Text(hint,
+              style: TextStyle(
+                  color: isDark ? Colors.white38 : Colors.black38,
+                  fontSize: 14)),
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: isDark ? Colors.white38 : Colors.black38),
+          icon: Icon(Icons.keyboard_arrow_down_rounded,
+              color: isDark ? Colors.white38 : Colors.black38),
           dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
-              child: Text(AppLocalizations.of(context)!.translate(item), style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w600)),
+              child: Text(AppLocalizations.of(context)!.translate(item),
+                  style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600)),
             );
           }).toList(),
           onChanged: onChanged,
@@ -259,9 +286,13 @@ class _AddExamScreenState extends State<AddExamScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.white.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
+          border: Border.all(
+              color:
+                  isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
         ),
         child: Row(
           children: [

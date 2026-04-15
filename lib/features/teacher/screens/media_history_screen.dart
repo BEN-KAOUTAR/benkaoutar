@@ -17,7 +17,8 @@ class MediaHistoryScreen extends StatefulWidget {
   State<MediaHistoryScreen> createState() => _MediaHistoryScreenState();
 }
 
-class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTickerProviderStateMixin {
+class _MediaHistoryScreenState extends State<MediaHistoryScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -32,9 +33,20 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _mediaMessages => widget.messages.where((m) => m['type'] == 'photo' || m['type'] == 'video').toList();
-  List<Map<String, dynamic>> get _docMessages => widget.messages.where((m) => m['type'] == 'pdf' || (m['content'] is String && m['content'].toString().endsWith('.pdf'))).toList();
-  List<Map<String, dynamic>> get _linkMessages => widget.messages.where((m) => m['content'] is String && (m['content'].toString().startsWith('http') || m['content'].toString().startsWith('www'))).toList();
+  List<Map<String, dynamic>> get _mediaMessages => widget.messages
+      .where((m) => m['type'] == 'photo' || m['type'] == 'video')
+      .toList();
+  List<Map<String, dynamic>> get _docMessages => widget.messages
+      .where((m) =>
+          m['type'] == 'pdf' ||
+          (m['content'] is String && m['content'].toString().endsWith('.pdf')))
+      .toList();
+  List<Map<String, dynamic>> get _linkMessages => widget.messages
+      .where((m) =>
+          m['content'] is String &&
+          (m['content'].toString().startsWith('http') ||
+              m['content'].toString().startsWith('www')))
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -52,14 +64,17 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
           icon: Icon(Icons.arrow_back_ios_new, color: pt, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(loc.translate('media_links_docs'), style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18)),
+        title: Text(loc.translate('media_links_docs'),
+            style: TextStyle(
+                color: pt, fontWeight: FontWeight.w900, fontSize: 18)),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.blueAccent,
           indicatorWeight: 3,
           labelColor: pt,
           unselectedLabelColor: isDark ? Colors.white24 : Colors.black26,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
+          labelStyle: const TextStyle(
+              fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
           tabs: [
             Tab(text: loc.translate('media_tab_label')),
             Tab(text: loc.translate('docs_tab_label')),
@@ -83,8 +98,12 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
     );
   }
 
-  Widget _buildMediaGrid(BuildContext context, List<Map<String, dynamic>> items, bool isDark, Color pt) {
-    if (items.isEmpty) return _buildEmptyState(Icons.photo_library_outlined, "Aucun média trouvé");
+  Widget _buildMediaGrid(BuildContext context, List<Map<String, dynamic>> items,
+      bool isDark, Color pt) {
+    if (items.isEmpty) {
+      return _buildEmptyState(
+          Icons.photo_library_outlined, "Aucun média trouvé");
+    }
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
@@ -109,8 +128,12 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
     );
   }
 
-  Widget _buildDocsList(BuildContext context, List<Map<String, dynamic>> items, bool isDark, Color pt) {
-    if (items.isEmpty) return _buildEmptyState(Icons.description_outlined, "Aucun document trouvé");
+  Widget _buildDocsList(BuildContext context, List<Map<String, dynamic>> items,
+      bool isDark, Color pt) {
+    if (items.isEmpty) {
+      return _buildEmptyState(
+          Icons.description_outlined, "Aucun document trouvé");
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -118,8 +141,10 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
       itemBuilder: (context, index) {
         final item = items[index];
         return ListTile(
-          leading: const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent),
-          title: Text(item['content'], style: TextStyle(color: pt, fontWeight: FontWeight.bold)),
+          leading:
+              const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent),
+          title: Text(item['content'],
+              style: TextStyle(color: pt, fontWeight: FontWeight.bold)),
           subtitle: Text(item['time'], style: const TextStyle(fontSize: 12)),
           trailing: const Icon(Icons.download_rounded, size: 20),
         );
@@ -127,8 +152,11 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
     );
   }
 
-  Widget _buildLinksList(BuildContext context, List<Map<String, dynamic>> items, bool isDark, Color pt) {
-    if (items.isEmpty) return _buildEmptyState(Icons.link_outlined, "Aucun lien trouvé");
+  Widget _buildLinksList(BuildContext context, List<Map<String, dynamic>> items,
+      bool isDark, Color pt) {
+    if (items.isEmpty) {
+      return _buildEmptyState(Icons.link_outlined, "Aucun lien trouvé");
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -137,7 +165,11 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
         final item = items[index];
         return ListTile(
           leading: const Icon(Icons.link_rounded, color: Colors.blueAccent),
-          title: Text(item['content'], style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+          title: Text(item['content'],
+              style: const TextStyle(
+                  color: Colors.blueAccent,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline)),
           subtitle: Text(item['time'], style: const TextStyle(fontSize: 12)),
         );
       },
@@ -151,7 +183,9 @@ class _MediaHistoryScreenState extends State<MediaHistoryScreen> with SingleTick
         children: [
           Icon(icon, size: 64, color: Colors.white10),
           const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: Colors.white38, fontWeight: FontWeight.bold)),
+          Text(message,
+              style: const TextStyle(
+                  color: Colors.white38, fontWeight: FontWeight.bold)),
         ],
       ),
     );

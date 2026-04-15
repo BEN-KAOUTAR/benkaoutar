@@ -27,10 +27,11 @@ class TranslationService {
     try {
       // 4. AI Translation Logic (Placeholder for Gemini/Vertex AI)
       // For now, we simulate an AI call with a small delay.
-      // In production, you would use: 
+      // In production, you would use:
       // final response = await gemini.generateContent('Translate this to $targetLanguageCode: $text');
-      
-      String translatedText = await _simulateAiTranslation(text, targetLanguageCode);
+
+      String translatedText =
+          await _simulateAiTranslation(text, targetLanguageCode);
 
       // 5. Cache the result
       _cache[cacheKey] = translatedText;
@@ -46,10 +47,11 @@ class TranslationService {
   Future<String> _simulateAiTranslation(String text, String targetLang) async {
     // In a real scenario, this would be an HTTP call to Gemini.
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     // Protection: Even the AI shouldn't change Ikenas
-    String processedText = text.replaceAll(RegExp(r'Ikenas', caseSensitive: false), '[[IKENAS]]');
-    
+    String processedText =
+        text.replaceAll(RegExp(r'Ikenas', caseSensitive: false), '[[IKENAS]]');
+
     // The AI handles everything in production.
     // Use processedText to simulate transformation then restore Ikenas
     return processedText.replaceAll('[[IKENAS]]', 'Ikenas');

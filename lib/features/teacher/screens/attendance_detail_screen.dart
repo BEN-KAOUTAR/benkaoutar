@@ -28,10 +28,11 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
     final DateTime today = DateTime(now.year, now.month, now.day);
     final DateTime yesterday = today.subtract(const Duration(days: 1));
     final DateTime sessionDate = widget.sessionData['datetime'] as DateTime;
-    
-    final bool isRecent = sessionDate.isAtSameMomentAs(today) || sessionDate.isAtSameMomentAs(yesterday);
+
+    final bool isRecent = sessionDate.isAtSameMomentAs(today) ||
+        sessionDate.isAtSameMomentAs(yesterday);
     final bool isValidated = widget.sessionData['isValidatedByAdmin'] ?? false;
-    
+
     isEditable = isRecent && !isValidated;
   }
 
@@ -60,11 +61,15 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
           children: [
             Text(
               widget.sessionData['subject'],
-              style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 16),
+              style: TextStyle(
+                  color: pt, fontWeight: FontWeight.w900, fontSize: 16),
             ),
             Text(
               widget.sessionData['date'],
-              style: TextStyle(color: pt.withValues(alpha: 0.5), fontSize: 10, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: pt.withValues(alpha: 0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -75,7 +80,9 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
               icon: Icon(Icons.save_rounded, color: Colors.blueAccent),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Modifications enregistrées !', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const SnackBar(
+                      content: Text('Modifications enregistrées !',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
                 );
                 Navigator.pop(context);
               },
@@ -112,8 +119,12 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   Widget _buildValidationStatus() {
     final isValidated = widget.sessionData['isValidatedByAdmin'] ?? false;
     final color = isValidated ? Colors.blueAccent : Colors.orangeAccent;
-    final text = isValidated ? 'Validé par l\'administration' : 'En attente de validation';
-    final icon = isValidated ? Icons.verified_user_rounded : Icons.pending_actions_rounded;
+    final text = isValidated
+        ? 'Validé par l\'administration'
+        : 'En attente de validation';
+    final icon = isValidated
+        ? Icons.verified_user_rounded
+        : Icons.pending_actions_rounded;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -129,7 +140,11 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
           const SizedBox(width: 8),
           Text(
             text.toUpperCase(),
-            style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+            style: TextStyle(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5),
           ),
         ],
       ),
@@ -138,47 +153,60 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
 
   Widget _buildStudentCard(dynamic student, int index, bool isDark, Color pt) {
     final status = _tempStatus[student.id];
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.white.withValues(alpha: 0.8)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${student.id}'),
+            backgroundImage:
+                NetworkImage('https://i.pravatar.cc/150?u=${student.id}'),
             backgroundColor: isDark ? Colors.white10 : Colors.black12,
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(student.name, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: pt)),
+            child: Text(student.name,
+                style: TextStyle(
+                    fontWeight: FontWeight.w900, fontSize: 14, color: pt)),
           ),
           if (isEditable)
             Row(
               children: [
-                _buildEditableStatusIcon(student.id, 'present', Icons.check_circle_rounded, Colors.greenAccent),
+                _buildEditableStatusIcon(student.id, 'present',
+                    Icons.check_circle_rounded, Colors.greenAccent),
                 const SizedBox(width: 8),
-                _buildEditableStatusIcon(student.id, 'late', Icons.access_time_filled_rounded, Colors.orangeAccent),
+                _buildEditableStatusIcon(student.id, 'late',
+                    Icons.access_time_filled_rounded, Colors.orangeAccent),
                 const SizedBox(width: 8),
-                _buildEditableStatusIcon(student.id, 'absent', Icons.cancel_rounded, Colors.redAccent),
+                _buildEditableStatusIcon(student.id, 'absent',
+                    Icons.cancel_rounded, Colors.redAccent),
               ],
             )
           else
             _buildReadOnlyStatus(status),
         ],
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: index * 30)).slideX(begin: 0.05);
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: index * 30))
+        .slideX(begin: 0.05);
   }
 
-  Widget _buildEditableStatusIcon(String studentId, String status, IconData icon, Color color) {
+  Widget _buildEditableStatusIcon(
+      String studentId, String status, IconData icon, Color color) {
     bool isSelected = _tempStatus[studentId] == status;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return GestureDetector(
       onTap: () => setState(() => _tempStatus[studentId] = status),
       child: AnimatedContainer(
@@ -186,11 +214,23 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: isSelected ? color : (isDark ? Colors.white.withValues(alpha: 0.05) : color.withValues(alpha: 0.05)),
+          color: isSelected
+              ? color
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : color.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isSelected ? Colors.transparent : (isDark ? Colors.white.withValues(alpha: 0.1) : color.withValues(alpha: 0.1))),
+          border: Border.all(
+              color: isSelected
+                  ? Colors.transparent
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : color.withValues(alpha: 0.1))),
         ),
-        child: Icon(icon, color: isSelected ? Colors.white : (isDark ? Colors.white54 : color), size: 16),
+        child: Icon(icon,
+            color:
+                isSelected ? Colors.white : (isDark ? Colors.white54 : color),
+            size: 16),
       ),
     );
   }
@@ -222,7 +262,11 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
       children: [
         Icon(icon, size: 14, color: color.withValues(alpha: 0.5)),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(color: color.withValues(alpha: 0.5), fontWeight: FontWeight.w900, fontSize: 11)),
+        Text(label,
+            style: TextStyle(
+                color: color.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w900,
+                fontSize: 11)),
       ],
     );
   }

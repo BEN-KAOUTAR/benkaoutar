@@ -20,6 +20,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../viewmodels/dashboard_view_model.dart';
 import '../viewmodels/feed_view_model.dart';
 import '../viewmodels/homework_view_model.dart';
+import '../viewmodels/event_view_model.dart';
 import '../../common/viewmodels/notification_view_model.dart';
 
 class ParentDashboard extends StatefulWidget {
@@ -172,25 +173,26 @@ class _ParentHome extends StatefulWidget {
 
 class _ParentHomeState extends State<_ParentHome> {
   int _currentPostIndex = 0;
-  String _selectedYear = '2023-2024';
   String _selectedSemester = 'all'; // Default to Both/All
+  late PageController _urgentPageController;
+
+  @override
+  void dispose() {
+    _urgentPageController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    // Academic year logic
-    if (now.month >= 9) {
-      _selectedYear = '${now.year}-${now.year + 1}';
-    } else {
-      _selectedYear = '${now.year - 1}-${now.year}';
-    }
     _selectedSemester = 'all'; // Default to all/both
+    _urgentPageController = PageController(initialPage: 0);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboardVM = context.read<DashboardViewModel>();
       dashboardVM.init().then((_) {
         if (!mounted) return;
+
         // Fetch initial evolution and homework for the first child if available
         if (dashboardVM.children.isNotEmpty) {
           final studentId = dashboardVM.children[0].id;
@@ -200,103 +202,461 @@ class _ParentHomeState extends State<_ParentHome> {
       });
       context.read<FeedViewModel>().fetchPosts();
       context.read<NotificationViewModel>().fetchNotifications();
+      context.read<EventViewModel>().fetchEvents();
     });
   }
 
-  void _showPostDetails(BuildContext context, PostModel post) {
+  void _showPostDetails(BuildContext context, dynamic post) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = (post is PostModel && post.isUrgent)
+        ? Colors.redAccent
+        : Colors.blueAccent;
+    final dashVM = context.read<DashboardViewModel>();
+
+    // Helper for RSVP status
+    String? currentResponse;
+    if (post is PostModel) {
+      currentResponse = post.participationStatus;
+    } else if (post is EventModel) currentResponse = post.participationStatus;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: 20,
-                top: 20,
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close_rounded,
-                      color: isDark ? Colors.white38 : Colors.black38),
-                ),
+        return StatefulBuilder(builder: (context, setModalState) {
+          bool isSubmitting = false;
+
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.9),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF0F172A).withValues(alpha: 0.95)
+                    : Colors.white.withValues(alpha: 0.95),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(40)),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.white10
+                        : Colors.black.withValues(alpha: 0.05)),
               ),
-              Padding(
-                padding: const EdgeInsets.all(40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Text(
-                          AppLocalizations.of(context)!.translate('Événements'),
-                          style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 2)),
+              child: Stack(
+                children: [
+                  // Top handle
+                  Positioned(
+                    top: 12,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white10 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 32),
-                    Text(post.content,
-                        style: TextStyle(
+                  ),
+                  Positioned(
+                    right: 20,
+                    top: 20,
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.black.withValues(alpha: 0.05),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.close_rounded,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                            size: 20),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: accentColor.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.stars_rounded,
+                                  color: accentColor, size: 14),
+                              const SizedBox(width: 8),
+                              Text(
+                                (post is PostModel && post.isEvent)
+                                    ? 'ÉVÉNEMENT'
+                                    : 'ACTUALITÉ',
+                                style: TextStyle(
+                                    color: accentColor,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          post is PostModel
+                              ? (post.title.isNotEmpty
+                                  ? post.title
+                                  : "Information")
+                              : (post is EventModel ? post.title : "Événement"),
+                          style: TextStyle(
                             color:
                                 isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontSize: 18,
+                            fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            height: 1.6)),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor:
-                              Colors.blueAccent.withValues(alpha: 0.1),
-                          child: const Icon(Icons.person_rounded,
-                              color: Colors.blueAccent),
+                            letterSpacing: -0.8,
+                            height: 1.2,
+                          ),
                         ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 16),
+                        // Display Date and Location
+                        Row(
                           children: [
-                            Text(post.authorName,
-                                style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14)),
-                            Text(post.authorRole,
+                            Icon(Icons.calendar_today_rounded,
+                                size: 14,
+                                color:
+                                    isDark ? Colors.white38 : Colors.black38),
+                            const SizedBox(width: 8),
+                            Text(
+                              () {
+                                final rawDate = post is PostModel
+                                    ? (post.eventDate ?? post.date)
+                                    : (post is EventModel ? post.date : "");
+                                try {
+                                  DateTime? dt = rawDate is DateTime
+                                      ? (rawDate as DateTime)
+                                      : DateTime.tryParse(rawDate.toString());
+                                  if (dt == null) return rawDate.toString();
+                                  const months = [
+                                    'Janvier',
+                                    'Février',
+                                    'Mars',
+                                    'Avril',
+                                    'Mai',
+                                    'Juin',
+                                    'Juillet',
+                                    'Août',
+                                    'Septembre',
+                                    'Octobre',
+                                    'Novembre',
+                                    'Décembre'
+                                  ];
+                                  return "${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}";
+                                } catch (_) {
+                                  return rawDate.toString();
+                                }
+                              }(),
+                              style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white38 : Colors.black38,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            if ((post is EventModel && post.location != null) ||
+                                (post is PostModel &&
+                                    post.content.contains('Salle'))) ...[
+                              const SizedBox(width: 20),
+                              Icon(Icons.location_on_rounded,
+                                  size: 14,
+                                  color:
+                                      isDark ? Colors.white38 : Colors.black38),
+                              const SizedBox(width: 8),
+                              Text(
+                                post is EventModel
+                                    ? (post.location ?? "Salle A")
+                                    : "Scolaire",
                                 style: TextStyle(
                                     color: isDark
                                         ? Colors.white38
                                         : Colors.black38,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w900)),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ]
                           ],
                         ),
+                        const SizedBox(height: 24),
+                        Flexible(
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.03)
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                  color: isDark
+                                      ? Colors.white10
+                                      : Colors.black.withValues(alpha: 0.05)),
+                            ),
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: Text(
+                                post is PostModel
+                                    ? post.content
+                                    : (post is EventModel
+                                        ? post.description
+                                        : (post as HomeworkModel).title),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.8)
+                                      : const Color(0xFF334155),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.8,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Participation Section
+                        if (post is PostModel && post.isEvent ||
+                            post is EventModel)
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                  color: accentColor.withValues(alpha: 0.1)),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "Allez-vous participer à cet événement ?",
+                                  style: TextStyle(
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: isSubmitting
+                                            ? null
+                                            : () async {
+                                                setModalState(
+                                                    () => isSubmitting = true);
+                                                bool ok = false;
+                                                if (post is EventModel) {
+                                                  ok = await context
+                                                      .read<EventViewModel>()
+                                                      .respondToEvent(
+                                                          post.id, 'going');
+                                                } else {
+                                                  ok = await dashVM
+                                                      .submitParticipation(
+                                                          post, 'going');
+                                                }
+                                                if (ok) {
+                                                  currentResponse = 'going';
+                                                  setModalState(() =>
+                                                      isSubmitting = false);
+                                                }
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: currentResponse ==
+                                                      'oui' || currentResponse == 'going' || currentResponse == 'present'
+                                              ? Colors.green
+                                              : (isDark
+                                                  ? Colors.white10
+                                                  : Colors.black
+                                                      .withValues(alpha: 0.05)),
+                                          foregroundColor:
+                                              currentResponse == 'oui' || currentResponse == 'going' || currentResponse == 'present'
+                                                  ? Colors.white
+                                                  : (isDark
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(16)),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 16),
+                                        ),
+                                        child: isSubmitting &&
+                                                currentResponse == null
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                        strokeWidth: 2))
+                                            : const Text("OUI, JE PARTICIPE",
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 12)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: isSubmitting
+                                            ? null
+                                            : () async {
+                                                setModalState(
+                                                    () => isSubmitting = true);
+                                                bool ok = false;
+                                                if (post is EventModel) {
+                                                  ok = await context
+                                                      .read<EventViewModel>()
+                                                      .respondToEvent(
+                                                          post.id, 'not_going');
+                                                } else {
+                                                  ok = await dashVM
+                                                      .submitParticipation(
+                                                          post, 'not_going');
+                                                }
+                                                if (ok) {
+                                                  currentResponse = 'not_going';
+                                                  setModalState(() =>
+                                                      isSubmitting = false);
+                                                }
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: currentResponse ==
+                                                      'non' || currentResponse == 'not_going' || currentResponse == 'absent'
+                                              ? Colors.redAccent
+                                              : (isDark
+                                                  ? Colors.white10
+                                                  : Colors.black
+                                                      .withValues(alpha: 0.05)),
+                                          foregroundColor:
+                                              currentResponse == 'non' || currentResponse == 'not_going' || currentResponse == 'absent'
+                                                  ? Colors.white
+                                                  : (isDark
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(16)),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 16),
+                                        ),
+                                        child: const Text("NON",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 12)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (currentResponse != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 12),
+                                    child: Text(
+                                      "Réponse enregistrée : ${(currentResponse == 'oui' || currentResponse == 'going' || currentResponse == 'present') ? 'Présent' : 'Absent'}",
+                                      style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        if (post is PostModel) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.03)
+                                  : Colors.black.withValues(alpha: 0.02),
+                              borderRadius: BorderRadius.circular(32),
+                              border: Border.all(
+                                  color: isDark
+                                      ? Colors.white10
+                                      : Colors.black.withValues(alpha: 0.05)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: accentColor.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    color: accentColor,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 20),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        post.authorName,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF0F172A),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        post.authorRole,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white38
+                                              : Colors.black45,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ]
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    Text(post.date,
-                        style: TextStyle(
-                            color: isDark ? Colors.white38 : Colors.black38,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900)),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
+            ),
+          );
+        });
       },
     );
   }
@@ -305,17 +665,42 @@ class _ParentHomeState extends State<_ParentHome> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Consumer2<FeedViewModel, DashboardViewModel>(
-      builder: (context, feedVM, dashVM, child) {
+    return Consumer3<FeedViewModel, DashboardViewModel, EventViewModel>(
+      builder: (context, feedVM, dashVM, eventVM, child) {
         final appState = Provider.of<AppState>(context);
-        final urgentPosts =
-            feedVM.posts.where((p) => p.isUrgent || p.isEvent).toList();
-        final totalUrgent = urgentPosts.length;
-        final currentIndex =
-            _currentPostIndex % (totalUrgent > 0 ? totalUrgent : 1);
-        final urgentPost =
-            urgentPosts.isNotEmpty ? urgentPosts[currentIndex] : null;
 
+        // Sort events from newest to oldest
+        final List<dynamic> dashboardEvents = List.from(eventVM.events);
+        dashboardEvents.sort((a, b) {
+          DateTime? dateA;
+          DateTime? dateB;
+
+          if (a is EventModel) {
+            dateA = a.createdAt != null
+                ? DateTime.tryParse(a.createdAt.toString())
+                : null;
+          } else if (a is PostModel) {
+            // Mixed fallback if they are PostModels
+            dateA = a.date is DateTime
+                ? a.date as DateTime
+                : DateTime.tryParse(a.date.toString());
+          }
+
+          if (b is EventModel) {
+            dateB = b.createdAt != null
+                ? DateTime.tryParse(b.createdAt.toString())
+                : null;
+          } else if (b is PostModel) {
+            dateB = b.date is DateTime
+                ? b.date as DateTime
+                : DateTime.tryParse(b.date.toString());
+          }
+
+          dateA ??= DateTime.fromMillisecondsSinceEpoch(0);
+          dateB ??= DateTime.fromMillisecondsSinceEpoch(0);
+
+          return dateB.compareTo(dateA);
+        });
         final isOffline = appState.isOffline;
 
         return Scaffold(
@@ -386,16 +771,24 @@ class _ParentHomeState extends State<_ParentHome> {
                                                       : const Color(0xFF0F172A),
                                                   fontWeight: FontWeight.w900,
                                                   fontSize: 32,
-                                                  letterSpacing: -1));
+                                                  letterSpacing: -1,
+                                                  shadows: [
+                                                    if (isDark)
+                                                      Shadow(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                                alpha: 0.3),
+                                                        blurRadius: 15,
+                                                      )
+                                                  ]));
                                         },
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 32),
-                                  if (urgentPost != null)
-                                    _buildUrgentCard(context, urgentPost,
-                                        isDark, totalUrgent, currentIndex),
-                                  const SizedBox(height: 24),
+                                  if (dashboardEvents.isNotEmpty)
+                                    _buildUrgentCarouselContainer(
+                                        context, dashboardEvents, isDark),
                                   const SizedBox(height: 48),
                                   _buildQuickActions(context, isDark),
                                   const SizedBox(height: 48),
@@ -418,7 +811,6 @@ class _ParentHomeState extends State<_ParentHome> {
   Widget _buildRecentActivities(BuildContext context, bool isDark) {
     final dashVM = context.watch<DashboardViewModel>();
     final agenda = dashVM.todayAgenda;
-    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,8 +848,36 @@ class _ParentHomeState extends State<_ParentHome> {
         if (agenda.isEmpty)
           _buildEmptyAgenda(context, isDark)
         else
-          ...agenda
-              .map((a) => _ActivityPlatinumTile(activity: a, isDark: isDark)),
+          Stack(
+            children: [
+              // Vertical Timeline Line
+              Positioned(
+                left: 31,
+                top: 40,
+                bottom: 40,
+                child: Container(
+                  width: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.blueAccent.withValues(alpha: 0),
+                        Colors.blueAccent.withValues(alpha: 0.2),
+                        Colors.blueAccent.withValues(alpha: 0)
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+              ),
+              Column(
+                children: List.generate(agenda.length, (index) {
+                  return _ActivityPlatinumTile(
+                      activity: agenda[index], isDark: isDark);
+                }),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -592,110 +1012,393 @@ class _ParentHomeState extends State<_ParentHome> {
         ? Colors.white.withValues(alpha: 0.05)
         : Colors.black.withValues(alpha: 0.02);
     final borderCol = isDark
-        ? Colors.white.withValues(alpha: 0.05)
+        ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.05);
-    final user = Provider.of<AppState>(context).currentUser;
+    final appState = Provider.of<AppState>(context);
+    final user = appState.currentUser;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                Colors.blueAccent.withValues(alpha: 0.2),
-                Colors.purpleAccent.withValues(alpha: 0.1)
-              ]),
-              borderRadius: BorderRadius.circular(16),
-              border:
-                  Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
-            ),
-            child: Image.asset('assets/images/image3.png',
-                width: 24, height: 24, fit: BoxFit.contain),
-          ),
-          const SizedBox(width: 16),
-          Text('Ikenas',
-              style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 22,
-                  color: primaryColor,
-                  letterSpacing: -0.5)),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                  color: secondaryBg,
-                  shape: BoxShape.circle,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderCol),
-                  boxShadow: [
-                    if (!isDark)
-                      BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10)
-                  ]),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(Icons.notifications_none_rounded,
-                      color: primaryColor, size: 24),
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
+                ),
+                child: Image.asset(
+                  'assets/images/image3.png',
+                  width: 24,
+                  height: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text('Ikenas',
+                  style: TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      letterSpacing: -0.5)),
+            ],
+          ),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen())),
+                child: Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: secondaryBg,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: borderCol),
+                      ),
+                      child: Icon(Icons.notifications_none_rounded,
+                          color: primaryColor, size: 20),
+                    ),
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
                         width: 10,
                         height: 10,
-                        decoration: const BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: Colors.redAccent, blurRadius: 6)
-                            ])),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen())),
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blueAccent.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                ),
-                child: user?.avatarIndex != null
-                    ? SpriteAvatar(index: user!.avatarIndex!, size: 40)
-                    : CircleAvatar(
-                        radius: 20,
-                        backgroundColor:
-                            Colors.blueAccent.withValues(alpha: 0.1),
-                        child: Icon(Icons.person_rounded,
-                            color: isDark ? Colors.white38 : Colors.black26,
-                            size: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF0F172A)
+                                  : Colors.white,
+                              width: 2),
+                        ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: Colors.blueAccent.withValues(alpha: 0.5),
+                        width: 1.5),
+                  ),
+                  child: user?.avatarIndex != null
+                      ? SpriteAvatar(index: user!.avatarIndex!, size: 34)
+                      : CircleAvatar(
+                          radius: 17,
+                          backgroundColor: secondaryBg,
+                          child: Icon(Icons.person_rounded,
+                              color: primaryColor.withValues(alpha: 0.6),
+                              size: 20),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUrgentCarouselContainer(
+      BuildContext context, List<dynamic> events, bool isDark) {
+    if (events.isEmpty) return const SizedBox.shrink();
+    final totalPosts = events.length;
+
+    String formatAdminDate(dynamic dateVal) {
+      if (dateVal == null || dateVal.toString().isEmpty) return "";
+      try {
+        DateTime? dt = dateVal is DateTime
+            ? dateVal
+            : DateTime.tryParse(dateVal.toString());
+        if (dt == null) return dateVal.toString().substring(0, 5);
+        const months = [
+          'Janvier',
+          'Février',
+          'Mars',
+          'Avril',
+          'Mai',
+          'Juin',
+          'Juillet',
+          'Août',
+          'Septembre',
+          'Octobre',
+          'Novembre',
+          'Décembre'
+        ];
+        return "${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]}";
+      } catch (_) {
+        return "";
+      }
+    }
+
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF38222A) : const Color(0xFFFBE4EA),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF452431), const Color(0xFF301B22)]
+              : [
+                  Colors.redAccent.withValues(alpha: 0.15),
+                  Colors.pinkAccent.withValues(alpha: 0.05)
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+            color: Colors.redAccent.withValues(alpha: 0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.redAccent.withValues(alpha: isDark ? 0.05 : 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          GestureDetector(
+            onHorizontalDragEnd: (details) {
+              if (details.primaryVelocity! < 0) {
+                setState(() {
+                  _currentPostIndex = (_currentPostIndex + 1) % totalPosts;
+                });
+              } else if (details.primaryVelocity! > 0) {
+                setState(() {
+                  _currentPostIndex = _currentPostIndex > 0
+                      ? _currentPostIndex - 1
+                      : totalPosts - 1;
+                });
+              }
+            },
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 600),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale:
+                        Tween<double>(begin: 0.92, end: 1.0).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: Builder(
+                key: ValueKey<int>(_currentPostIndex),
+                builder: (context) {
+                  final item = events[_currentPostIndex];
+                  final currentIndex = _currentPostIndex;
+
+                  final String category = (item is PostModel && item.isUrgent)
+                      ? 'URGENT'
+                      : (item is HomeworkModel ? 'EXAMEN' : 'ÉVÉNEMENT');
+
+                  final String adminSentDate = formatAdminDate(item is PostModel
+                      ? item.date
+                      : (item is EventModel ? item.createdAt : ""));
+
+                  final String title = item is PostModel
+                      ? (item.title.isNotEmpty ? item.title : item.content)
+                      : (item is EventModel
+                          ? item.title
+                          : (item is HomeworkModel ? item.title : ""));
+
+                  return GestureDetector(
+                    onTap: () => _showPostDetails(context, item),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                        category == 'URGENT'
+                                            ? Icons.warning_rounded
+                                            : Icons.event_note_rounded,
+                                        color: Colors.redAccent,
+                                        size: 14),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      category,
+                                      style: const TextStyle(
+                                          color: Colors.redAccent,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.5),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      '${currentIndex + 1}/$totalPosts',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    adminSentDate,
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF0F172A),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 22,
+                                  letterSpacing: -0.7,
+                                  height: 1.1),
+                            ),
+                          ),
+                          const Spacer(),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                if (totalPosts > 1)
+                                  Row(
+                                    children: [
+                                      Visibility(
+                                        visible: currentIndex > 0,
+                                        maintainSize: true,
+                                        maintainAnimation: true,
+                                        maintainState: true,
+                                        child: _buildNavArrow(
+                                          icon: Icons.chevron_left_rounded,
+                                          onTap: () {
+                                            setState(() {
+                                              _currentPostIndex =
+                                                  _currentPostIndex > 0
+                                                      ? _currentPostIndex - 1
+                                                      : totalPosts - 1;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Visibility(
+                                        visible: currentIndex < totalPosts - 1,
+                                        maintainSize: true,
+                                        maintainAnimation: true,
+                                        maintainState: true,
+                                        child: _buildNavArrow(
+                                          icon: Icons.chevron_right_rounded,
+                                          onTap: () {
+                                            setState(() {
+                                              _currentPostIndex =
+                                                  (_currentPostIndex + 1) %
+                                                      totalPosts;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  const SizedBox.shrink(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.1)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('view_details')
+                                            .toUpperCase(),
+                                        style: TextStyle(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.9),
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 10,
+                                            letterSpacing: 1.5),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(Icons.arrow_forward_rounded,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.9),
+                                          size: 12),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -704,128 +1407,27 @@ class _ParentHomeState extends State<_ParentHome> {
     );
   }
 
-  Widget _buildUrgentCard(BuildContext context, PostModel post, bool isDark,
-      int totalPosts, int currentIndex) {
-    final showArrow = totalPosts > 1;
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color:
-            isDark ? Colors.redAccent.withValues(alpha: 0.1) : Colors.redAccent,
-        borderRadius: BorderRadius.circular(36),
-        border: Border.all(
-            color: isDark
-                ? Colors.redAccent.withValues(alpha: 0.2)
-                : Colors.redAccent.withValues(alpha: 0.1),
-            width: 1.5),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.redAccent.withValues(alpha: 0.15),
-              blurRadius: 30,
-              offset: const Offset(0, 10))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16)),
-                child: Row(
-                  children: [
-                    Icon(Icons.event_rounded,
-                        color: Colors.redAccent, size: 14),
-                    SizedBox(width: 8),
-                    Text("ÉVÉNEMENT",
-                        style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 9,
-                            letterSpacing: 1.5)),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              if (showArrow)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text('${currentIndex + 1}/$totalPosts',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1)),
-                ),
-              const SizedBox(width: 12),
-              Text(post.date,
-                  style: TextStyle(
-                      color: isDark
-                          ? Colors.redAccent.withValues(alpha: 0.8)
-                          : Colors.white.withValues(alpha: 0.7),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900)),
-            ],
+  Widget _buildNavArrow({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2), width: 0.5),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
-          const SizedBox(height: 24),
-          Text(post.content,
-                  key: ValueKey('content_${post.id}'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      height: 1.5))
-              .animate()
-              .fadeIn()
-              .slideX(begin: 0.02),
-          const SizedBox(height: 32),
-          Row(
-            children: [
-              if (showArrow)
-                GestureDetector(
-                  onTap: () => setState(() => _currentPostIndex++),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white12, width: 1.5)),
-                    child: const Icon(Icons.arrow_forward_rounded,
-                        color: Colors.white, size: 16),
-                  ),
-                )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .shimmer(duration: 2.seconds, color: Colors.white24),
-              const Spacer(),
-              InkWell(
-                onTap: () => _showPostDetails(context, post),
-                child: Text(
-                    AppLocalizations.of(context)!.translate('view_details'),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 10,
-                        letterSpacing: 1)),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
-    )
-        .animate(key: ValueKey('card_${post.id}'))
-        .fadeIn(duration: 400.ms)
-        .slideY(begin: 0.05);
+    ).animate().fadeIn(duration: 400.ms).scale(delay: 200.ms);
   }
 
   Widget _buildQuickActions(BuildContext context, bool isDark) {
@@ -934,24 +1536,35 @@ class _ParentHomeState extends State<_ParentHome> {
             clipBehavior: Clip.none,
             children: [
               Container(
-                padding: const EdgeInsets.all(22),
+                padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [color, color.withValues(alpha: 0.3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                        color: color.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        spreadRadius: 2)
+                      color: color.withValues(alpha: 0.25),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
+                    ),
                   ],
-                  border: Border.all(color: color.withValues(alpha: 0.2)),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
               ),
               if (showBadge)
                 Positioned(
-                  top: 0,
-                  right: 0,
+                  top: -2,
+                  right: -2,
                   child: Container(
                     width: 14,
                     height: 14,
@@ -960,19 +1573,17 @@ class _ParentHomeState extends State<_ParentHome> {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                        width: 2,
+                        width: 2.5,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.redAccent.withValues(alpha: 0.4),
-                          blurRadius: 6,
+                          blurRadius: 8,
                         ),
                       ],
                     ),
                   ),
-                )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .shimmer(duration: 2.seconds),
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -988,21 +1599,19 @@ class _ParentHomeState extends State<_ParentHome> {
   }
 
   Widget _buildComparisonChart(BuildContext context, bool isDark) {
-    final textColor = isDark ? Colors.white38 : Colors.black45;
-    final yassinColor =
-        isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5); // Indigo
+    final textColor = isDark ? Colors.white54 : Colors.black54;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(AppLocalizations.of(context)!.translate('global_evolution'),
+            Text('Évolution Globale',
                 style: TextStyle(
                     color: textColor,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 2)),
+                    letterSpacing: 1.5)),
             const Spacer(),
             _buildChartSelector(
               _selectedSemester == 'all'
@@ -1019,251 +1628,208 @@ class _ParentHomeState extends State<_ParentHome> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(40),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              height: 360, // Increased height for titles and tooltips
-              padding: const EdgeInsets.fromLTRB(
-                  16, 48, 28, 20), // Increased top padding
-              decoration: BoxDecoration(
+        const SizedBox(height: 16),
+        Container(
+          height: 320,
+          padding: const EdgeInsets.fromLTRB(16, 40, 24, 20),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.03)
+                : Colors.black.withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.03)
-                    : Colors.white.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(40),
-                border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.black.withValues(alpha: 0.05)),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                        color: yassinColor.withValues(alpha: 0.05),
-                        blurRadius: 30,
-                        offset: const Offset(0, 15))
-                ],
-              ),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: LineChart(
-                      LineChartData(
-                        minY: 0,
-                        maxY: 10,
-                        gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            horizontalInterval: 5,
-                            getDrawingHorizontalLine: (value) => FlLine(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.black.withValues(alpha: 0.05),
-                                strokeWidth: 1,
-                                dashArray: [5, 5])),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                  showTitles: true,
-                                  interval: 5,
-                                  reservedSize: 35,
-                                  getTitlesWidget: (val, meta) {
-                                    if (val > 10)
-                                      return const SizedBox.shrink();
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: Text(val.toInt().toString(),
-                                          style: TextStyle(
-                                              color: textColor.withValues(
-                                                  alpha: 0.5),
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w900)),
-                                    );
-                                  })),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              interval: 1,
-                              getTitlesWidget: (val, meta) {
-                                final dashVM =
-                                    context.read<DashboardViewModel>();
-                                final averages = dashVM.subjectAverages;
-                                if (val.toInt() >= 0 &&
-                                    val.toInt() < averages.length) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 12.0),
-                                    child: Text(
-                                        averages[val.toInt()]['subject'] ?? '',
-                                        style: TextStyle(
-                                            color: textColor,
-                                            fontSize:
-                                                9, // Slightly smaller for many subjects
-                                            fontWeight: FontWeight.w900)),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              },
-                              reservedSize: 35,
-                            ),
-                          ),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05)),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: LineChart(
+                  LineChartData(
+                    minY: 0,
+                    maxY: 10,
+                    gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 5,
+                        getDrawingHorizontalLine: (value) => FlLine(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.03)
+                                : Colors.black.withValues(alpha: 0.03),
+                            strokeWidth: 1,
+                            dashArray: [10, 5])),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 5,
+                          getTitlesWidget: (value, meta) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Text(value.toInt().toString(),
+                                  style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900)),
+                            );
+                          },
+                          reservedSize: 28,
                         ),
-                        borderData: FlBorderData(show: false),
-                        lineTouchData: LineTouchData(
-                          handleBuiltInTouches: true,
-                          getTouchedSpotIndicator: (LineChartBarData barData,
-                              List<int> spotIndexes) {
-                            return spotIndexes.map((spotIndex) {
-                              return TouchedSpotIndicatorData(
-                                FlLine(
-                                    color:
-                                        barData.color?.withValues(alpha: 0.3),
-                                    strokeWidth: 4),
-                                FlDotData(
-                                  getDotPainter:
-                                      (spot, percent, barData, index) =>
-                                          FlDotCirclePainter(
-                                    radius: 8,
-                                    color: barData.color ?? Colors.blueAccent,
-                                    strokeWidth: 2,
-                                    strokeColor: Colors.white,
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            if (value != value.toInt()) return const SizedBox.shrink();
+                            final avgs = context
+                                .read<DashboardViewModel>()
+                                .subjectAverages;
+                            if (value.toInt() >= 0 &&
+                                value.toInt() < avgs.length) {
+                              final subject =
+                                  avgs[value.toInt()]['subject'] as String;
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: Text(
+                                  subject.toUpperCase().replaceAll(' ', '\n'),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 7,
+                                    fontWeight: FontWeight.w900,
                                   ),
                                 ),
                               );
-                            }).toList();
+                            }
+                            return const SizedBox.shrink();
                           },
-                          touchTooltipData: LineTouchTooltipData(
-                            getTooltipColor: (touchedSpot) =>
-                                isDark ? const Color(0xFF0F172A) : Colors.white,
-                            tooltipBorderRadius: BorderRadius.circular(20),
-                            tooltipPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            tooltipBorder: BorderSide(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.black.withValues(alpha: 0.05)),
-                            getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                              return touchedSpots
-                                  .map((LineBarSpot touchedSpot) {
-                                return LineTooltipItem(
-                                  touchedSpot.y.toStringAsFixed(1),
-                                  TextStyle(
-                                    color: touchedSpot.bar.color,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 18,
-                                  ),
-                                );
-                              }).toList();
-                            },
-                          ),
+                          reservedSize: 42,
                         ),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: context
-                                    .watch<DashboardViewModel>()
-                                    .subjectAverages
-                                    .isEmpty
-                                ? const [FlSpot(0, 0)]
-                                : context
-                                    .watch<DashboardViewModel>()
-                                    .subjectAverages
-                                    .map((e) => FlSpot(
-                                        (e['index'] as num).toDouble(),
-                                        (e['grade'] as num).toDouble()))
-                                    .toList(),
-                            isCurved: true,
-                            curveSmoothness: 0.4,
-                            gradient: const LinearGradient(
-                              colors: [
-                                Colors.cyanAccent,
-                                Colors.blueAccent,
-                                Colors.indigoAccent,
-                              ],
-                            ),
-                            barWidth: 6,
-                            isStrokeCapRound: true,
-                            shadow: Shadow(
-                              color: Colors.blueAccent.withValues(alpha: 0.5),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                            dotData: FlDotData(
-                              show: true,
-                              getDotPainter: (spot, percent, barData, index) =>
-                                  FlDotCirclePainter(
-                                radius: 6,
-                                color: Colors.white,
-                                strokeWidth: 4,
-                                strokeColor: Colors.blueAccent,
-                              ),
-                            ),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.blueAccent.withValues(alpha: 0.2),
-                                  Colors.blueAccent.withValues(alpha: 0),
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 28),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: (isDark ? Colors.white : Colors.black)
-                          .withValues(alpha: 0.02),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: (isDark ? Colors.white : Colors.black)
-                              .withValues(alpha: 0.05)),
+                    borderData: FlBorderData(show: false),
+                    lineTouchData: LineTouchData(
+                      handleBuiltInTouches: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (touchedSpot) =>
+                            isDark ? const Color(0xFF0F172A) : Colors.white,
+                        tooltipBorderRadius: BorderRadius.circular(16),
+                        getTooltipItems: (touchedSpots) {
+                          return touchedSpots.map((LineBarSpot touchedSpot) {
+                            final avgs = context
+                                .read<DashboardViewModel>()
+                                .subjectAverages;
+                            final index = touchedSpot.x.toInt();
+                            if (index < 0 || index >= avgs.length) return null;
+                            final subject = avgs[index]['subject'] as String;
+                            final grade = touchedSpot.y.toStringAsFixed(2);
+                            return LineTooltipItem(
+                              '$subject\n',
+                              TextStyle(
+                                color: isDark ? Colors.white70 : Colors.black87,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '$grade',
+                                  style: TextStyle(
+                                    color: Colors.blueAccent,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList();
+                        },
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: context
-                          .read<DashboardViewModel>()
-                          .children
-                          .asMap()
-                          .entries
-                          .map((entry) {
-                        final index = entry.key;
-                        final child = entry.value;
-                        const color = Colors.blueAccent;
-                        return Row(
-                          children: [
-                            _buildLegendItem(
-                                child.name.split(' ')[0], color, isDark),
-                            if (index <
-                                context
-                                        .read<DashboardViewModel>()
-                                        .children
-                                        .length -
-                                    1)
-                              const SizedBox(width: 40),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: context
+                                .watch<DashboardViewModel>()
+                                .subjectAverages
+                                .isEmpty
+                            ? const [FlSpot(0, 0)]
+                            : context
+                                .watch<DashboardViewModel>()
+                                .subjectAverages
+                                .map((e) => FlSpot(
+                                    (e['index'] as num).toDouble(),
+                                    (e['grade'] as num).toDouble()))
+                                .toList(),
+                        isCurved: true,
+                        curveSmoothness: 0.4,
+                        gradient: const LinearGradient(
+                          colors: [
+                            Colors.cyanAccent,
+                            Colors.blueAccent,
                           ],
-                        );
-                      }).toList(),
-                    ),
+                        ),
+                        barWidth: 4,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) =>
+                              FlDotCirclePainter(
+                            radius: 6,
+                            color: Colors.white,
+                            strokeWidth: 3,
+                            strokeColor: Colors.blueAccent,
+                          ),
+                        ),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blueAccent.withValues(alpha: 0.15),
+                              Colors.blueAccent.withValues(alpha: 0),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: context
+                    .read<DashboardViewModel>()
+                    .children
+                    .asMap()
+                    .entries
+                    .map((entry) {
+                  final index = entry.key;
+                  final child = entry.value;
+                  const color = Colors.blueAccent;
+                  return Row(
+                    children: [
+                      _buildLegendItem(child.name.split(' ')[0], color, isDark),
+                      if (index <
+                          context.read<DashboardViewModel>().children.length -
+                              1)
+                        const SizedBox(width: 40),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ],
           ),
         ),
       ],
-    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1);
+    ).animate().fadeIn();
   }
 
   Widget _buildChartSelector(String value, List<String> options,
@@ -1328,179 +1894,679 @@ class _ParentHomeState extends State<_ParentHome> {
       ],
     );
   }
-}
 
-class _ChildPlatinumCard extends StatelessWidget {
-  final StudentModel child;
-  final bool isDark;
-  const _ChildPlatinumCard({required this.child, required this.isDark});
+  Widget _buildEventsSection(BuildContext context, bool isDark) {
+    return Consumer<EventViewModel>(
+      builder: (context, eventVM, child) {
+        if (eventVM.isLoading) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: CircularProgressIndicator(
+                  color: Colors.blueAccent.withValues(alpha: 0.5)),
+            ),
+          );
+        }
 
-  @override
-  Widget build(BuildContext context) {
-    final primaryColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    return Container(
-      width: 250,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1E293B).withValues(alpha: 0.6)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(44),
-        border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.05)),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 40,
-                offset: const Offset(0, 15))
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: Colors.purpleAccent.withValues(alpha: 0.4),
-                        width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.purpleAccent.withValues(alpha: 0.2),
-                          blurRadius: 10)
-                    ]),
-                child: CircleAvatar(
-                  radius: 22,
-                  backgroundImage:
-                      NetworkImage('https://i.pravatar.cc/150?u=${child.id}'),
+        if (eventVM.events.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.02)
+                  : Colors.black.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.05)),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.event_note_rounded,
+                    size: 48,
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.1)),
+                const SizedBox(height: 16),
+                Text(
+                  "Aucun événement",
+                  style: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.black54,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(child.name,
-                        style: TextStyle(
-                            color: primaryColor,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                            letterSpacing: -0.5)),
-                    const SizedBox(height: 1),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white10
-                              : Colors.black.withValues(alpha: 0.03),
-                          borderRadius: BorderRadius.circular(8)),
-                      child: Text((child.className ?? "CLASSE").toUpperCase(),
-                          style: TextStyle(
-                              color: isDark ? Colors.white60 : Colors.black54,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1)),
+                const SizedBox(height: 4),
+                Text(
+                  "Revenez plus tard pour les prochains événements",
+                  style: TextStyle(
+                    color: isDark ? Colors.white24 : Colors.black26,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "ÉVÉNEMENTS À VENIR",
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    "${eventVM.events.length} ÉVÉNEMENTS",
+                    style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildCompactStat(AppLocalizations.of(context)!.translate('avg'),
-                  '${child.average}', Colors.blueAccent, isDark),
-              Container(
-                  width: 1,
-                  height: 16,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.05)),
-              _buildCompactStat(
-                  AppLocalizations.of(context)!.translate('homework'),
-                  '--',
-                  Colors.orangeAccent,
-                  isDark),
-              Container(
-                  width: 1,
-                  height: 16,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.05)),
-              _buildCompactStat(
-                  AppLocalizations.of(context)!.translate('attendance_short'),
-                  '${(child.attendanceRate ?? 0).toInt()}%',
-                  Colors.greenAccent,
-                  isDark),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => SuiviScolaireScreen(student: child))),
-                child: Row(
-                  children: [
-                    Text(
-                        AppLocalizations.of(context)!
-                            .translate('detailed_tracking'),
-                        style: TextStyle(
-                            color: isDark ? Colors.white38 : Colors.black38,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                            letterSpacing: 0.5)),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.black.withValues(alpha: 0.05),
-                          shape: BoxShape.circle),
-                      child: Icon(Icons.arrow_forward_ios_rounded,
-                          size: 8,
-                          color: isDark ? Colors.white38 : Colors.black38),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: eventVM.events.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final event = eventVM.events[index];
+                return _buildEventCard(context, event, isDark, eventVM);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildCompactStat(
-      String label, String value, Color color, bool isDark) {
-    return Column(
-      children: [
-        Text(value,
-            style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                fontWeight: FontWeight.w900,
-                fontSize: 18)),
-        const SizedBox(height: 2),
-        Text(label,
-            style: TextStyle(
-                color: color,
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5)),
-      ],
+  Widget _buildEventCard(BuildContext context, EventModel event, bool isDark,
+      EventViewModel eventVM) {
+    final String statusColor = event.participationStatus == 'going'
+        ? 'Confirmé'
+        : (event.participationStatus == 'not_going' ? 'Refusé' : 'En attente');
+
+    final statusColorIcon = event.participationStatus == 'going'
+        ? Colors.greenAccent
+        : (event.participationStatus == 'not_going'
+            ? Colors.redAccent
+            : Colors.amberAccent);
+
+    return GestureDetector(
+      // onTap: () => _showEventDetails(context, event, eventVM),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+              color: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Event Icon Badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.event_rounded,
+                    color: Colors.blueAccent,
+                    size: 20,
+                  ),
+                ),
+                Text(
+                  event.type.toUpperCase(),
+                  style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: TextStyle(
+                          color:
+                              isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today_rounded,
+                              size: 13,
+                              color: isDark ? Colors.white38 : Colors.black38),
+                          const SizedBox(width: 8),
+                          Text(
+                            event.date,
+                            style: TextStyle(
+                              color: isDark ? Colors.white38 : Colors.black38,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (event.location != null) ...[
+                            const SizedBox(width: 16),
+                            Icon(Icons.location_on_rounded,
+                                size: 13,
+                                color:
+                                    isDark ? Colors.white38 : Colors.black38),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                event.location!,
+                                style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white38 : Colors.black38,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ]
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: statusColorIcon.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    event.participationStatus == 'going'
+                        ? Icons.check_rounded
+                        : (event.participationStatus == 'not_going'
+                            ? Icons.close_rounded
+                            : Icons.help_outline_rounded),
+                    color: statusColorIcon,
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColorIcon.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                statusColor,
+                style: TextStyle(
+                  color: statusColorIcon,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1),
+    );
+  }
+
+  void _showEventDetails(
+      BuildContext context, EventModel event, EventViewModel eventVM) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          bool isSubmitting = false;
+          String? currentResponse = event.participationStatus;
+
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF0F172A).withValues(alpha: 0.9)
+                    : Colors.white.withValues(alpha: 0.9),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(40)),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.white10
+                        : Colors.black.withValues(alpha: 0.05)),
+              ),
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color:
+                                    Colors.blueAccent.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.event_rounded,
+                                  color: Colors.blueAccent, size: 14),
+                              const SizedBox(width: 8),
+                              Text(
+                                'ÉVÉNEMENT',
+                                style: TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          event.title,
+                          style: TextStyle(
+                            color:
+                                isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.8,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.calendar_today_rounded,
+                                    size: 14,
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.black38),
+                                const SizedBox(width: 8),
+                                Text(
+                                  event.date,
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.black38,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (event.location != null)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.location_on_rounded,
+                                      size: 14,
+                                      color: isDark
+                                          ? Colors.white38
+                                          : Colors.black38),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    event.location!,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white38
+                                          : Colors.black38,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Description",
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  event.description,
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.7)
+                                        : const Color(0xFF334155),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.7,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                if (event.createdAt != null &&
+                                    event.createdAt!.isNotEmpty) ...[
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amberAccent
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                          color: Colors.amberAccent
+                                              .withValues(alpha: 0.2)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.info_rounded,
+                                            color: Colors.amberAccent,
+                                            size: 20),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                "Créé par l'administrateur",
+                                                style: TextStyle(
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : Colors.black87,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                event.createdAt ??
+                                                    "Date inconnue",
+                                                style: TextStyle(
+                                                  color: isDark
+                                                      ? Colors.white54
+                                                      : Colors.black54,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                ]
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                                color:
+                                    Colors.blueAccent.withValues(alpha: 0.1)),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                "Allez-vous participer à cet événement ?",
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: isSubmitting
+                                          ? null
+                                          : () async {
+                                              setModalState(
+                                                  () => isSubmitting = true);
+                                              final ok =
+                                                  await eventVM.respondToEvent(
+                                                      event.id, 'going');
+                                              if (ok) {
+                                                currentResponse = 'going';
+                                                setModalState(
+                                                    () => isSubmitting = false);
+                                              }
+                                            },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: currentResponse ==
+                                                'going'
+                                            ? Colors.green
+                                            : (isDark
+                                                ? Colors.white10
+                                                : Colors.black
+                                                    .withValues(alpha: 0.05)),
+                                        foregroundColor:
+                                            currentResponse == 'going'
+                                                ? Colors.white
+                                                : (isDark
+                                                    ? Colors.white
+                                                    : Colors.black),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16)),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                      ),
+                                      child: isSubmitting &&
+                                              currentResponse == null
+                                          ? const SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2))
+                                          : const Text("OUI, JE PARTICIPE",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 12)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: isSubmitting
+                                          ? null
+                                          : () async {
+                                              setModalState(
+                                                  () => isSubmitting = true);
+                                              final ok =
+                                                  await eventVM.respondToEvent(
+                                                      event.id, 'not_going');
+                                              if (ok) {
+                                                currentResponse = 'not_going';
+                                                setModalState(
+                                                    () => isSubmitting = false);
+                                              }
+                                            },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: currentResponse ==
+                                                'not_going'
+                                            ? Colors.redAccent
+                                            : (isDark
+                                                ? Colors.white10
+                                                : Colors.black
+                                                    .withValues(alpha: 0.05)),
+                                        foregroundColor:
+                                            currentResponse == 'not_going'
+                                                ? Colors.white
+                                                : (isDark
+                                                    ? Colors.white
+                                                    : Colors.black),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16)),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                      ),
+                                      child: const Text("NON",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (currentResponse != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Text(
+                                    "Réponse enregistrée : ${currentResponse == 'going' ? 'Présent' : 'Absent'}",
+                                    style: const TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final ok = await eventVM.deleteEvent(event.id);
+                            if (ok && mounted) {
+                              Navigator.pop(context);
+                            }
+                          },
+                          icon: const Icon(Icons.delete_rounded),
+                          label: const Text("Supprimer l'événement"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Colors.redAccent.withValues(alpha: 0.2),
+                            foregroundColor: Colors.redAccent,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 24),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white10 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 20,
+                    top: 20,
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.black.withValues(alpha: 0.05),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.close_rounded,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                            size: 20),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
     );
   }
 }
@@ -1510,89 +2576,670 @@ class _ActivityPlatinumTile extends StatelessWidget {
   final bool isDark;
   const _ActivityPlatinumTile({required this.activity, required this.isDark});
 
+  String _getTypeLabel(String type) {
+    switch (type.toLowerCase()) {
+      case 'session':
+        return 'SÉANCE';
+      case 'exam':
+      case 'exam_result':
+        return 'EXAMEN';
+      case 'absence':
+        return 'ABSENCE';
+      case 'homework':
+        return 'DEVOIR';
+      case 'event':
+        return 'ÉVÉNEMENT';
+      default:
+        return 'ACTIVITÉ';
+    }
+  }
+
+  IconData _getTypeIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'session':
+        return Icons.schedule_rounded;
+      case 'exam':
+      case 'exam_result':
+        return Icons.assignment_turned_in_rounded;
+      case 'absence':
+        return Icons.event_busy_rounded;
+      case 'homework':
+        return Icons.menu_book_rounded;
+      case 'event':
+        return Icons.event_available_rounded;
+      default:
+        return Icons.calendar_today_rounded;
+    }
+  }
+
+  void _showDetails(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final type = activity['type'] as String? ?? 'activity';
+    final isEvent = type == 'event';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          bool isSubmitting = false;
+          
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF0F172A).withValues(alpha: 0.95)
+                    : Colors.white.withValues(alpha: 0.95),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(40)),
+                border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white10
+                        : Colors.black.withValues(alpha: 0.05)),
+              ),
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(32, 60, 32, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Type badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: (activity['color'] as Color?)
+                                    ?.withValues(alpha: 0.1) ??
+                                Colors.blueAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: (activity['color'] as Color?)
+                                        ?.withValues(alpha: 0.2) ??
+                                    Colors.blueAccent.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(_getTypeIcon(type),
+                                  color: activity['color'] ?? Colors.blueAccent,
+                                  size: 14),
+                              const SizedBox(width: 8),
+                              Text(
+                                _getTypeLabel(type),
+                                style: TextStyle(
+                                    color: activity['color'] ??
+                                        Colors.blueAccent,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Title
+                        Text(
+                          activity['title'] ?? 'Activité',
+                          style: TextStyle(
+                            color: isDarkMode
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.8,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Details Grid
+                        if (activity['time'] != null) ...[
+                          _buildDetailRow(
+                            isDarkMode,
+                            Icons.schedule_rounded,
+                            'Heure',
+                            activity['time']?.toString() ?? 'À définir',
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (activity['location'] != null &&
+                            (activity['location'] as String).isNotEmpty) ...[
+                          _buildDetailRow(
+                            isDarkMode,
+                            Icons.location_on_rounded,
+                            'Lieu',
+                            activity['location']?.toString() ??
+                                'Non spécifié',
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if ((activity['content'] as String?)?.isNotEmpty ??
+                            false) ...[
+                          _buildDetailRow(
+                            isDarkMode,
+                            Icons.info_rounded,
+                            'Détails',
+                            activity['content']?.toString() ?? '',
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        // Description/Content box if available
+
+                        // Event Response Section
+                        if (isEvent) ...[
+                          const SizedBox(height: 24),
+                          _buildEventResponseSection(
+                            context,
+                            isDarkMode,
+                            activity,
+                            isSubmitting,
+                            setModalState,
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                  // Top handle
+                  Positioned(
+                    top: 12,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white10 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 20,
+                    top: 20,
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.black.withValues(alpha: 0.05),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.close_rounded,
+                            color: isDarkMode ? Colors.white60 : Colors.black54,
+                            size: 20),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Widget _buildDetailRow(
+      bool isDark, IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: (activity['color'] as Color?)?.withValues(alpha: 0.1) ??
+                Colors.blueAccent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: activity['color'] ?? Colors.blueAccent,
+            size: 16,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: isDark ? Colors.white38 : Colors.black38,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEventResponseSection(
+    BuildContext context,
+    bool isDarkMode,
+    Map<String, dynamic> activity,
+    bool isSubmitting,
+    StateSetter setModalState,
+  ) {
+    String currentResponse =
+        activity['participation_status']?.toString().toLowerCase() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.blueAccent.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            "Allez-vous participer à cet événement ?",
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Current response status display
+          if (currentResponse.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: currentResponse == 'going' ||
+                          currentResponse == 'yes' ||
+                          currentResponse == 'oui'
+                      ? Colors.green.withValues(alpha: 0.1)
+                      : Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        currentResponse == 'going' ||
+                                currentResponse == 'yes' ||
+                                currentResponse == 'oui'
+                            ? Icons.check_circle_rounded
+                            : Icons.cancel_rounded,
+                        color: currentResponse == 'going' ||
+                                currentResponse == 'yes' ||
+                                currentResponse == 'oui'
+                            ? Colors.green
+                            : Colors.red,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        currentResponse == 'going' ||
+                                currentResponse == 'yes' ||
+                                currentResponse == 'oui'
+                            ? "Vous participez ✓"
+                            : "Vous ne participez pas",
+                        style: TextStyle(
+                          color: currentResponse == 'going' ||
+                                  currentResponse == 'yes' ||
+                                  currentResponse == 'oui'
+                              ? Colors.green
+                              : Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          setModalState(() => isSubmitting = true);
+                          // Get event ID from activity or use a generic one
+                          final eventId = activity['event_id'] as String? ?? '';
+                          if (eventId.isEmpty) {
+                            setModalState(() => isSubmitting = false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Erreur: ID événement non trouvé'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          try {
+                            final eventVM =
+                                context.read<EventViewModel>();
+                            final success =
+                                await eventVM.respondToEvent(eventId, 'going');
+
+                            if (success && context.mounted) {
+                              setModalState(() {
+                                isSubmitting = false;
+                                currentResponse = 'going';
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Votre réponse a été enregistrée !'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              setModalState(() => isSubmitting = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Erreur lors de l\'envoi de la réponse'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                            setModalState(() => isSubmitting = false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: currentResponse == 'going' ||
+                            currentResponse == 'yes' ||
+                            currentResponse == 'oui'
+                        ? Colors.green
+                        : (isDarkMode
+                            ? Colors.white10
+                            : Colors.black.withValues(alpha: 0.05)),
+                    foregroundColor: currentResponse == 'going' ||
+                            currentResponse == 'yes' ||
+                            currentResponse == 'oui'
+                        ? Colors.white
+                        : (isDarkMode ? Colors.white : Colors.black),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: isSubmitting && currentResponse != 'going'
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text("OUI, JE PARTICIPE",
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 12)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          setModalState(() => isSubmitting = true);
+                          final eventId = activity['event_id'] as String? ?? '';
+                          if (eventId.isEmpty) {
+                            setModalState(() => isSubmitting = false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Erreur: ID événement non trouvé'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          try {
+                            final eventVM =
+                                context.read<EventViewModel>();
+                            final success =
+                                await eventVM.respondToEvent(eventId, 'not_going');
+
+                            if (success && context.mounted) {
+                              setModalState(() {
+                                isSubmitting = false;
+                                currentResponse = 'not_going';
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Votre réponse a été enregistrée !'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              setModalState(() => isSubmitting = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Erreur lors de l\'envoi de la réponse'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                            setModalState(() => isSubmitting = false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: currentResponse == 'not_going' ||
+                            currentResponse == 'no' ||
+                            currentResponse == 'non'
+                        ? Colors.redAccent
+                        : (isDarkMode
+                            ? Colors.white10
+                            : Colors.black.withValues(alpha: 0.05)),
+                    foregroundColor: currentResponse == 'not_going' ||
+                            currentResponse == 'no' ||
+                            currentResponse == 'non'
+                        ? Colors.white
+                        : (isDarkMode ? Colors.white : Colors.black),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: isSubmitting && currentResponse != 'not_going'
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text("NON",
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 12)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final color = activity['color'] as Color ?? Colors.blueAccent;
+    final color = (activity['color'] as Color?) ?? Colors.blueAccent;
+    final location = activity['location'] as String?;
     final type = activity['type'] as String? ?? 'activity';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.03)),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02), blurRadius: 20)
-              ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+    return GestureDetector(
+      // onTap: () => _showDetails(context),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF0F172A).withValues(alpha: 0.5)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.03)),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8))
+                ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withValues(alpha: 0.2))),
-            child: Icon(
-                activity['icon'] as IconData ?? Icons.event_note_rounded,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                _getTypeIcon(type),
                 color: color,
-                size: 24),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (type == 'absence')
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Icon(Icons.warning_rounded,
-                            color: Colors.redAccent, size: 14),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _getTypeLabel(type),
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    Expanded(
-                      child: Text(activity['title'] ?? '',
+                      if (activity['time'] != null)
+                        Text(
+                          activity['time'],
                           style: TextStyle(
-                              color: primaryColor,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 15,
-                              letterSpacing: -0.5)),
+                            color: isDark ? Colors.white38 : Colors.black38,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    activity['title'] ?? '',
+                    style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3),
+                  ),
+                  if ((activity['content'] as String?)?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      activity['content']?.toString() ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isDark ? Colors.white38 : Colors.black45,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 6),
-                Text(activity['content'] ?? '',
-                    style: TextStyle(
-                        color: isDark ? Colors.white60 : Colors.black54,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
-              ],
+                  if (location != null && location.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined,
+                            size: 12,
+                            color: isDark ? Colors.white24 : Colors.black26),
+                        const SizedBox(width: 4),
+                        Text(
+                          location,
+                          style: TextStyle(
+                            color: isDark ? Colors.white24 : Colors.black26,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          if (activity['time'] != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white10
-                      : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8)),
-              child: Text(activity['time'] ?? '',
-                  style: TextStyle(
-                      color: isDark ? Colors.white60 : Colors.black54,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900)),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

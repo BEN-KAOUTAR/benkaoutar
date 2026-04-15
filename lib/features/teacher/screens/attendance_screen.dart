@@ -48,15 +48,39 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   String _getDayKey(DateTime date) {
     final lang = AppLocalizations.of(context)?.locale.languageCode ?? 'fr';
-    
+
     if (lang == 'ar') {
-      final days = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+      final days = [
+        'الاثنين',
+        'الثلاثاء',
+        'الأربعاء',
+        'الخميس',
+        'الجمعة',
+        'السبت',
+        'الأحد'
+      ];
       return days[date.weekday - 1];
     } else if (lang == 'en') {
-      final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      final days = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+      ];
       return days[date.weekday - 1];
     } else {
-      final days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+      final days = [
+        'Lundi',
+        'Mardi',
+        'Mercredi',
+        'Jeudi',
+        'Vendredi',
+        'Samedi',
+        'Dimanche'
+      ];
       return days[date.weekday - 1];
     }
   }
@@ -70,9 +94,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
-  int get _absentCount => _studentStatus.values.where((v) => v == 'absent').length;
+  int get _absentCount =>
+      _studentStatus.values.where((v) => v == 'absent').length;
   int get _lateCount => _studentStatus.values.where((v) => v == 'late').length;
-  int get _presentCount => _studentStatus.values.where((v) => v == 'present').length;
+  int get _presentCount =>
+      _studentStatus.values.where((v) => v == 'present').length;
   int get _totalStudents => _studentStatus.length;
 
   void _onSave() {
@@ -84,10 +110,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppLocalizations.of(context)!.translate('attendance_validated')} : $_presentCount ${AppLocalizations.of(context)!.translate('present')}, $_absentCount ${AppLocalizations.of(context)!.translate('absent_count')} 📲', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
+            content: Text(
+                '${AppLocalizations.of(context)!.translate('attendance_validated')} : $_presentCount ${AppLocalizations.of(context)!.translate('present')}, $_absentCount ${AppLocalizations.of(context)!.translate('absent_count')} 📲',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.white)),
+            backgroundColor:
+                isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         Navigator.pop(context);
@@ -97,7 +128,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime now = DateTime.now();
-    
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate.isAfter(now) ? now : _selectedDate,
@@ -110,8 +141,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             colorScheme: ColorScheme.dark(
               primary: Colors.blueAccent,
               onPrimary: Colors.white,
-              surface: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-              onSurface: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+              surface: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E293B)
+                  : Colors.white,
+              onSurface: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: Colors.blueAccent),
@@ -143,15 +178,23 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: primaryTextColor, size: 20),
+          icon:
+              Icon(Icons.arrow_back_ios_new, color: primaryTextColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(loc.translate('mark_attendance'), style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 18)),
+        title: Text(loc.translate('mark_attendance'),
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: primaryTextColor,
+                fontSize: 18)),
         centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(Icons.history_rounded, color: primaryTextColor),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceHistoryScreen())),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const AttendanceHistoryScreen())),
           ),
           const SizedBox(width: 8),
         ],
@@ -162,133 +205,168 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           child: Column(
             children: [
               const SizedBox(height: 10),
-            // Stat row
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildMiniStat(context, loc.translate('present'), _presentCount.toString(), Colors.greenAccent),
-                  const SizedBox(width: 8),
-                  _buildMiniStat(context, loc.translate('delays'), _lateCount.toString(), Colors.orangeAccent),
-                  const SizedBox(width: 8),
-                  _buildMiniStat(context, loc.translate('absent_count'), _absentCount.toString(), Colors.redAccent),
-                ],
-              ),
-            ).animate().fadeIn().slideX(begin: 0.1),
+              // Stat row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    _buildMiniStat(context, loc.translate('present'),
+                        _presentCount.toString(), Colors.greenAccent),
+                    const SizedBox(width: 8),
+                    _buildMiniStat(context, loc.translate('delays'),
+                        _lateCount.toString(), Colors.orangeAccent),
+                    const SizedBox(width: 8),
+                    _buildMiniStat(context, loc.translate('absent_count'),
+                        _absentCount.toString(), Colors.redAccent),
+                  ],
+                ),
+              ).animate().fadeIn().slideX(begin: 0.1),
 
-            // Date & Subject Selector
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  // Date Picker
-                  Expanded(
-                    flex: 3,
-                    child: GestureDetector(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.blueAccent),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                DateFormat('dd MMMM', loc.locale.languageCode).format(_selectedDate), 
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: primaryTextColor),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Subject Selector
-                  Expanded(
-                    flex: 4,
-                    child: PopupMenuButton<String>(
-                      onSelected: (String value) {
-                        setState(() {
-                          _selectedSubject = value;
-                        });
-                        _loadSchedule();
-                      },
-                      itemBuilder: (BuildContext context) {
-                        String dayKey = _getDayKey(_selectedDate);
-                        final daySessions = [];
-                        return daySessions.map((session) {
-                          return PopupMenuItem<String>(
-                            value: session['subject'],
-                            child: Text(session['subject'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          );
-                        }).toList();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.blueAccent.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.blueAccent.withValues(alpha: 0.1)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.book_rounded, size: 16, color: Colors.blueAccent),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                (_selectedSubject ?? loc.translate('select_subject')).toUpperCase(), 
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.blueAccent),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const Icon(Icons.arrow_drop_down_rounded, color: Colors.blueAccent),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Students List or Empty State
-            Expanded(
-              child: _totalStudents == 0 
-                ? _buildEmptyState(context)
-                : ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: _todaysClasses.length,
-                    itemBuilder: (context, classIndex) {
-                      final cls = _todaysClasses[classIndex];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8, bottom: 8, top: 16),
-                            child: Text(
-                              cls.name.toUpperCase(), 
-                              style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1)
-                            ),
+              // Date & Subject Selector
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    // Date Picker
+                    Expanded(
+                      flex: 3,
+                      child: GestureDetector(
+                        onTap: () => _selectDate(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.white.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.white),
                           ),
-                          ...cls.students.asMap().entries.map((entry) => _buildStudentRow(context, entry.value, entry.key)),
-                        ],
-                      );
-                    },
-                  ),
-            ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today_outlined,
+                                  size: 16, color: Colors.blueAccent),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  DateFormat('dd MMMM', loc.locale.languageCode)
+                                      .format(_selectedDate),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 13,
+                                      color: primaryTextColor),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Subject Selector
+                    Expanded(
+                      flex: 4,
+                      child: PopupMenuButton<String>(
+                        onSelected: (String value) {
+                          setState(() {
+                            _selectedSubject = value;
+                          });
+                          _loadSchedule();
+                        },
+                        itemBuilder: (BuildContext context) {
+                          String dayKey = _getDayKey(_selectedDate);
+                          final daySessions = [];
+                          return daySessions.map((session) {
+                            return PopupMenuItem<String>(
+                              value: session['subject'],
+                              child: Text(session['subject'],
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13)),
+                            );
+                          }).toList();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.blueAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.blueAccent.withValues(alpha: 0.1)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.book_rounded,
+                                  size: 16, color: Colors.blueAccent),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  (_selectedSubject ??
+                                          loc.translate('select_subject'))
+                                      .toUpperCase(),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 12,
+                                      color: Colors.blueAccent),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down_rounded,
+                                  color: Colors.blueAccent),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-            // Persistent Actions
-            _buildBottomAction(context),
-          ],
-        ),
+              // Students List or Empty State
+              Expanded(
+                child: _totalStudents == 0
+                    ? _buildEmptyState(context)
+                    : ListView.builder(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: _todaysClasses.length,
+                        itemBuilder: (context, classIndex) {
+                          final cls = _todaysClasses[classIndex];
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left: 8, bottom: 8, top: 16),
+                                child: Text(cls.name.toUpperCase(),
+                                    style: const TextStyle(
+                                        color: Colors.blueAccent,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 11,
+                                        letterSpacing: 1)),
+                              ),
+                              ...cls.students.asMap().entries.map((entry) =>
+                                  _buildStudentRow(
+                                      context, entry.value, entry.key)),
+                            ],
+                          );
+                        },
+                      ),
+              ),
+
+              // Persistent Actions
+              _buildBottomAction(context),
+            ],
+          ),
         ),
       ),
     );
@@ -300,18 +378,21 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy_rounded, size: 64, color: isDark ? Colors.white10 : Colors.black12),
+          Icon(Icons.event_busy_rounded,
+              size: 64, color: isDark ? Colors.white10 : Colors.black12),
           const SizedBox(height: 16),
-          Text(
-            AppLocalizations.of(context)!.translate('no_classes_today'), 
-            style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontWeight: FontWeight.w900, fontSize: 14)
-          ),
+          Text(AppLocalizations.of(context)!.translate('no_classes_today'),
+              style: TextStyle(
+                  color: isDark ? Colors.white24 : Colors.black26,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14)),
         ],
       ),
     );
   }
 
-  Widget _buildMiniStat(BuildContext context, String label, String value, Color color) {
+  Widget _buildMiniStat(
+      BuildContext context, String label, String value, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -322,19 +403,28 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 20)),
+            Text(value,
+                style: TextStyle(
+                    color: color, fontWeight: FontWeight.w900, fontSize: 20)),
             const SizedBox(height: 4),
-            Text(label.toUpperCase(), style: TextStyle(color: color.withValues(alpha: 0.5), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+            Text(label.toUpperCase(),
+                style: TextStyle(
+                    color: color.withValues(alpha: 0.5),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStudentRow(BuildContext context, StudentModel student, int index) {
+  Widget _buildStudentRow(
+      BuildContext context, StudentModel student, int index) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
+    final secondaryTextColor =
+        isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -342,8 +432,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
-        boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 10)],
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.white.withValues(alpha: 0.8)),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.7), blurRadius: 10)
+              ],
       ),
       child: Row(
         children: [
@@ -351,33 +449,45 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: primaryTextColor.withValues(alpha: 0.1)),
+              border:
+                  Border.all(color: primaryTextColor.withValues(alpha: 0.1)),
             ),
             child: CircleAvatar(
               radius: 18,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${student.id}'),
+              backgroundImage:
+                  NetworkImage('https://i.pravatar.cc/150?u=${student.id}'),
               backgroundColor: secondaryTextColor,
             ),
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(student.name, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: primaryTextColor)),
+            child: Text(student.name,
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    color: primaryTextColor)),
           ),
-          
-          _buildStatusIcon(student.id, 'present', Icons.check_circle_rounded, Colors.greenAccent),
+          _buildStatusIcon(student.id, 'present', Icons.check_circle_rounded,
+              Colors.greenAccent),
           const SizedBox(width: 8),
-          _buildStatusIcon(student.id, 'late', Icons.access_time_filled_rounded, Colors.orangeAccent),
+          _buildStatusIcon(student.id, 'late', Icons.access_time_filled_rounded,
+              Colors.orangeAccent),
           const SizedBox(width: 8),
-          _buildStatusIcon(student.id, 'absent', Icons.cancel_rounded, Colors.redAccent),
+          _buildStatusIcon(
+              student.id, 'absent', Icons.cancel_rounded, Colors.redAccent),
         ],
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: index * 30)).slideX(begin: 0.05);
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: index * 30))
+        .slideX(begin: 0.05);
   }
 
-  Widget _buildStatusIcon(String studentId, String status, IconData icon, Color color) {
+  Widget _buildStatusIcon(
+      String studentId, String status, IconData icon, Color color) {
     bool isSelected = _studentStatus[studentId] == status;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return GestureDetector(
       onTap: () => setState(() => _studentStatus[studentId] = status),
       child: AnimatedContainer(
@@ -385,19 +495,35 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: isSelected ? color : (isDark ? Colors.white.withValues(alpha: 0.05) : color.withValues(alpha: 0.05)),
+          color: isSelected
+              ? color
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : color.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isSelected ? Colors.transparent : (isDark ? Colors.white.withValues(alpha: 0.1) : color.withValues(alpha: 0.2))),
-          boxShadow: isSelected ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10)] : [],
+          border: Border.all(
+              color: isSelected
+                  ? Colors.transparent
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : color.withValues(alpha: 0.2))),
+          boxShadow: isSelected
+              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10)]
+              : [],
         ),
-        child: Icon(icon, color: isSelected ? Colors.white : (isDark ? Colors.white54 : color), size: 18),
+        child: Icon(icon,
+            color:
+                isSelected ? Colors.white : (isDark ? Colors.white54 : color),
+            size: 18),
       ),
     );
   }
 
   Widget _buildBottomAction(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryBg = isDark ? const Color(0xFF0F172A).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.9);
+    final primaryBg = isDark
+        ? const Color(0xFF0F172A).withValues(alpha: 0.8)
+        : Colors.white.withValues(alpha: 0.9);
     final loc = AppLocalizations.of(context)!;
 
     return ClipRRect(
@@ -407,8 +533,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
           decoration: BoxDecoration(
             color: primaryBg,
-            border: Border(top: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white)),
-            boxShadow: isDark ? [] : [BoxShadow(color: Colors.white, blurRadius: 20, offset: const Offset(0, -5))],
+            border: Border(
+                top: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.white)),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                        color: Colors.white,
+                        blurRadius: 20,
+                        offset: const Offset(0, -5))
+                  ],
           ),
           child: Column(
             children: [
@@ -416,24 +553,39 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: _totalStudents == 0 ? null : () => setState(() {
-                      _studentStatus.updateAll((k, v) => 'present');
-                    }),
+                    onPressed: _totalStudents == 0
+                        ? null
+                        : () => setState(() {
+                              _studentStatus.updateAll((k, v) => 'present');
+                            }),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.blueAccent.withValues(alpha: 0.2))),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                              color: Colors.blueAccent.withValues(alpha: 0.2))),
                       backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
                     ),
-                    child: Text(loc.translate('mark_all_present'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                    child: Text(loc.translate('mark_all_present'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900, fontSize: 13)),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.redAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text('$_absentCount ${loc.translate('absent_count').toLowerCase()}', style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    child: Text(
+                        '$_absentCount ${loc.translate('absent_count').toLowerCase()}',
+                        style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5)),
                   ),
                 ],
               ),
@@ -441,18 +593,35 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: (_isSaving || _totalStudents == 0) ? null : _onSave,
+                  onPressed:
+                      (_isSaving || _totalStudents == 0) ? null : _onSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
-                    foregroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                    backgroundColor:
+                        isDark ? Colors.white : const Color(0xFF0F172A),
+                    foregroundColor:
+                        isDark ? const Color(0xFF0F172A) : Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                     elevation: 10,
-                    shadowColor: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.2),
+                    shadowColor: isDark
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : Colors.black.withValues(alpha: 0.2),
                   ),
                   child: _isSaving
-                    ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: isDark ? const Color(0xFF0F172A) : Colors.white, strokeWidth: 3))
-                    : Text(loc.translate('validate_attendance').toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1.5)),
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              color: isDark
+                                  ? const Color(0xFF0F172A)
+                                  : Colors.white,
+                              strokeWidth: 3))
+                      : Text(loc.translate('validate_attendance').toUpperCase(),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                              letterSpacing: 1.5)),
                 ),
               ),
             ],

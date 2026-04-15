@@ -2,8 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
 enum HomeworkStatus { notStarted, inProgress, done, late }
+
 enum UserRole { parent, teacher }
-enum IconType { location, grade, absence, payment, post, message, info, exam, devoir, event }
+
+enum IconType {
+  location,
+  grade,
+  absence,
+  payment,
+  post,
+  message,
+  info,
+  exam,
+  devoir,
+  event
+}
 
 class UserModel {
   final String id;
@@ -222,7 +235,8 @@ class GradeModel {
     } else if (json['matiere'] is Map) {
       subjectName = json['matiere']['name'] ?? json['matiere']['title'] ?? '';
     } else {
-      subjectName = json['subject'] ?? json['subjectName'] ?? json['matiere'] ?? '';
+      subjectName =
+          json['subject'] ?? json['subjectName'] ?? json['matiere'] ?? '';
     }
 
     // Infer semester from date if not provided
@@ -237,7 +251,16 @@ class GradeModel {
 
     // Try all possible grade field names
     double gradeValue = 0.0;
-    for (final key in ['note', 'score', 'mark', 'grade', 'result', 'value', 'obtainedGrade', 'obtained']) {
+    for (final key in [
+      'note',
+      'score',
+      'mark',
+      'grade',
+      'result',
+      'value',
+      'obtainedGrade',
+      'obtained'
+    ]) {
       if (json[key] != null) {
         gradeValue = (json[key] as num).toDouble();
         break;
@@ -246,7 +269,14 @@ class GradeModel {
 
     // Try all possible title/name field names
     String? title;
-    for (final key in ['title', 'name', 'label', 'examName', 'description', 'evaluationName']) {
+    for (final key in [
+      'title',
+      'name',
+      'label',
+      'examName',
+      'description',
+      'evaluationName'
+    ]) {
       if (json[key] != null && json[key].toString().isNotEmpty) {
         title = json[key].toString();
         break;
@@ -254,10 +284,21 @@ class GradeModel {
     }
 
     List<GradeComponentModel>? parsedComponents;
-    for (final key in ['components', 'subGrades', 'details', 'children', 'elements', 'criterias', 'competences', 'mokawinat']) {
+    for (final key in [
+      'components',
+      'subGrades',
+      'details',
+      'children',
+      'elements',
+      'criterias',
+      'competences',
+      'mokawinat'
+    ]) {
       if (json[key] is List && (json[key] as List).isNotEmpty) {
-         parsedComponents = (json[key] as List).map((x) => GradeComponentModel.fromJson(x as Map<String, dynamic>)).toList();
-         break;
+        parsedComponents = (json[key] as List)
+            .map((x) => GradeComponentModel.fromJson(x as Map<String, dynamic>))
+            .toList();
+        break;
       }
     }
 
@@ -265,16 +306,24 @@ class GradeModel {
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       subject: subjectName,
       grade: gradeValue,
-      maxGrade: (json['maxGrade'] ?? json['total'] ?? json['outOf'] ?? 20 as num).toDouble(),
+      maxGrade:
+          (json['maxGrade'] ?? json['total'] ?? json['outOf'] ?? 10 as num)
+              .toDouble(),
       coefficient: (json['coefficient'] as num?)?.toDouble() ?? 1.0,
       date: rawDate,
       type: json['type'] ?? json['evaluationType'] ?? 'exam',
       comment: json['comment'] ?? json['appreciation'] ?? json['observation'],
-      classAverage: (json['classAverage'] ?? json['moyenne'] ?? json['average'] as num?)?.toDouble(),
+      classAverage:
+          (json['classAverage'] ?? json['moyenne'] ?? json['average'] as num?)
+              ?.toDouble(),
       semester: semester,
       title: title,
-      rank: (json['rank'] ?? json['classement'] ?? json['position'] as num?)?.toInt(),
-      classSize: (json['classSize'] ?? json['totalStudents'] ?? json['effectif'] as num?)?.toInt(),
+      rank: (json['rank'] ?? json['classement'] ?? json['position'] as num?)
+          ?.toInt(),
+      classSize: (json['classSize'] ??
+              json['totalStudents'] ??
+              json['effectif'] as num?)
+          ?.toInt(),
       components: parsedComponents,
     );
   }
@@ -312,9 +361,20 @@ class GradeComponentModel {
 
   factory GradeComponentModel.fromJson(Map<String, dynamic> json) {
     return GradeComponentModel(
-      title: json['title'] ?? json['name'] ?? json['label'] ?? json['mokawin'] ?? '',
-      grade: ((json['grade'] ?? json['note'] ?? json['score'] ?? json['value'] ?? 0) as num).toDouble(),
-      maxGrade: ((json['maxGrade'] ?? json['total'] ?? json['outOf'] ?? 20) as num).toDouble(),
+      title: json['title'] ??
+          json['name'] ??
+          json['label'] ??
+          json['mokawin'] ??
+          '',
+      grade: ((json['grade'] ??
+              json['note'] ??
+              json['score'] ??
+              json['value'] ??
+              0) as num)
+          .toDouble(),
+      maxGrade:
+          ((json['maxGrade'] ?? json['total'] ?? json['outOf'] ?? 10) as num)
+              .toDouble(),
     );
   }
 
@@ -342,7 +402,6 @@ class AttendanceRecord {
   final String? approvalStatus; // 'pending', 'approved', 'rejected'
   final String? recordedBy;
   final String? scheduleId;
-  
 
   AttendanceRecord({
     required this.id,
@@ -363,15 +422,21 @@ class AttendanceRecord {
 
   factory AttendanceRecord.fromJson(Map<String, dynamic> json) {
     // Standardize status: absent_justifie, absent_non_justifie, retard, present
-    String rawStatus = (json['status'] ?? json['attendanceStatus'] ?? json['type'] ?? 'present').toString().toLowerCase();
-    String? scheduleId = json['schedule']?.toString() ?? json['calendarId']?.toString();
-    
+    String rawStatus = (json['status'] ??
+            json['attendanceStatus'] ??
+            json['type'] ??
+            'present')
+        .toString()
+        .toLowerCase();
+    String? scheduleId =
+        json['schedule']?.toString() ?? json['calendarId']?.toString();
+
     // Normalize status strings
     String finalStatus = 'present';
-    if (rawStatus.contains('absent') || 
-        rawStatus.contains('justifie') || 
+    if (rawStatus.contains('absent') ||
+        rawStatus.contains('justifie') ||
         rawStatus.contains('justified') ||
-        rawStatus.contains('sick') || 
+        rawStatus.contains('sick') ||
         rawStatus.contains('malade')) {
       finalStatus = 'absent';
     } else if (rawStatus.contains('retard') || rawStatus.contains('late')) {
@@ -390,12 +455,14 @@ class AttendanceRecord {
     } else if (json['matiere'] is Map) {
       subjectName = json['matiere']['name'] ?? json['matiere']['title'];
     }
-    
+
     // Fallback subject mapping - handle Map or String
     if (subjectName == null) {
-      final rawSubject = json['subjectName'] ?? json['subject'] ?? json['matiere'];
+      final rawSubject =
+          json['subjectName'] ?? json['subject'] ?? json['matiere'];
       if (rawSubject is Map) {
-        subjectName = rawSubject['name'] ?? rawSubject['title'] ?? rawSubject['nom'];
+        subjectName =
+            rawSubject['name'] ?? rawSubject['title'] ?? rawSubject['nom'];
       } else if (rawSubject is String && rawSubject.isNotEmpty) {
         subjectName = rawSubject;
       }
@@ -406,17 +473,25 @@ class AttendanceRecord {
     String? endTime = json['endTime'] ?? json['hourEnd'] ?? json['end'];
     if (json['session'] is Map) {
       final session = json['session'];
-      startTime ??= session['startTime'] ?? session['hourStart'] ?? session['start'];
+      startTime ??=
+          session['startTime'] ?? session['hourStart'] ?? session['start'];
       endTime ??= session['endTime'] ?? session['hourEnd'] ?? session['end'];
     }
 
     String? extractAttachment(dynamic data) {
       if (data == null) return null;
-      if (data is Map) return data['url']?.toString() ?? data['path']?.toString() ?? data['file']?.toString() ?? data['filename']?.toString();
-      if (data is String && data.isNotEmpty && data != 'null' && data != '{}') return data;
+      if (data is Map) {
+        return data['url']?.toString() ??
+            data['path']?.toString() ??
+            data['file']?.toString() ??
+            data['filename']?.toString();
+      }
+      if (data is String && data.isNotEmpty && data != 'null' && data != '{}') {
+        return data;
+      }
       return null;
     }
-    
+
     bool parseBool(dynamic val) {
       if (val == null) return false;
       if (val is bool) return val;
@@ -424,67 +499,101 @@ class AttendanceRecord {
       return false;
     }
 
-    String? motif = json['motif']?.toString() ?? json['justificationText']?.toString() ?? json['reason']?.toString() ?? json['justificationReason']?.toString();
-    String? attachment = extractAttachment(json['attachment']) ?? 
-                         extractAttachment(json['file']) ?? 
-                         extractAttachment(json['justification_file']) ?? 
-                         extractAttachment(json['proof']) ?? 
-                         extractAttachment(json['justificationAttachment']);
-    
+    String? motif = json['motif']?.toString() ??
+        json['justificationText']?.toString() ??
+        json['reason']?.toString() ??
+        json['justificationReason']?.toString();
+    String? attachment = extractAttachment(json['attachment']) ??
+        extractAttachment(json['file']) ??
+        extractAttachment(json['justification_file']) ??
+        extractAttachment(json['proof']) ??
+        extractAttachment(json['justificationAttachment']);
+
     // Keep this strict: a teacher-marked absence must not become "justified"
     // unless there is an explicit student/parent justification signal.
     bool justifiedByStudent = parseBool(json['justifiedByStudent']) ||
-                              parseBool(json['hasJustification']) ||
-                              parseBool(json['justificationSubmitted']);
-                              
-    String? approvalStatus = json['approvalStatus']?.toString() ?? json['justificationStatus']?.toString();
+        parseBool(json['hasJustification']) ||
+        parseBool(json['justificationSubmitted']);
+
+    String? approvalStatus = json['approvalStatus']?.toString() ??
+        json['justificationStatus']?.toString();
 
     // Check for nested justification object
     if (json['justification'] != null) {
       if (json['justification'] is Map) {
         final j = json['justification'];
-        final jMotif = j['motif']?.toString() ?? j['reason']?.toString() ?? j['text']?.toString();
-        final jAttachment = extractAttachment(j['attachment']) ?? extractAttachment(j['file']) ?? extractAttachment(j['url']);
+        final jMotif = j['motif']?.toString() ??
+            j['reason']?.toString() ??
+            j['text']?.toString();
+        final jAttachment = extractAttachment(j['attachment']) ??
+            extractAttachment(j['file']) ??
+            extractAttachment(j['url']);
         final hasAnyJustificationPayload = j.isNotEmpty;
         if (jMotif != null && jMotif.isNotEmpty) motif ??= jMotif;
-        if (jAttachment != null && jAttachment.isNotEmpty) attachment ??= jAttachment;
-        if (hasAnyJustificationPayload || parseBool(j['justified']) || parseBool(j['isJustified'])) {
+        if (jAttachment != null && jAttachment.isNotEmpty) {
+          attachment ??= jAttachment;
+        }
+        if (hasAnyJustificationPayload ||
+            parseBool(j['justified']) ||
+            parseBool(j['isJustified'])) {
           justifiedByStudent = true;
         }
-        approvalStatus ??= j['status']?.toString() ?? j['approvalStatus']?.toString() ?? j['justificationStatus']?.toString();
-      } else if (json['justification'] is String && (json['justification'] as String).isNotEmpty && json['justification'] != 'null') {
+        approvalStatus ??= j['status']?.toString() ??
+            j['approvalStatus']?.toString() ??
+            j['justificationStatus']?.toString();
+      } else if (json['justification'] is String &&
+          (json['justification'] as String).isNotEmpty &&
+          json['justification'] != 'null') {
         final jStr = (json['justification'] as String).toLowerCase();
         if (jStr == 'true') {
-           justifiedByStudent = true;
+          justifiedByStudent = true;
         } else {
-           motif ??= json['justification'].toString();
-           justifiedByStudent = true;
+          motif ??= json['justification'].toString();
+          justifiedByStudent = true;
         }
-      } else if (json['justification'] is bool && json['justification'] == true) {
-         justifiedByStudent = true;
-      }
-    }
-    
-    // Check array of justifications
-    if (json['justifications'] != null && json['justifications'] is List && (json['justifications'] as List).isNotEmpty) {
-      final latest = (json['justifications'] as List).last;
-      if (latest is Map) {
-         final jMotif = latest['motif']?.toString() ?? latest['reason']?.toString() ?? latest['text']?.toString();
-         final jAttachment = extractAttachment(latest['attachment']) ?? extractAttachment(latest['file']) ?? extractAttachment(latest['url']);
-         if (jMotif != null && jMotif.isNotEmpty) motif ??= jMotif;
-         if (jAttachment != null && jAttachment.isNotEmpty) attachment ??= jAttachment;
-         justifiedByStudent = true;
-         approvalStatus ??= latest['status']?.toString() ?? latest['approvalStatus']?.toString();
+      } else if (json['justification'] is bool &&
+          json['justification'] == true) {
+        justifiedByStudent = true;
       }
     }
 
-    if (attachment != null && attachment.isNotEmpty && attachment != 'null' && attachment != '{}') {
+    // Check array of justifications
+    if (json['justifications'] != null &&
+        json['justifications'] is List &&
+        (json['justifications'] as List).isNotEmpty) {
+      final latest = (json['justifications'] as List).last;
+      if (latest is Map) {
+        final jMotif = latest['motif']?.toString() ??
+            latest['reason']?.toString() ??
+            latest['text']?.toString();
+        final jAttachment = extractAttachment(latest['attachment']) ??
+            extractAttachment(latest['file']) ??
+            extractAttachment(latest['url']);
+        if (jMotif != null && jMotif.isNotEmpty) motif ??= jMotif;
+        if (jAttachment != null && jAttachment.isNotEmpty) {
+          attachment ??= jAttachment;
+        }
+        justifiedByStudent = true;
+        approvalStatus ??= latest['status']?.toString() ??
+            latest['approvalStatus']?.toString();
+      }
+    }
+
+    if (attachment != null &&
+        attachment.isNotEmpty &&
+        attachment != 'null' &&
+        attachment != '{}') {
       justifiedByStudent = true;
     }
 
     return AttendanceRecord(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-      date: json['date']?.toString() ?? '',
+      date: (json['date'] ??
+              json['passedAt'] ??
+              json['createdAt'] ??
+              json['day'] ??
+              '')
+          .toString(),
       status: finalStatus,
       motif: motif,
       attachment: processImageUrl(attachment),
@@ -495,7 +604,9 @@ class AttendanceRecord {
       sessionName: sessionName,
       justifiedByStudent: justifiedByStudent,
       approvalStatus: approvalStatus,
-      recordedBy: json['recordedBy'] is Map ? (json['recordedBy']['fullName'] ?? json['recordedBy']['name']) : json['recordedBy']?.toString(),
+      recordedBy: json['recordedBy'] is Map
+          ? (json['recordedBy']['fullName'] ?? json['recordedBy']['name'])
+          : json['recordedBy']?.toString(),
       scheduleId: scheduleId,
     );
   }
@@ -524,12 +635,14 @@ class AttendanceRecord {
     if (justifiedByStudent) return true;
 
     // 2) Check for presence of motif or attachment as proxy for justification
-    final hasContent = (motif != null && motif!.trim().isNotEmpty && motif != 'null') ||
-        (attachment != null && attachment!.trim().isNotEmpty && attachment != 'null');
+    final hasContent =
+        (motif != null && motif!.trim().isNotEmpty && motif != 'null') ||
+            (attachment != null &&
+                attachment!.trim().isNotEmpty &&
+                attachment != 'null');
 
     return hasContent;
   }
-
 }
 
 class PostModel {
@@ -549,6 +662,7 @@ class PostModel {
   final bool isUrgent;
   final bool? isCompleted; // Added for homework
   final String? eventDate;
+  final String? participationStatus; // 'yes', 'no', null
   final List<CommentModel> commentsList;
   final List<LikeModel> likedBy;
 
@@ -569,6 +683,7 @@ class PostModel {
     this.isUrgent = false,
     this.isCompleted = false,
     this.eventDate,
+    this.participationStatus,
     this.commentsList = const [],
     this.likedBy = const [],
   });
@@ -588,11 +703,19 @@ class PostModel {
     String? extractFileUrl(dynamic fileOrFiles) {
       if (fileOrFiles == null) return null;
       if (fileOrFiles is Map) {
-         return fileOrFiles['url'] ?? fileOrFiles['path'] ?? fileOrFiles['filename'] ?? fileOrFiles['file'];
+        return fileOrFiles['url'] ??
+            fileOrFiles['path'] ??
+            fileOrFiles['filename'] ??
+            fileOrFiles['file'];
       }
       if (fileOrFiles is List && fileOrFiles.isNotEmpty) {
         final first = fileOrFiles.first;
-        if (first is Map) return first['url'] ?? first['path'] ?? first['filename'] ?? first['file'];
+        if (first is Map) {
+          return first['url'] ??
+              first['path'] ??
+              first['filename'] ??
+              first['file'];
+        }
         return first?.toString();
       }
       if (fileOrFiles is String && fileOrFiles.isNotEmpty) return fileOrFiles;
@@ -601,7 +724,8 @@ class PostModel {
 
     // Extract ID robustly (handle nested _id.$oid or direct string)
     String idValue = '';
-    final rawId = json['id'] ?? json['_id'] ?? json['postId'] ?? json['newsId'] ?? '';
+    final rawId =
+        json['id'] ?? json['_id'] ?? json['postId'] ?? json['newsId'] ?? '';
     if (rawId is Map && rawId.containsKey('\$oid')) {
       idValue = rawId['\$oid']?.toString() ?? '';
     } else {
@@ -615,25 +739,46 @@ class PostModel {
       authorRole: authorRole,
       authorAvatar: processImageUrl(authorAvatar),
       title: json['title'] ?? '',
-      content: (json['content'] == null || json['content'] == 'string' || json['content'] == '') 
-          ? (json['description'] ?? json['message'] ?? json['body'] ?? '') 
+      content: (json['content'] == null ||
+              json['content'] == 'string' ||
+              json['content'] == '')
+          ? (json['description'] ?? json['message'] ?? json['body'] ?? '')
           : json['content'],
-      imageUrl: processImageUrl(extractFileUrl(json['imageUrl']) ?? extractFileUrl(json['image']) ?? extractFileUrl(json['media']) ?? extractFileUrl(json['photo']) ?? extractFileUrl(json['files']) ?? extractFileUrl(json['attachments']) ?? extractFileUrl(json['documents'])),
+      imageUrl: processImageUrl(extractFileUrl(json['imageUrl']) ??
+          extractFileUrl(json['image']) ??
+          extractFileUrl(json['media']) ??
+          extractFileUrl(json['photo']) ??
+          extractFileUrl(json['files']) ??
+          extractFileUrl(json['attachments']) ??
+          extractFileUrl(json['documents'])),
       date: json['date'] ?? json['createdAt'] ?? '',
-      likes: json['likesCount'] ?? (json['likes'] is List ? (json['likes'] as List).length : 0),
-      comments: json['commentsCount'] ?? (json['comments'] is List ? (json['comments'] as List).length : 0),
+      likes: json['likesCount'] ??
+          (json['likes'] is List ? (json['likes'] as List).length : 0),
+      comments: json['commentsCount'] ??
+          (json['comments'] is List ? (json['comments'] as List).length : 0),
       isLiked: json['isLiked'] ?? false,
       isSaved: json['isSaved'] ?? false,
       isEvent: json['isEvent'] ?? (json['type'] == 'event'),
       isUrgent: json['isUrgent'] ?? false,
       isCompleted: json['isCompleted'] ?? false,
       eventDate: json['eventDate'],
-      commentsList: (json['comments'] is List && json['comments'].isNotEmpty && json['comments'][0] is Map)
-              ? (json['comments'] as List).map((c) => CommentModel.fromJson(c)).toList()
-              : const [],
-      likedBy: (json['likes'] is List && json['likes'].isNotEmpty && json['likes'][0] is Map)
-              ? (json['likes'] as List).map((l) => LikeModel.fromJson(l)).toList()
-              : const [],
+      participationStatus: json['participationStatus'] ??
+          json['userResponse'] ??
+          json['userParticipation'] ??
+          json['myStatus'] ??
+          json['status'],
+      commentsList: (json['comments'] is List &&
+              json['comments'].isNotEmpty &&
+              json['comments'][0] is Map)
+          ? (json['comments'] as List)
+              .map((c) => CommentModel.fromJson(c))
+              .toList()
+          : const [],
+      likedBy: (json['likes'] is List &&
+              json['likes'].isNotEmpty &&
+              json['likes'][0] is Map)
+          ? (json['likes'] as List).map((l) => LikeModel.fromJson(l)).toList()
+          : const [],
     );
   }
 
@@ -655,6 +800,7 @@ class PostModel {
       'isUrgent': isUrgent,
       'isCompleted': isCompleted,
       'eventDate': eventDate,
+      'participationStatus': participationStatus,
       'commentsList': commentsList.map((c) => c.toJson()).toList(),
       'likedBy': likedBy.map((l) => l.toJson()).toList(),
     };
@@ -677,6 +823,7 @@ class PostModel {
     bool? isUrgent,
     bool? isCompleted,
     String? eventDate,
+    String? participationStatus,
     List<CommentModel>? commentsList,
     List<LikeModel>? likedBy,
   }) {
@@ -697,6 +844,7 @@ class PostModel {
       isUrgent: isUrgent ?? this.isUrgent,
       isCompleted: isCompleted ?? this.isCompleted,
       eventDate: eventDate ?? this.eventDate,
+      participationStatus: participationStatus ?? this.participationStatus,
       commentsList: commentsList ?? this.commentsList,
       likedBy: likedBy ?? this.likedBy,
     );
@@ -709,11 +857,10 @@ class LikeModel {
 
   LikeModel({required this.userName, this.userAvatar});
 
-
   factory LikeModel.fromJson(Map<String, dynamic> json) {
     String name = json['fullName'] ?? json['name'] ?? 'Utilisateur';
     String? avatar = processImageUrl(json['avatar'] ?? json['avatarUrl']);
-    
+
     // Handle nested author/user structures
     if (json['user'] is Map) {
       final user = json['user'];
@@ -722,7 +869,8 @@ class LikeModel {
     } else if (json['author'] is Map) {
       final author = json['author'];
       name = author['fullName'] ?? author['name'] ?? name;
-      avatar = processImageUrl(author['avatar'] ?? author['avatarUrl']) ?? avatar;
+      avatar =
+          processImageUrl(author['avatar'] ?? author['avatarUrl']) ?? avatar;
     }
 
     return LikeModel(userName: name, userAvatar: avatar);
@@ -791,7 +939,6 @@ class CommentModel {
     };
   }
 }
-
 
 class ChatThreadModel {
   final String id;
@@ -866,7 +1013,8 @@ class ChatMessageModel {
     String senderId = json['senderId']?.toString() ?? '';
     // Handle nested sender object
     if (json['sender'] is Map) {
-      senderId = (json['sender']['id'] ?? json['sender']['_id'])?.toString() ?? senderId;
+      senderId = (json['sender']['id'] ?? json['sender']['_id'])?.toString() ??
+          senderId;
     }
 
     return ChatMessageModel(
@@ -923,6 +1071,8 @@ class EventModel {
   final String time;
   final String type;
   final String? location;
+  final String? participationStatus; // 'yes', 'no', null
+  final String? createdAt; // Admin sent date
 
   EventModel({
     required this.id,
@@ -932,6 +1082,8 @@ class EventModel {
     required this.time,
     required this.type,
     this.location,
+    this.participationStatus,
+    this.createdAt,
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -943,6 +1095,13 @@ class EventModel {
       time: json['time'] ?? '',
       type: json['type'] ?? '',
       location: json['location'],
+      participationStatus: json['participationStatus'] ??
+          json['userResponse'] ??
+          json['userParticipation'] ??
+          json['myStatus'] ??
+          json['status'],
+      createdAt:
+          json['createdAt'] ?? json['date'], // fallback to date if not provided
     );
   }
 
@@ -955,6 +1114,8 @@ class EventModel {
       'time': time,
       'type': type,
       'location': location,
+      'participationStatus': participationStatus,
+      'createdAt': createdAt,
     };
   }
 
@@ -966,6 +1127,8 @@ class EventModel {
     String? time,
     String? type,
     String? location,
+    String? participationStatus,
+    String? createdAt,
   }) {
     return EventModel(
       id: id ?? this.id,
@@ -975,6 +1138,8 @@ class EventModel {
       time: time ?? this.time,
       type: type ?? this.type,
       location: location ?? this.location,
+      participationStatus: participationStatus ?? this.participationStatus,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
@@ -1017,22 +1182,27 @@ class HomeworkModel {
     if (json['teacher'] != null) {
       if (json['teacher'] is Map) {
         final t = json['teacher'] as Map;
-        teacherName = t['name'] ?? t['fullName'] ?? t['username'] ?? 
-                     ((t['firstName'] != null || t['lastName'] != null) 
-                      ? "${t['firstName'] ?? ''} ${t['lastName'] ?? ''}".trim() 
-                      : 'Unknown');
-      } else if (json['teacher'] is String && json['teacher'].toString().isNotEmpty) {
+        teacherName = t['name'] ??
+            t['fullName'] ??
+            t['username'] ??
+            ((t['firstName'] != null || t['lastName'] != null)
+                ? "${t['firstName'] ?? ''} ${t['lastName'] ?? ''}".trim()
+                : 'Unknown');
+      } else if (json['teacher'] is String &&
+          json['teacher'].toString().isNotEmpty) {
         teacherName = json['teacher'];
       }
-    } else if (json['teacherName'] != null && json['teacherName'].toString().isNotEmpty) {
+    } else if (json['teacherName'] != null &&
+        json['teacherName'].toString().isNotEmpty) {
       teacherName = json['teacherName'];
     } else if (json['createdBy'] != null) {
       if (json['createdBy'] is Map) {
         final c = json['createdBy'] as Map;
-        teacherName = c['name'] ?? c['fullName'] ?? 
-                     ((c['firstName'] != null || c['lastName'] != null) 
-                      ? "${c['firstName'] ?? ''} ${c['lastName'] ?? ''}".trim() 
-                      : 'Unknown');
+        teacherName = c['name'] ??
+            c['fullName'] ??
+            ((c['firstName'] != null || c['lastName'] != null)
+                ? "${c['firstName'] ?? ''} ${c['lastName'] ?? ''}".trim()
+                : 'Unknown');
       } else {
         teacherName = json['createdBy'].toString();
       }
@@ -1041,37 +1211,52 @@ class HomeworkModel {
     // Advanced status extraction
     bool isDone = false;
     String statusStr = (json['status'] ?? '').toString().toLowerCase();
-    if (json['isSubmitted'] == true || statusStr == 'done' || statusStr == 'completed' || statusStr == 'submitted') {
+    if (json['isSubmitted'] == true ||
+        statusStr == 'done' ||
+        statusStr == 'completed' ||
+        statusStr == 'submitted') {
       isDone = true;
     }
-    
+
     // Check nested submissions array
-    if (json['submissions'] is List && (json['submissions'] as List).isNotEmpty) {
+    if (json['submissions'] is List &&
+        (json['submissions'] as List).isNotEmpty) {
       isDone = true;
     }
-    
+
     // Check nested studentAssignments
     String? nestedAttachment;
     String? submissionId;
-    if (json['studentAssignments'] is List && (json['studentAssignments'] as List).isNotEmpty) {
+    if (json['studentAssignments'] is List &&
+        (json['studentAssignments'] as List).isNotEmpty) {
       final sa = (json['studentAssignments'] as List).first;
       submissionId = (sa['id'] ?? sa['_id'])?.toString();
       final saStatus = (sa['status'] ?? '').toString().toLowerCase();
-      if (saStatus == 'completed' || saStatus == 'done' || saStatus == 'submitted' || sa['isSubmitted'] == true) {
+      if (saStatus == 'completed' ||
+          saStatus == 'done' ||
+          saStatus == 'submitted' ||
+          sa['isSubmitted'] == true) {
         isDone = true;
       }
       nestedAttachment = sa['fileUrl'] ?? sa['attachment'];
     }
 
     if (isDone) statusStr = 'done';
-    
+
     // Extract progress/percentage
-    double progress = (json['progress'] ?? json['percentage'] ?? json['completionRate'] ?? 0.0).toDouble();
+    double progress = (json['progress'] ??
+            json['percentage'] ??
+            json['completionRate'] ??
+            0.0)
+        .toDouble();
     if (progress == 0 && statusStr == 'done') progress = 100.0;
     if (progress == 0 && statusStr == 'inProgress') progress = 50.0;
 
-    String? foundAttachment = json['attachment'] ?? json['fileUrl'] ?? json['document'] ?? nestedAttachment;
-    
+    String? foundAttachment = json['attachment'] ??
+        json['fileUrl'] ??
+        json['document'] ??
+        nestedAttachment;
+
     // Aggressive media hunt
     if (foundAttachment == null) {
       for (final key in ['attachments', 'files', 'media', 'documents']) {
@@ -1080,7 +1265,12 @@ class HomeworkModel {
           if (first is String) {
             foundAttachment = first;
           } else if (first is Map) {
-            foundAttachment = first['original_url'] ?? first['url'] ?? first['fileUrl'] ?? first['path'] ?? first['link'] ?? first['file'];
+            foundAttachment = first['original_url'] ??
+                first['url'] ??
+                first['fileUrl'] ??
+                first['path'] ??
+                first['link'] ??
+                first['file'];
           }
           if (foundAttachment != null && foundAttachment.isNotEmpty) break;
         }
@@ -1092,25 +1282,41 @@ class HomeworkModel {
       subject: subjectName,
       title: json['title'] ?? json['name'] ?? '',
       description: json['description'] ?? json['content'] ?? '',
-      dueDate: json['dueDate'] ?? json['due_date'] ?? json['deadline'] ?? '',
-      startDate: json['createdAt']?.toString().split('T')[0] ?? json['startDate']?.toString() ?? '',
+      dueDate: json['dueDate'] ??
+          json['due_date'] ??
+          json['deadline'] ??
+          json['date']?.toString() ??
+          '',
+      startDate: json['createdAt']?.toString().split('T')[0] ??
+          json['startDate']?.toString() ??
+          '',
       submissionId: submissionId,
       status: _statusFromString(statusStr),
       attachment: processImageUrl(foundAttachment),
       teacherComment: json['teacherComment'] ?? json['feedback'],
       teacherName: teacherName,
-      type: (json['type'] ?? json['assignmentType'] ?? 'devoir').toString().toLowerCase() == 'exam' ? 'exam' : 'devoir',
+      type: (json['type'] ?? json['assignmentType'] ?? 'devoir')
+                  .toString()
+                  .toLowerCase() ==
+              'exam'
+          ? 'exam'
+          : 'devoir',
       progressRate: progress,
     );
   }
 
   static HomeworkStatus _statusFromString(String? status) {
     switch (status) {
-      case 'notStarted': return HomeworkStatus.notStarted;
-      case 'inProgress': return HomeworkStatus.inProgress;
-      case 'done': return HomeworkStatus.done;
-      case 'late': return HomeworkStatus.late;
-      default: return HomeworkStatus.notStarted;
+      case 'notStarted':
+        return HomeworkStatus.notStarted;
+      case 'inProgress':
+        return HomeworkStatus.inProgress;
+      case 'done':
+        return HomeworkStatus.done;
+      case 'late':
+        return HomeworkStatus.late;
+      default:
+        return HomeworkStatus.notStarted;
     }
   }
 
@@ -1211,27 +1417,39 @@ class NotificationModel {
       body: json['message'] ?? json['body'] ?? '',
       time: json['createdAt'] ?? json['time'] ?? '',
       type: json['type'] ?? '',
-      iconType: _iconTypeFromString(json['type'] ?? ''), // Use type to infer icon
+      iconType:
+          _iconTypeFromString(json['type'] ?? ''), // Use type to infer icon
       isRead: (json['readBy'] as List?)?.isNotEmpty ?? json['isRead'] ?? false,
       isUrgent: json['isUrgent'] ?? (json['type'] == 'exam_scheduled'),
     );
   }
 
   static IconType _iconTypeFromString(String type) {
-    if (type.contains('location') || type.contains('zone')) return IconType.location;
+    if (type.contains('location') || type.contains('zone')) {
+      return IconType.location;
+    }
     switch (type.toLowerCase()) {
-      case 'grade': return IconType.grade;
-      case 'absence': return IconType.absence;
-      case 'payment': return IconType.payment;
-      case 'post': return IconType.post;
-      case 'message': return IconType.message;
+      case 'grade':
+        return IconType.grade;
+      case 'absence':
+        return IconType.absence;
+      case 'payment':
+        return IconType.payment;
+      case 'post':
+        return IconType.post;
+      case 'message':
+        return IconType.message;
       case 'exam':
-      case 'examen': return IconType.exam;
+      case 'examen':
+        return IconType.exam;
       case 'devoir':
-      case 'assignment': return IconType.devoir;
+      case 'assignment':
+        return IconType.devoir;
       case 'event':
-      case 'evenement': return IconType.event;
-      default: return IconType.info;
+      case 'evenement':
+        return IconType.event;
+      default:
+        return IconType.info;
     }
   }
 
@@ -1303,7 +1521,8 @@ class StudentModel {
   factory StudentModel.fromJson(Map<String, dynamic> json) {
     String studentName = json['name'] ?? '';
     if (json['user'] is Map) {
-      studentName = json['user']['fullName'] ?? json['user']['name'] ?? studentName;
+      studentName =
+          json['user']['fullName'] ?? json['user']['name'] ?? studentName;
     }
 
     String className = json['className'] ?? '';
@@ -1370,6 +1589,7 @@ class TeacherActivityModel {
     this.color,
   });
 }
+
 class BusLocationModel {
   final String id;
   final double latitude;
@@ -1421,7 +1641,7 @@ class LocationHistoryRecord {
   final IconData icon;
   final Color color;
   final bool isLast;
-  
+
   // Rich Trip Data
   final String mode; // 'school_bus_mode', 'walking_mode', etc.
   final String status; // 'trip_finished', 'trip_in_progress'
@@ -1485,8 +1705,12 @@ class LocationHistoryRecord {
       toAddress: json['toAddress'] ?? '',
       startTime: json['startTime'] ?? '',
       endTime: json['endTime'] ?? '',
-      startCoord: json['startLat'] != null ? LatLng(json['startLat'], json['startLng']) : null,
-      endCoord: json['endLat'] != null ? LatLng(json['endLat'], json['endLng']) : null,
+      startCoord: json['startLat'] != null
+          ? LatLng(json['startLat'], json['startLng'])
+          : null,
+      endCoord: json['endLat'] != null
+          ? LatLng(json['endLat'], json['endLng'])
+          : null,
     );
   }
 
@@ -1555,17 +1779,20 @@ class PaymentModel {
   });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
-    String rawMonth = json['month']?.toString() ?? json['periodMonth']?.toString() ?? json['label']?.toString() ?? '';
-    
+    String rawMonth = json['month']?.toString() ??
+        json['periodMonth']?.toString() ??
+        json['label']?.toString() ??
+        '';
+
     String normalizeMonth(String mStr) {
       if (mStr.isEmpty) return '';
       String m = mStr.toLowerCase().trim();
-      
+
       // Handle "Scolarité • Avril" format
       if (m.contains('•')) {
         m = m.split('•').last.trim();
       }
-      
+
       int? num = int.tryParse(m);
       if (num != null) {
         if (num == 9) return 'september';
@@ -1593,7 +1820,10 @@ class PaymentModel {
     }
 
     // Extract date robustly
-    String dateValue = json['date']?.toString() ?? json['paidAt']?.toString() ?? json['createdAt']?.toString() ?? '';
+    String dateValue = json['date']?.toString() ??
+        json['paidAt']?.toString() ??
+        json['createdAt']?.toString() ??
+        '';
 
     // Extract student name from nested student/user object or direct field
     String? studentName;
@@ -1605,72 +1835,111 @@ class PaymentModel {
       }
       studentName ??= s['fullName']?.toString() ?? s['name']?.toString();
     }
-    studentName ??= json['studentName']?.toString() ?? json['student']?.toString();
+    studentName ??=
+        json['studentName']?.toString() ?? json['student']?.toString();
 
     // Extract class name
     String? className;
     if (json['class'] is Map) {
-      className = (json['class'] as Map)['name']?.toString() ?? (json['class'] as Map)['label']?.toString();
+      className = (json['class'] as Map)['name']?.toString() ??
+          (json['class'] as Map)['label']?.toString();
     } else if (json['classe'] is Map) {
-      className = (json['classe'] as Map)['name']?.toString() ?? (json['classe'] as Map)['label']?.toString();
+      className = (json['classe'] as Map)['name']?.toString() ??
+          (json['classe'] as Map)['label']?.toString();
     } else if (json['group'] is Map) {
-      className = (json['group'] as Map)['name']?.toString() ?? (json['group'] as Map)['label']?.toString();
+      className = (json['group'] as Map)['name']?.toString() ??
+          (json['group'] as Map)['label']?.toString();
     } else if (json['affectation'] is Map) {
       final aff = json['affectation'];
       if (aff['class'] is Map) {
         className = aff['class']['name']?.toString();
-      } else if (aff['classe'] is Map) className = aff['classe']['name']?.toString();
-      else if (aff['group'] is Map) className = aff['group']['name']?.toString();
+      } else if (aff['classe'] is Map)
+        className = aff['classe']['name']?.toString();
+      else if (aff['group'] is Map)
+        className = aff['group']['name']?.toString();
     }
-    className ??= json['className']?.toString() ?? json['level']?.toString() ?? json['groupName']?.toString();
-    if (className == null && json['classe'] is String) className = json['classe'].toString();
-    if (className == null && json['class'] is String) className = json['class'].toString();
+    className ??= json['className']?.toString() ??
+        json['level']?.toString() ??
+        json['groupName']?.toString();
+    if (className == null && json['classe'] is String) {
+      className = json['classe'].toString();
+    }
+    if (className == null && json['class'] is String) {
+      className = json['class'].toString();
+    }
 
     // Extract year from paidAt date or periodYear
-    int? year = json['periodYear'] is int ? json['periodYear'] as int 
+    int? year = json['periodYear'] is int
+        ? json['periodYear'] as int
         : int.tryParse(json['periodYear']?.toString() ?? '');
     if (year == null && dateValue.length >= 4) {
       year = int.tryParse(dateValue.substring(0, 4));
     }
 
     // Detect payment type from invoiceNumber prefix or label
-    final invoiceNum = json['invoiceNumber']?.toString() ?? json['reference']?.toString() ?? json['invoiceRef']?.toString() ?? json['ref']?.toString() ?? '';
+    final invoiceNum = json['invoiceNumber']?.toString() ??
+        json['reference']?.toString() ??
+        json['invoiceRef']?.toString() ??
+        json['ref']?.toString() ??
+        '';
     final label = json['label']?.toString().toLowerCase() ?? '';
     PaymentType pType = PaymentType.scolarity;
-    if (invoiceNum.toUpperCase().startsWith('INV-TRA') || label.contains('transport')) {
+    if (invoiceNum.toUpperCase().startsWith('INV-TRA') ||
+        label.contains('transport')) {
       pType = PaymentType.transport;
     }
 
     // Extract ID robustly (handle nested _id.$oid or direct string)
     String idValue = '';
-    final rawId = json['id'] ?? json['_id'] ?? json['paymentId'] ?? json['invoiceId'] ?? json['uid'] ?? json['key'] ?? '';
+    final rawId = json['id'] ??
+        json['_id'] ??
+        json['paymentId'] ??
+        json['invoiceId'] ??
+        json['uid'] ??
+        json['key'] ??
+        '';
     if (rawId is Map && rawId.containsKey('\$oid')) {
       idValue = rawId['\$oid']?.toString() ?? '';
     } else {
       idValue = rawId.toString();
     }
-    // Final fallback: if ID is still empty but we have an invoice number, 
+    // Final fallback: if ID is still empty but we have an invoice number,
     // it's better than nothing, but let's stick to empty if it looks like a junk value.
     if (idValue == 'null' || idValue == '{}') idValue = '';
 
     return PaymentModel(
       id: idValue,
       month: normalizeMonth(rawMonth),
-      amount: (json['amount'] ?? json['totalAmount'] ?? json['fee'] ?? json['total'] as num?)?.toDouble() ?? 0.0,
+      amount: (json['amount'] ??
+                  json['totalAmount'] ??
+                  json['fee'] ??
+                  json['total'] as num?)
+              ?.toDouble() ??
+          0.0,
       status: PaymentStatus.values.firstWhere(
-        (e) => e.toString().split('.').last.toLowerCase() == json['status']?.toString().toLowerCase(),
-        orElse: () => (json['isPaid'] == true || 
-                       json['status']?.toString().toLowerCase() == 'paid' || 
-                       json['paidAt'] != null ||
-                       (json['paidAmount'] != null && json['paidAmount'] != 0)) ? PaymentStatus.paid : PaymentStatus.pending,
+        (e) =>
+            e.toString().split('.').last.toLowerCase() ==
+            json['status']?.toString().toLowerCase(),
+        orElse: () => (json['isPaid'] == true ||
+                json['status']?.toString().toLowerCase() == 'paid' ||
+                json['paidAt'] != null ||
+                (json['paidAmount'] != null && json['paidAmount'] != 0))
+            ? PaymentStatus.paid
+            : PaymentStatus.pending,
       ),
       date: dateValue,
-      invoiceUrl: json['invoiceUrl'] ?? json['receiptUrl'] ?? json['downloadUrl'],
-      childIds: json['childIds'] is List ? List<String>.from(json['childIds']) : (json['studentId'] != null ? [json['studentId'].toString()] : []),
+      invoiceUrl:
+          json['invoiceUrl'] ?? json['receiptUrl'] ?? json['downloadUrl'],
+      childIds: json['childIds'] is List
+          ? List<String>.from(json['childIds'])
+          : (json['studentId'] != null ? [json['studentId'].toString()] : []),
       invoiceNumber: invoiceNum.isNotEmpty ? invoiceNum : null,
       studentName: studentName,
       className: className,
-      paymentMethod: json['paymentMethod']?.toString() ?? json['paymentMode']?.toString() ?? json['method']?.toString() ?? json['mode']?.toString(),
+      paymentMethod: json['paymentMethod']?.toString() ??
+          json['paymentMode']?.toString() ??
+          json['method']?.toString() ??
+          json['mode']?.toString(),
       year: year,
       paymentType: pType,
     );
@@ -1731,12 +2000,17 @@ class MonthPaymentGroup {
   bool get transportPaid => transport?.status == PaymentStatus.paid;
   bool get scolarityOverdue => scolarity?.status == PaymentStatus.overdue;
   bool get transportOverdue => transport?.status == PaymentStatus.overdue;
-  bool get allPaid => (scolarity == null || scolarityPaid) && (transport == null || transportPaid);
+  bool get allPaid =>
+      (scolarity == null || scolarityPaid) &&
+      (transport == null || transportPaid);
   bool get anyPaid => scolarityPaid || transportPaid;
 
   PaymentStatus get overallStatus {
     if (allPaid) return PaymentStatus.paid;
-    if (scolarity?.status == PaymentStatus.overdue || transport?.status == PaymentStatus.overdue) return PaymentStatus.overdue;
+    if (scolarity?.status == PaymentStatus.overdue ||
+        transport?.status == PaymentStatus.overdue) {
+      return PaymentStatus.overdue;
+    }
     return PaymentStatus.pending;
   }
 }

@@ -10,7 +10,7 @@ class AppColors {
   static const Color accent = Color(0xFF3B82F6);
   static const Color accentLight = Color(0xFF60A5FA);
   static const Color accentSoft = Color(0xFFF0F9FF);
-  
+
   // Luxury Palette
   static const Color gold = Color(0xFFD4AF37);
   static const Color platinum = Color(0xFFE5E4E2);
@@ -37,7 +37,8 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF0EA5E9);
-  static const Color attendanceBar = Color(0xFFE2E8F0); // Grey background for progress bars
+  static const Color attendanceBar =
+      Color(0xFFE2E8F0); // Grey background for progress bars
   static const Color attendanceFill = Color(0xFF00008B); // Blue fill
 
   // Subject Backgrounds (Soft colors for icons)
@@ -66,7 +67,7 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
-  
+
   static List<BoxShadow> softShadow = [
     BoxShadow(
       color: Colors.white.withValues(alpha: 0.9),

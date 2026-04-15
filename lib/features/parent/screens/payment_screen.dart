@@ -8,7 +8,6 @@ import '../../../core/widgets/deep_space_background.dart';
 import '../../../core/models/models.dart';
 import '../viewmodels/payment_view_model.dart';
 
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -19,7 +18,6 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen>
     with SingleTickerProviderStateMixin {
-
   @override
   void initState() {
     super.initState();
@@ -52,7 +50,8 @@ class _PaymentScreenState extends State<PaymentScreen>
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.2)),
+              border:
+                  Border.all(color: Colors.blueAccent.withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +63,8 @@ class _PaymentScreenState extends State<PaymentScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('year_summary_range'),
+                          AppLocalizations.of(context)!
+                              .translate('year_summary_range'),
                           style: TextStyle(
                             color: Colors.blueAccent.withValues(alpha: 0.8),
                             fontSize: 10,
@@ -93,9 +93,11 @@ class _PaymentScreenState extends State<PaymentScreen>
                           Colors.blueAccent.withValues(alpha: 0.3),
                           Colors.blueAccent.withValues(alpha: 0.05),
                         ]),
-                        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.4)),
+                        border: Border.all(
+                            color: Colors.blueAccent.withValues(alpha: 0.4)),
                       ),
-                      child: const Icon(Icons.receipt_long_rounded, color: Colors.blueAccent, size: 22),
+                      child: const Icon(Icons.receipt_long_rounded,
+                          color: Colors.blueAccent, size: 22),
                     ),
                   ],
                 ),
@@ -137,9 +139,16 @@ class _PaymentScreenState extends State<PaymentScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _statPill(AppLocalizations.of(context)!.translate('paid'), '$paid', Colors.greenAccent),
-                    _statPill(AppLocalizations.of(context)!.translate('overdue'), '${vm.overdueCount}', Colors.redAccent),
-                    _statPill(AppLocalizations.of(context)!.translate('pending'), '${vm.pendingCount}', Colors.orangeAccent),
+                    _statPill(AppLocalizations.of(context)!.translate('paid'),
+                        '$paid', Colors.greenAccent),
+                    _statPill(
+                        AppLocalizations.of(context)!.translate('overdue'),
+                        '${vm.overdueCount}',
+                        Colors.redAccent),
+                    _statPill(
+                        AppLocalizations.of(context)!.translate('pending'),
+                        '${vm.pendingCount}',
+                        Colors.orangeAccent),
                   ],
                 ),
               ],
@@ -153,29 +162,40 @@ class _PaymentScreenState extends State<PaymentScreen>
   Widget _statPill(String label, String value, Color color) {
     return Row(
       children: [
-        Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
         Text(
           '$value $label',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11, fontWeight: FontWeight.w700),
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 11,
+              fontWeight: FontWeight.w700),
         ),
       ],
     );
   }
 
   // ── Month Card ──────────────────────────────────────────────────────────────
-  Widget _buildMonthCard(MonthPaymentGroup group, int index, bool isDark, PaymentViewModel vm) {
+  Widget _buildMonthCard(
+      MonthPaymentGroup group, int index, bool isDark, PaymentViewModel vm) {
     final loc = AppLocalizations.of(context)!;
     final overallStatus = group.overallStatus;
     bool isFirstPending = false;
-    final pendingGroups = vm.monthGroups.where((g) => g.overallStatus == PaymentStatus.pending).toList();
-    if (overallStatus == PaymentStatus.pending && pendingGroups.isNotEmpty && pendingGroups.first.month == group.month) {
+    final pendingGroups = vm.monthGroups
+        .where((g) => g.overallStatus == PaymentStatus.pending)
+        .toList();
+    if (overallStatus == PaymentStatus.pending &&
+        pendingGroups.isNotEmpty &&
+        pendingGroups.first.month == group.month) {
       isFirstPending = true;
     }
 
     // Logic for identifying specifically the color theme
     final isCurrentMonth = group.month.toLowerCase() == vm.currentMonthName;
-    
+
     // Check for mixed state (for Orange)
     // Mixed means: at least one service exists AND (one is paid while other is not)
     bool isMixed = false;
@@ -184,7 +204,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         isMixed = true;
       }
     }
-    
+
     // All existing items are overdue (for Red)
     bool allOverdue = true;
     if (group.scolarity != null && !group.scolarityOverdue) allOverdue = false;
@@ -192,29 +212,49 @@ class _PaymentScreenState extends State<PaymentScreen>
     if (group.scolarity == null && group.transport == null) allOverdue = false;
 
     // Colors base setup
-    Color glowColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.7);
-    Color borderColor = isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.9);
+    Color glowColor = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.white.withValues(alpha: 0.7);
+    Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.07)
+        : Colors.white.withValues(alpha: 0.9);
     Color labelColor = isDark ? Colors.white60 : Colors.black54;
 
     if (isCurrentMonth) {
       // 1. Current Month (Blue - Priority 1)
-      glowColor = isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.3) : const Color(0xFFDBEAFE);
-      borderColor = isDark ? const Color(0xFF3B82F6).withValues(alpha: 0.4) : const Color(0xFF3B82F6).withValues(alpha: 0.3);
+      glowColor = isDark
+          ? const Color(0xFF1E3A8A).withValues(alpha: 0.3)
+          : const Color(0xFFDBEAFE);
+      borderColor = isDark
+          ? const Color(0xFF3B82F6).withValues(alpha: 0.4)
+          : const Color(0xFF3B82F6).withValues(alpha: 0.3);
       labelColor = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
     } else if (group.allPaid) {
       // 2. All Paid (Green - Priority 2)
-      glowColor = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFD1FAE5);
-      borderColor = isDark ? const Color(0xFF10B981).withValues(alpha: 0.4) : const Color(0xFF10B981).withValues(alpha: 0.3);
+      glowColor = isDark
+          ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+          : const Color(0xFFD1FAE5);
+      borderColor = isDark
+          ? const Color(0xFF10B981).withValues(alpha: 0.4)
+          : const Color(0xFF10B981).withValues(alpha: 0.3);
       labelColor = isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
     } else if (allOverdue) {
       // 3. All Overdue (Red - Priority 3)
-      glowColor = isDark ? const Color(0xFF450A0A).withValues(alpha: 0.3) : const Color(0xFFFEE2E2);
-      borderColor = isDark ? const Color(0xFFEF4444).withValues(alpha: 0.4) : const Color(0xFFEF4444).withValues(alpha: 0.3);
+      glowColor = isDark
+          ? const Color(0xFF450A0A).withValues(alpha: 0.3)
+          : const Color(0xFFFEE2E2);
+      borderColor = isDark
+          ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+          : const Color(0xFFEF4444).withValues(alpha: 0.3);
       labelColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
     } else if (isMixed || group.anyPaid) {
       // 4. Mixed (Orange - Priority 4)
-      glowColor = isDark ? const Color(0xFF431407).withValues(alpha: 0.3) : const Color(0xFFFFF7ED);
-      borderColor = isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.4) : const Color(0xFFF59E0B).withValues(alpha: 0.3);
+      glowColor = isDark
+          ? const Color(0xFF431407).withValues(alpha: 0.3)
+          : const Color(0xFFFFF7ED);
+      borderColor = isDark
+          ? const Color(0xFFF59E0B).withValues(alpha: 0.4)
+          : const Color(0xFFF59E0B).withValues(alpha: 0.3);
       labelColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
     }
 
@@ -281,11 +321,15 @@ class _PaymentScreenState extends State<PaymentScreen>
               if (group.allPaid)
                 Row(
                   children: [
-                    Icon(Icons.check_circle_rounded, color: labelColor, size: 12),
+                    Icon(Icons.check_circle_rounded,
+                        color: labelColor, size: 12),
                     const SizedBox(width: 3),
                     Text(
                       loc.translate('paid'),
-                      style: TextStyle(color: labelColor, fontSize: 9, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                          color: labelColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900),
                     ),
                   ],
                 )
@@ -316,11 +360,15 @@ class _PaymentScreenState extends State<PaymentScreen>
                 else if (allOverdue)
                   Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: labelColor, size: 12),
+                      Icon(Icons.warning_amber_rounded,
+                          color: labelColor, size: 12),
                       const SizedBox(width: 3),
                       Text(
                         loc.translate('overdue'),
-                        style: TextStyle(color: labelColor, fontSize: 9, fontWeight: FontWeight.w900),
+                        style: TextStyle(
+                            color: labelColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900),
                       ),
                     ],
                   )
@@ -338,18 +386,25 @@ class _PaymentScreenState extends State<PaymentScreen>
           ),
         ),
       ),
-    ).animate().fadeIn(delay: (30 * index).ms).scale(begin: const Offset(0.93, 0.93));
+    )
+        .animate()
+        .fadeIn(delay: (30 * index).ms)
+        .scale(begin: const Offset(0.93, 0.93));
   }
 
   Widget _typeStatusDot(IconData icon, bool isPaid, bool exists, bool isDark) {
     if (!exists) {
       return Container(
-        width: 32, height: 32,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
           color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, size: 16, color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15)),
+        child: Icon(icon,
+            size: 16,
+            color:
+                (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15)),
       );
     }
     final Color bg = isPaid
@@ -358,19 +413,20 @@ class _PaymentScreenState extends State<PaymentScreen>
     final Color border = isPaid
         ? const Color(0xFF10B981).withValues(alpha: 0.6)
         : const Color(0xFFEF4444).withValues(alpha: 0.6);
-    final Color iconColor = isPaid
-        ? const Color(0xFF34D399)
-        : const Color(0xFFF87171);
+    final Color iconColor =
+        isPaid ? const Color(0xFF34D399) : const Color(0xFFF87171);
 
     return Container(
-      width: 32, height: 32,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: border, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.25),
+            color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFEF4444))
+                .withValues(alpha: 0.25),
             blurRadius: 6,
             spreadRadius: 0,
           ),
@@ -394,22 +450,30 @@ class _PaymentScreenState extends State<PaymentScreen>
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.transparent),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.transparent),
           ),
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               Text(
-                AppLocalizations.of(context)!.translate('receipt_type').toUpperCase(),
+                AppLocalizations.of(context)!
+                    .translate('receipt_type')
+                    .toUpperCase(),
                 style: TextStyle(
                   color: primaryTextColor,
                   fontSize: 18,
@@ -421,7 +485,8 @@ class _PaymentScreenState extends State<PaymentScreen>
               // Scolarité option
               if (group.scolarity != null)
                 _buildTypeOption(
-                  title: AppLocalizations.of(context)!.translate('scolarity_receipt'),
+                  title: AppLocalizations.of(context)!
+                      .translate('scolarity_receipt'),
                   icon: Icons.school_rounded,
                   color: Colors.blueAccent,
                   isPaid: group.scolarityPaid,
@@ -435,7 +500,8 @@ class _PaymentScreenState extends State<PaymentScreen>
               // Transport option
               if (group.transport != null)
                 _buildTypeOption(
-                  title: AppLocalizations.of(context)!.translate('transport_receipt'),
+                  title: AppLocalizations.of(context)!
+                      .translate('transport_receipt'),
                   icon: Icons.directions_bus_rounded,
                   color: Colors.orangeAccent,
                   isPaid: group.transportPaid,
@@ -505,7 +571,8 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: primaryTextColor.withValues(alpha: 0.3)),
+            Icon(Icons.chevron_right_rounded,
+                color: primaryTextColor.withValues(alpha: 0.3)),
           ],
         ),
       ),
@@ -513,27 +580,33 @@ class _PaymentScreenState extends State<PaymentScreen>
   }
 
   // ── Receipt Bottom Sheet ──────────────────────────────────────────────────────
-  void _showReceiptSheet(PaymentModel payment, PaymentViewModel vm, {bool isTransport = false}) {
+  void _showReceiptSheet(PaymentModel payment, PaymentViewModel vm,
+      {bool isTransport = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF64748B);
+    final secondaryTextColor =
+        isDark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF64748B);
     final bgColor = isDark ? const Color(0xFF0F1D2E) : Colors.white;
-    final dividerColor = isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0);
+    final dividerColor =
+        isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0);
 
     // Format payment date
     String formattedDate = payment.date;
     try {
       if (payment.date.isNotEmpty) {
         final dt = DateTime.parse(payment.date);
-        formattedDate = '${dt.day.toString().padLeft(2,'0')}/${dt.month.toString().padLeft(2,'0')}/${dt.year}';
+        formattedDate =
+            '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
       }
     } catch (_) {}
 
     // Month + Year label
     final loc = AppLocalizations.of(context)!;
-    final monthLabel = payment.month.isNotEmpty ? loc.translate(payment.month) : '--';
+    final monthLabel =
+        payment.month.isNotEmpty ? loc.translate(payment.month) : '--';
     final yearLabel = payment.year?.toString() ?? '';
-    final monthYearLabel = '$monthLabel${yearLabel.isNotEmpty ? ' $yearLabel' : ''}';
+    final monthYearLabel =
+        '$monthLabel${yearLabel.isNotEmpty ? ' $yearLabel' : ''}';
 
     // Invoice number
     final invoiceNum = payment.invoiceNumber ?? '--';
@@ -544,7 +617,9 @@ class _PaymentScreenState extends State<PaymentScreen>
       final m = payment.paymentMethod!.toLowerCase();
       if (m.contains('espece') || m.contains('cash') || m.contains('espèce')) {
         methodLabel = 'Espèces';
-      } else if (m.contains('virement') || m.contains('bank') || m.contains('transfer')) {
+      } else if (m.contains('virement') ||
+          m.contains('bank') ||
+          m.contains('transfer')) {
         methodLabel = 'Virement bancaire';
       } else if (m.contains('cheque') || m.contains('chèque')) {
         methodLabel = 'Chèque';
@@ -573,171 +648,237 @@ class _PaymentScreenState extends State<PaymentScreen>
       backgroundColor: Colors.transparent,
       builder: (_) {
         return ListenableBuilder(
-          listenable: vm,
-          builder: (context, child) {
-            bool isDownloading = vm.isDownloading;
+            listenable: vm,
+            builder: (context, child) {
+              bool isDownloading = vm.isDownloading;
 
-            return Container(
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.transparent),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Handle
-                      Container(
-                        width: 40, height: 4,
-                        margin: const EdgeInsets.only(bottom: 20),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(2),
+              return Container(
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(36)),
+                  border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.transparent),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle
+                        Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : Colors.black.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                      ),
 
-                      // Header Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Facture du mois',
-                              style: TextStyle(
-                                color: primaryTextColor,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ),
-                          // Download Button
-                          GestureDetector(
-                            onTap: () async {
-                              if (isDownloading) return;
-                              HapticFeedback.mediumImpact();
-                              
-                              // Use the new internal download and open flow
-                              final success = await vm.getReceiptUrl(
-                                payment.id, 
-                                isTransport ? 'transport' : 'scolarity'
-                              );
-
-                              if (success) {
-                                HapticFeedback.heavyImpact();
-                                if (context.mounted) Navigator.pop(context);
-                              } else {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Erreur lors du téléchargement du reçu.'),
-                                      backgroundColor: Colors.redAccent,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF6366F1)]),
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (isDownloading)
-                                    const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-                                  else
-                                    const Icon(Icons.download_rounded, color: Colors.white, size: 15),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    isDownloading ? 'Chargement...' : 'Télécharger',
-                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0)),
-                              ),
-                              child: Text('Fermer', style: TextStyle(color: primaryTextColor, fontSize: 12, fontWeight: FontWeight.w800)),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-                      Divider(color: dividerColor, height: 1),
-                      const SizedBox(height: 20),
-
-                      // Receipt fields
-                      _receiptGrid([
-                        _ReceiptField('N° Facture', invoiceNum),
-                        _ReceiptField('Type', receiptType),
-                        _ReceiptField('Nom et prénom de l\'élève', payment.studentName ?? '--'),
-                        _ReceiptField('Classe', payment.className ?? '--'),
-                        _ReceiptField('Mois', monthYearLabel),
-                        _ReceiptField('Statut', payment.status == PaymentStatus.paid ? 'Payé' : (payment.status == PaymentStatus.overdue ? 'En retard' : 'En attente'), isGreen: payment.status == PaymentStatus.paid),
-                        _ReceiptField('Date de paiement', formattedDate.isNotEmpty ? formattedDate : '--'),
-                        _ReceiptField('Mode de paiement', methodLabel),
-                      ], isDark, primaryTextColor, secondaryTextColor),
-
-                      const SizedBox(height: 20),
-
-                      // Total
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.15)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        // Header Row
+                        Row(
                           children: [
-                            Text('TOTAL PAYÉ',
-                              style: TextStyle(
-                                color: isDark ? Colors.blueAccent.shade100 : Colors.blueAccent.shade700,
-                                fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5,
+                            Expanded(
+                              child: Text(
+                                'Facture du mois',
+                                style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.5,
+                                ),
                               ),
                             ),
-                            Text(
-                              payment.amount > 0 ? '${payment.amount.toStringAsFixed(payment.amount == payment.amount.roundToDouble() ? 0 : 2)} DH' : '--',
-                              style: TextStyle(color: primaryTextColor, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                            // Download Button
+                            GestureDetector(
+                              onTap: () async {
+                                if (isDownloading) return;
+                                HapticFeedback.mediumImpact();
+
+                                // Use the new internal download and open flow
+                                final success = await vm.getReceiptUrl(
+                                    payment.id,
+                                    isTransport ? 'transport' : 'scolarity');
+
+                                if (success) {
+                                  HapticFeedback.heavyImpact();
+                                  if (context.mounted) Navigator.pop(context);
+                                } else {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Erreur lors du téléchargement du reçu.'),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(colors: [
+                                    Color(0xFF3B82F6),
+                                    Color(0xFF6366F1)
+                                  ]),
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: const Color(0xFF3B82F6)
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4))
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (isDownloading)
+                                      const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white)))
+                                    else
+                                      const Icon(Icons.download_rounded,
+                                          color: Colors.white, size: 15),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      isDownloading
+                                          ? 'Chargement...'
+                                          : 'Télécharger',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.1)
+                                          : const Color(0xFFE2E8F0)),
+                                ),
+                                child: Text('Fermer',
+                                    style: TextStyle(
+                                        color: primaryTextColor,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800)),
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 24),
+                        Divider(color: dividerColor, height: 1),
+                        const SizedBox(height: 20),
+
+                        // Receipt fields
+                        _receiptGrid([
+                          _ReceiptField('N° Facture', invoiceNum),
+                          _ReceiptField('Type', receiptType),
+                          _ReceiptField('Nom et prénom de l\'élève',
+                              payment.studentName ?? '--'),
+                          _ReceiptField('Classe', payment.className ?? '--'),
+                          _ReceiptField('Mois', monthYearLabel),
+                          _ReceiptField(
+                              'Statut',
+                              payment.status == PaymentStatus.paid
+                                  ? 'Payé'
+                                  : (payment.status == PaymentStatus.overdue
+                                      ? 'En retard'
+                                      : 'En attente'),
+                              isGreen: payment.status == PaymentStatus.paid),
+                          _ReceiptField('Date de paiement',
+                              formattedDate.isNotEmpty ? formattedDate : '--'),
+                          _ReceiptField('Mode de paiement', methodLabel),
+                        ], isDark, primaryTextColor, secondaryTextColor),
+
+                        const SizedBox(height: 20),
+
+                        // Total
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.04)
+                                : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color:
+                                    Colors.blueAccent.withValues(alpha: 0.15)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'TOTAL PAYÉ',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.blueAccent.shade100
+                                      : Colors.blueAccent.shade700,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                              Text(
+                                payment.amount > 0
+                                    ? '${payment.amount.toStringAsFixed(payment.amount == payment.amount.roundToDouble() ? 0 : 2)} DH'
+                                    : '--',
+                                style: TextStyle(
+                                    color: primaryTextColor,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.5),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          }
-        );
+              );
+            });
       },
     );
   }
 
-  Widget _receiptGrid(List<_ReceiptField> fields, bool isDark, Color primaryTextColor, Color secondaryTextColor) {
+  Widget _receiptGrid(List<_ReceiptField> fields, bool isDark,
+      Color primaryTextColor, Color secondaryTextColor) {
     return Column(
       children: fields.map((f) {
-        final valueColor = f.isGreen ? Colors.greenAccent.shade400 : primaryTextColor;
+        final valueColor =
+            f.isGreen ? Colors.greenAccent.shade400 : primaryTextColor;
         return Padding(
           padding: const EdgeInsets.only(bottom: 14),
           child: Row(
@@ -745,10 +886,20 @@ class _PaymentScreenState extends State<PaymentScreen>
             children: [
               SizedBox(
                 width: 170,
-                child: Text(f.label, style: TextStyle(color: secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w600)),
+                child: Text(f.label,
+                    style: TextStyle(
+                        color: secondaryTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
               ),
               Expanded(
-                child: Text(f.value, style: TextStyle(color: valueColor, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
+                child: Text(f.value,
+                    style: TextStyle(
+                        color: valueColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
               ),
             ],
           ),
@@ -776,11 +927,17 @@ class _PaymentScreenState extends State<PaymentScreen>
               height: 42,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.8),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.white),
               ),
-              child: Image.asset('assets/images/image3.png', fit: BoxFit.contain),
+              child:
+                  Image.asset('assets/images/image3.png', fit: BoxFit.contain),
             ),
             const SizedBox(width: 14),
             Text(
@@ -800,21 +957,30 @@ class _PaymentScreenState extends State<PaymentScreen>
         child: Consumer<PaymentViewModel>(
           builder: (context, vm, child) {
             if (vm.isLoading && vm.monthGroups.isEmpty) {
-              return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+              return const Center(
+                  child: CircularProgressIndicator(color: Colors.blueAccent));
             }
 
             if (vm.errorMessage != null && vm.monthGroups.isEmpty) {
-               return Center(
+              return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline_rounded, size: 64, color: Colors.redAccent.withValues(alpha: 0.5)),
+                    Icon(Icons.error_outline_rounded,
+                        size: 64,
+                        color: Colors.redAccent.withValues(alpha: 0.5)),
                     const SizedBox(height: 16),
-                    Text(AppLocalizations.of(context)!.translate(vm.errorMessage!), style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.w900)),
+                    Text(
+                        AppLocalizations.of(context)!
+                            .translate(vm.errorMessage!),
+                        style: const TextStyle(
+                            color: Colors.white54,
+                            fontWeight: FontWeight.w900)),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () => vm.fetchPayments(),
-                      child: Text(AppLocalizations.of(context)!.translate('retry')),
+                      child: Text(
+                          AppLocalizations.of(context)!.translate('retry')),
                     ),
                   ],
                 ),
@@ -833,9 +999,14 @@ class _PaymentScreenState extends State<PaymentScreen>
                     child: Row(
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.translate('monthly_payments').toUpperCase(),
+                          AppLocalizations.of(context)!
+                              .translate('monthly_payments')
+                              .toUpperCase(),
                           style: TextStyle(
-                            color: isDark ? Colors.white.withValues(alpha: 0.3) : const Color(0xFF0F172A).withValues(alpha: 0.4),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.3)
+                                : const Color(0xFF0F172A)
+                                    .withValues(alpha: 0.4),
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
@@ -850,14 +1021,16 @@ class _PaymentScreenState extends State<PaymentScreen>
                     child: GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         childAspectRatio: 0.82,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
                       ),
                       itemCount: vm.monthGroups.length,
-                      itemBuilder: (ctx, i) => _buildMonthCard(vm.monthGroups[i], i, isDark, vm),
+                      itemBuilder: (ctx, i) =>
+                          _buildMonthCard(vm.monthGroups[i], i, isDark, vm),
                     ),
                   ),
                   const SizedBox(height: 120),

@@ -26,8 +26,10 @@ class AttendanceHistoryScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          loc.translate('attendance_history_title') ?? 'Historique des Présences',
-          style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
+          loc.translate('attendance_history_title') ??
+              'Historique des Présences',
+          style:
+              TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -48,12 +50,16 @@ class AttendanceHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item, int index, bool isDark, Color pt) {
+  Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item,
+      int index, bool isDark, Color pt) {
     final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
-    
+
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => AttendanceDetailScreen(sessionData: item)));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => AttendanceDetailScreen(sessionData: item)));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -61,8 +67,17 @@ class AttendanceHistoryScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
-          boxShadow: isDark ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 10)],
+          border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.white.withValues(alpha: 0.8)),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      blurRadius: 10)
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,17 +87,26 @@ class AttendanceHistoryScreen extends StatelessWidget {
               children: [
                 Text(
                   item['date'],
-                  style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                  style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 0.5),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.blueAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     item['class'],
-                    style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                    style: const TextStyle(
+                        color: Colors.blueAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5),
                   ),
                 ),
               ],
@@ -93,28 +117,38 @@ class AttendanceHistoryScreen extends StatelessWidget {
               children: [
                 Text(
                   item['subject'],
-                  style: TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 16),
+                  style: TextStyle(
+                      color: pt, fontWeight: FontWeight.w900, fontSize: 16),
                 ),
                 if (item['isValidatedByAdmin'] == true)
-                  Icon(Icons.verified_user_rounded, color: Colors.blueAccent.withValues(alpha: 0.5), size: 16),
+                  Icon(Icons.verified_user_rounded,
+                      color: Colors.blueAccent.withValues(alpha: 0.5),
+                      size: 16),
               ],
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                _buildSmallStat(Icons.check_circle_rounded, '${item['present']}', Colors.greenAccent),
+                _buildSmallStat(Icons.check_circle_rounded,
+                    '${item['present']}', Colors.greenAccent),
                 const SizedBox(width: 12),
-                _buildSmallStat(Icons.access_time_filled_rounded, '${item['late']}', Colors.orangeAccent),
+                _buildSmallStat(Icons.access_time_filled_rounded,
+                    '${item['late']}', Colors.orangeAccent),
                 const SizedBox(width: 12),
-                _buildSmallStat(Icons.cancel_rounded, '${item['absent']}', Colors.redAccent),
+                _buildSmallStat(Icons.cancel_rounded, '${item['absent']}',
+                    Colors.redAccent),
                 const Spacer(),
-                const Icon(Icons.chevron_right_rounded, color: Colors.blueAccent, size: 20),
+                const Icon(Icons.chevron_right_rounded,
+                    color: Colors.blueAccent, size: 20),
               ],
             ),
           ],
         ),
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: index * 100)).slideY(begin: 0.1);
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: index * 100))
+        .slideY(begin: 0.1);
   }
 
   Widget _buildSmallStat(IconData icon, String value, Color color) {
@@ -122,7 +156,9 @@ class AttendanceHistoryScreen extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 6),
-        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 12)),
+        Text(value,
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.w900, fontSize: 12)),
       ],
     );
   }

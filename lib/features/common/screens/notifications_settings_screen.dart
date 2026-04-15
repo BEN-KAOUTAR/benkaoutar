@@ -10,10 +10,12 @@ class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -30,12 +32,20 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.white, shape: BoxShape.circle),
-            child: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 16),
+            decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : Colors.white,
+                shape: BoxShape.circle),
+            child: Icon(Icons.arrow_back_ios_new_rounded,
+                color: primaryTextColor, size: 16),
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(loc.translate('notification_settings_title'), style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 20, letterSpacing: -0.5)),
+        title: Text(loc.translate('notification_settings_title'),
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: primaryTextColor,
+                fontSize: 20,
+                letterSpacing: -0.5)),
         centerTitle: true,
       ),
       body: DeepSpaceBackground(
@@ -100,10 +110,20 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.8),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.03)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-        boxShadow: [if (!isDark) BoxShadow(color: color.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10))],
+        border: Border.all(
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+                color: color.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 10))
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
@@ -118,7 +138,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16)),
                       child: Icon(icon, color: color, size: 24),
                     ),
                     const SizedBox(width: 16),
@@ -126,8 +148,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primaryTextColor)),
-                          Text(subtitle, style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text(title,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16,
+                                  color: primaryTextColor)),
+                          Text(subtitle,
+                              style: TextStyle(
+                                  color: secondaryTextColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -149,27 +179,43 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           ),
         ),
       ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, curve: Curves.easeOutQuart);
+    )
+        .animate()
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.1, curve: Curves.easeOutQuart);
   }
 
   bool _getValue(BuildContext context, String key) {
     final appState = Provider.of<AppState>(context, listen: false);
     switch (key) {
-      case 'academic': return appState.academicAlertsEnabled;
-      case 'security': return appState.securitySafetyEnabled;
-      case 'announcements': return appState.newsAlertsEnabled;
-      case 'financial': return appState.pushEnabled;
-      default: return true;
+      case 'academic':
+        return appState.academicAlertsEnabled;
+      case 'security':
+        return appState.securitySafetyEnabled;
+      case 'announcements':
+        return appState.newsAlertsEnabled;
+      case 'financial':
+        return appState.pushEnabled;
+      default:
+        return true;
     }
   }
 
   void _toggleValue(BuildContext context, String key, bool value) {
     final appState = Provider.of<AppState>(context, listen: false);
     switch (key) {
-      case 'academic': appState.toggleAcademicAlerts(value); break;
-      case 'security': appState.toggleSecuritySafety(value); break;
-      case 'announcements': appState.toggleNewsAlerts(value); break;
-      case 'financial': appState.togglePush(value); break;
+      case 'academic':
+        appState.toggleAcademicAlerts(value);
+        break;
+      case 'security':
+        appState.toggleSecuritySafety(value);
+        break;
+      case 'announcements':
+        appState.toggleNewsAlerts(value);
+        break;
+      case 'financial':
+        appState.togglePush(value);
+        break;
     }
   }
 
@@ -192,7 +238,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         children: [
           Icon(icon, size: 16, color: value ? color : Colors.grey),
           const SizedBox(width: 12),
-          Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: value ? primaryTextColor : Colors.grey)),
+          Text(label,
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: value ? primaryTextColor : Colors.grey)),
         ],
       ),
       activeThumbColor: color,

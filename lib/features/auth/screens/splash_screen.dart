@@ -48,9 +48,14 @@ class _SplashScreenState extends State<SplashScreen> {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.7),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.white.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(36),
-                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
+                      border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.white),
                       boxShadow: [
                         if (isDark)
                           BoxShadow(
@@ -64,19 +69,29 @@ class _SplashScreenState extends State<SplashScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF0F172A),
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
-                            BoxShadow(color: (isDark ? Colors.white : const Color(0xFF0F172A)).withValues(alpha: 0.3), blurRadius: 20),
+                            BoxShadow(
+                                color: (isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A))
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 20),
                           ],
                         ),
-                        child: Image.asset('assets/images/image3.png', width: 48, height: 48, fit: BoxFit.contain),
+                        child: Image.asset('assets/images/image3.png',
+                            width: 48, height: 48, fit: BoxFit.contain),
                       ),
                     ),
-                  ).animate().scale(duration: 800.ms, curve: Curves.elasticOut).shimmer(delay: 5.seconds, duration: 10.seconds),
-                  
+                  )
+                      .animate()
+                      .scale(duration: 800.ms, curve: Curves.elasticOut)
+                      .shimmer(delay: 5.seconds, duration: 10.seconds),
+
                   const SizedBox(height: 40),
-                  
+
                   // App Name with Ultimate Contrast
                   Text(
                     'Ikenas',
@@ -87,9 +102,9 @@ class _SplashScreenState extends State<SplashScreen> {
                       letterSpacing: -1.5,
                     ),
                   ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Sub-brand / Version
                   Text(
                     AppLocalizations.of(context)!.translate('app_school_2026'),
@@ -100,9 +115,9 @@ class _SplashScreenState extends State<SplashScreen> {
                       letterSpacing: 4,
                     ),
                   ).animate().fadeIn(delay: 600.ms),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Motto
                   Text(
                     AppLocalizations.of(context)!.translate('app_motto'),

@@ -22,31 +22,30 @@ class FeedViewModel extends ChangeNotifier {
 
     try {
       final freshPosts = await _apiService.getPosts();
-      
+
       // Load local likes
       final prefs = await SharedPreferences.getInstance();
       final likedPostIds = prefs.getStringList('local_liked_posts') ?? [];
-      
+
       final userName = currentUserName?.toLowerCase() ?? 'moi';
-      
+
       _posts = freshPosts.map((post) {
         // ALWAYS check the likedBy list from server (survives app re-install)
-        bool alreadyInList = post.likedBy.any((l) => 
-          l.userName.toLowerCase() == userName || 
-          l.userName.toLowerCase() == 'moi' || 
-          l.userName.toLowerCase() == 'me'
-        );
-        
+        bool alreadyInList = post.likedBy.any((l) =>
+            l.userName.toLowerCase() == userName ||
+            l.userName.toLowerCase() == 'moi' ||
+            l.userName.toLowerCase() == 'me');
+
         bool isLikedLocally = likedPostIds.contains(post.id);
-        
+
         bool finalIsLiked = post.isLiked || alreadyInList || isLikedLocally;
         int correctLikes = post.likes;
 
         if (finalIsLiked) {
-           // If we know we liked it, ensure the count is at least 1
-           if (correctLikes == 0) correctLikes = 1;
-           // If we have a local like but API hasn't caught up, ensure we don't double count
-           // (already handled by trusting post.likes if it's > 0)
+          // If we know we liked it, ensure the count is at least 1
+          if (correctLikes == 0) correctLikes = 1;
+          // If we have a local like but API hasn't caught up, ensure we don't double count
+          // (already handled by trusting post.likes if it's > 0)
         }
 
         return post.copyWith(isLiked: finalIsLiked, likes: correctLikes);
@@ -62,23 +61,27 @@ class FeedViewModel extends ChangeNotifier {
   }
 
   // OPTIMISTIC UI: Toggle Like
-  Future<void> toggleLike(PostModel post, {String? userName, String? userAvatar}) async {
+  Future<void> toggleLike(PostModel post,
+      {String? userName, String? userAvatar}) async {
     final index = _posts.indexWhere((p) => p.id == post.id);
     if (index == -1) return;
 
     final originalPost = _posts[index];
     final isLiked = !originalPost.isLiked;
-    
+
     final currentUserName = userName ?? "Moi";
     List<LikeModel> newLikedBy = List.from(originalPost.likedBy);
-    
+
     if (isLiked) {
       // Prevent duplicates in likedBy (Instagram behavior)
-      if (!newLikedBy.any((l) => l.userName.toLowerCase() == currentUserName.toLowerCase())) {
-        newLikedBy.add(LikeModel(userName: currentUserName, userAvatar: userAvatar));
+      if (!newLikedBy.any(
+          (l) => l.userName.toLowerCase() == currentUserName.toLowerCase())) {
+        newLikedBy
+            .add(LikeModel(userName: currentUserName, userAvatar: userAvatar));
       }
     } else {
-      newLikedBy.removeWhere((l) => l.userName.toLowerCase() == currentUserName.toLowerCase());
+      newLikedBy.removeWhere(
+          (l) => l.userName.toLowerCase() == currentUserName.toLowerCase());
     }
 
     _posts[index] = originalPost.copyWith(
@@ -87,7 +90,7 @@ class FeedViewModel extends ChangeNotifier {
       likedBy: newLikedBy,
     );
     notifyListeners();
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final likedPostIds = prefs.getStringList('local_liked_posts') ?? [];
@@ -110,7 +113,7 @@ class FeedViewModel extends ChangeNotifier {
       // _posts[index] = originalPost;
       _errorMessage = 'failed_to_like';
       notifyListeners();
-      
+
       Future.delayed(const Duration(seconds: 2), () {
         _errorMessage = null;
         notifyListeners();
@@ -119,13 +122,14 @@ class FeedViewModel extends ChangeNotifier {
   }
 
   // OPTIMISTIC UI: Add Comment
-  Future<void> addComment(String postId, String authorName, String content) async {
+  Future<void> addComment(
+      String postId, String authorName, String content) async {
     final index = _posts.indexWhere((p) => p.id == postId);
     if (index == -1) return;
 
     final originalPost = _posts[index];
     final tempCommentId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-    
+
     final tempComment = CommentModel(
       id: tempCommentId,
       authorName: authorName,
@@ -141,20 +145,24 @@ class FeedViewModel extends ChangeNotifier {
 
     try {
       final realComment = await _apiService.addComment(postId, content);
-      
+
       final updatedIndex = _posts.indexWhere((p) => p.id == postId);
       if (updatedIndex != -1) {
         final currentPost = _posts[updatedIndex];
-        
+
         final combinedComment = CommentModel(
           id: realComment.id,
           authorName: authorName, // Keep the actual user's name locally
           content: content,
-          date: DateTime.now().toUtc().toIso8601String(), // Force REAL time to override mock server dates
+          date: DateTime.now()
+              .toUtc()
+              .toIso8601String(), // Force REAL time to override mock server dates
           authorAvatar: tempComment.authorAvatar,
         );
 
-        final newList = currentPost.commentsList.map((c) => c.id == tempCommentId ? combinedComment : c).toList();
+        final newList = currentPost.commentsList
+            .map((c) => c.id == tempCommentId ? combinedComment : c)
+            .toList();
         _posts[updatedIndex] = currentPost.copyWith(commentsList: newList);
         notifyListeners();
       }
@@ -162,7 +170,7 @@ class FeedViewModel extends ChangeNotifier {
       _posts[index] = originalPost;
       _errorMessage = 'failed_to_comment';
       notifyListeners();
-      
+
       Future.delayed(const Duration(seconds: 2), () {
         _errorMessage = null;
         notifyListeners();

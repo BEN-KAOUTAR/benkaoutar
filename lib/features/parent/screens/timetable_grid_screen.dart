@@ -35,14 +35,16 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
       AppLocalizations.of(context)!.translate('thu_short'),
       AppLocalizations.of(context)!.translate('fri_short'),
     ];
-    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
 
     return Consumer<TimetableViewModel>(
       builder: (context, vm, child) {
         // Filter timetable for selected day
-        final dayTimetable = vm.timetable.where((item) => item.dayIndex == _selectedDayIndex).toList();
+        final dayTimetable = vm.timetable
+            .where((item) => item.dayIndex == _selectedDayIndex)
+            .toList();
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -53,12 +55,21 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.white, shape: BoxShape.circle),
-                child: Icon(Icons.arrow_back_ios_new_rounded, color: primaryTextColor, size: 16),
+                decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : Colors.white,
+                    shape: BoxShape.circle),
+                child: Icon(Icons.arrow_back_ios_new_rounded,
+                    color: primaryTextColor, size: 16),
               ),
               onPressed: () => Navigator.pop(context),
             ),
-            title: Text(AppLocalizations.of(context)!.translate('timetable_title'), style: TextStyle(fontWeight: FontWeight.w900, color: primaryTextColor, fontSize: 20, letterSpacing: -0.5)),
+            title: Text(
+                AppLocalizations.of(context)!.translate('timetable_title'),
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: primaryTextColor,
+                    fontSize: 20,
+                    letterSpacing: -0.5)),
             centerTitle: true,
           ),
           body: DeepSpaceBackground(
@@ -66,7 +77,8 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
             child: SafeArea(
               child: Column(
                 children: [
-                  const SizedBox(height: 24), // Reduced to bring layout closer to top
+                  const SizedBox(
+                      height: 24), // Reduced to bring layout closer to top
                   // Glassmorphic Day Selector
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -78,10 +90,21 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
                           height: 70,
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.white.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white),
-                            boxShadow: [if (!isDark) BoxShadow(color: Colors.white.withValues(alpha: 0.8), blurRadius: 20, offset: const Offset(0, 10))],
+                            border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.white),
+                            boxShadow: [
+                              if (!isDark)
+                                BoxShadow(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10))
+                            ],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -90,27 +113,50 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
                               String dayName = entry.value;
                               final isSelected = _selectedDayIndex == index;
                               final selectedText = Colors.white;
-                              final unselectedText = isDark ? Colors.white54 : Colors.black54;
+                              final unselectedText =
+                                  isDark ? Colors.white54 : Colors.black54;
 
                               return Expanded(
                                 child: GestureDetector(
-                                  onTap: () => setState(() => _selectedDayIndex = index),
+                                  onTap: () =>
+                                      setState(() => _selectedDayIndex = index),
                                   behavior: HitTestBehavior.opaque,
                                   child: AnimatedContainer(
                                     duration: 300.ms,
                                     curve: Curves.easeOutCubic,
-                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 4),
                                     decoration: BoxDecoration(
-                                      gradient: isSelected ? const LinearGradient(colors: [Colors.blueAccent, Colors.indigoAccent], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+                                      gradient: isSelected
+                                          ? const LinearGradient(
+                                              colors: [
+                                                  Colors.blueAccent,
+                                                  Colors.indigoAccent
+                                                ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight)
+                                          : null,
                                       borderRadius: BorderRadius.circular(18),
-                                      boxShadow: isSelected ? [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))] : [],
+                                      boxShadow: isSelected
+                                          ? [
+                                              BoxShadow(
+                                                  color: Colors.blueAccent
+                                                      .withValues(alpha: 0.3),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4))
+                                            ]
+                                          : [],
                                     ),
                                     child: Center(
                                       child: Text(
                                         dayName,
                                         style: TextStyle(
-                                          color: isSelected ? selectedText : unselectedText,
-                                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+                                          color: isSelected
+                                              ? selectedText
+                                              : unselectedText,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w900
+                                              : FontWeight.bold,
                                           fontSize: 12,
                                           letterSpacing: 2,
                                         ),
@@ -131,38 +177,55 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
                   // Timetable List
                   Expanded(
                     child: vm.isLoading && vm.timetable.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : AnimatedSwitcher(
-                      duration: 400.ms,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(begin: const Offset(0.05, 0), end: Offset.zero).animate(animation),
-                          child: child,
-                        ),
-                      ),
-                      child: dayTimetable.isEmpty
-                      ? Center(child: Text(AppLocalizations.of(context)!.translate('no_classes'), style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontWeight: FontWeight.bold)))
-                      : ListView.builder(
-                        key: ValueKey(_selectedDayIndex),
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                        itemCount: dayTimetable.length,
-                        itemBuilder: (context, index) {
-                          final item = dayTimetable[index];
-                          return _TimetableRow(
-                            time: item.time, 
-                            subject: item.subject,
-                            teacher: item.teacher,
-                            room: item.room,
-                            isCanceled: item.isCanceled, 
-                            isLive: item.isLive,
-                            index: index,
-                            isLast: index == dayTimetable.length - 1,
-                          ).animate().fadeIn(delay: (index * 80).ms).slideX(begin: 0.05);
-                        },
-                      ),
-                    ),
+                        ? const Center(child: CircularProgressIndicator())
+                        : AnimatedSwitcher(
+                            duration: 400.ms,
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                        begin: const Offset(0.05, 0),
+                                        end: Offset.zero)
+                                    .animate(animation),
+                                child: child,
+                              ),
+                            ),
+                            child: dayTimetable.isEmpty
+                                ? Center(
+                                    child: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('no_classes'),
+                                        style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white38
+                                                : Colors.black38,
+                                            fontWeight: FontWeight.bold)))
+                                : ListView.builder(
+                                    key: ValueKey(_selectedDayIndex),
+                                    physics: const BouncingScrollPhysics(),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 8),
+                                    itemCount: dayTimetable.length,
+                                    itemBuilder: (context, index) {
+                                      final item = dayTimetable[index];
+                                      return _TimetableRow(
+                                        time: item.time,
+                                        subject: item.subject,
+                                        teacher: item.teacher,
+                                        room: item.room,
+                                        isCanceled: item.isCanceled,
+                                        isLive: item.isLive,
+                                        index: index,
+                                        isLast:
+                                            index == dayTimetable.length - 1,
+                                      )
+                                          .animate()
+                                          .fadeIn(delay: (index * 80).ms)
+                                          .slideX(begin: 0.05);
+                                    },
+                                  ),
+                          ),
                   ),
                 ],
               ),
@@ -185,12 +248,12 @@ class _TimetableRow extends StatelessWidget {
   final bool isLast;
 
   const _TimetableRow({
-    required this.time, 
-    required this.subject, 
-    required this.teacher, 
-    required this.room, 
-    required this.isCanceled, 
-    required this.isLive, 
+    required this.time,
+    required this.subject,
+    required this.teacher,
+    required this.room,
+    required this.isCanceled,
+    required this.isLive,
     required this.index,
     this.isLast = false,
   });
@@ -198,13 +261,13 @@ class _TimetableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final colors = [
-      Colors.blueAccent, 
-      Colors.orangeAccent, 
-      Colors.greenAccent, 
-      Colors.purpleAccent, 
-      Colors.indigoAccent, 
+      Colors.blueAccent,
+      Colors.orangeAccent,
+      Colors.greenAccent,
+      Colors.purpleAccent,
+      Colors.indigoAccent,
       Colors.tealAccent,
       Colors.pinkAccent,
       Colors.amberAccent
@@ -224,13 +287,24 @@ class _TimetableRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Column(
                 children: [
-                   Text(
+                  Text(
                     time.split(':')[0],
-                    style: TextStyle(color: isLive ? Colors.blueAccent : (isDark ? Colors.white : const Color(0xFF0F172A)), fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -1),
+                    style: TextStyle(
+                        color: isLive
+                            ? Colors.blueAccent
+                            : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1),
                   ),
                   Text(
                     time.split(':')[1],
-                    style: TextStyle(color: isLive ? Colors.blueAccent.withValues(alpha: 0.6) : (isDark ? Colors.white38 : Colors.black38), fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: isLive
+                            ? Colors.blueAccent.withValues(alpha: 0.6)
+                            : (isDark ? Colors.white38 : Colors.black38),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -241,28 +315,47 @@ class _TimetableRow extends StatelessWidget {
           Column(
             children: [
               Container(
-                width: 20, height: 20,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
-                  color: isCanceled ? Colors.redAccent : (isLive ? Colors.blueAccent : color),
+                  color: isCanceled
+                      ? Colors.redAccent
+                      : (isLive ? Colors.blueAccent : color),
                   shape: BoxShape.circle,
-                  border: Border.all(color: isDark ? const Color(0xFF0F172A) : Colors.white, width: 4),
+                  border: Border.all(
+                      color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                      width: 4),
                   boxShadow: [
-                    if (isLive) BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.6), blurRadius: 15, spreadRadius: 2),
-                    BoxShadow(color: isCanceled ? Colors.redAccent.withValues(alpha: 0.4) : color.withValues(alpha: 0.4), blurRadius: 8)
+                    if (isLive)
+                      BoxShadow(
+                          color: Colors.blueAccent.withValues(alpha: 0.6),
+                          blurRadius: 15,
+                          spreadRadius: 2),
+                    BoxShadow(
+                        color: isCanceled
+                            ? Colors.redAccent.withValues(alpha: 0.4)
+                            : color.withValues(alpha: 0.4),
+                        blurRadius: 8)
                   ],
                 ),
-              ).animate(target: isLive ? 1 : 0, onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 800.ms),
+              )
+                  .animate(
+                      target: isLive ? 1 : 0,
+                      onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.2, 1.2),
+                      duration: 800.ms),
               if (!isLast)
                 Expanded(
-                  child: Container(
-                    width: 2, 
-                    margin: const EdgeInsets.only(top: 8, bottom: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
-                      borderRadius: BorderRadius.circular(2)
-                    )
-                  )
-                ),
+                    child: Container(
+                        width: 2,
+                        margin: const EdgeInsets.only(top: 8, bottom: 8),
+                        decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(2)))),
             ],
           ),
 
@@ -273,21 +366,39 @@ class _TimetableRow extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: isLive 
+                color: isLive
                     ? Colors.blueAccent.withValues(alpha: 0.05)
-                    : (isCanceled 
-                        ? Colors.redAccent.withValues(alpha: 0.1) 
-                        : (isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white)),
+                    : (isCanceled
+                        ? Colors.redAccent.withValues(alpha: 0.1)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.03)
+                            : Colors.white)),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: isLive 
+                  color: isLive
                       ? Colors.blueAccent.withValues(alpha: 0.3)
-                      : (isCanceled ? Colors.redAccent.withValues(alpha: 0.3) : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8))),
+                      : (isCanceled
+                          ? Colors.redAccent.withValues(alpha: 0.3)
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white.withValues(alpha: 0.8))),
                   width: isLive ? 2 : 1,
                 ),
-                boxShadow: isLive 
-                    ? [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.1), blurRadius: 30, spreadRadius: -5)]
-                    : (isDark || isCanceled ? [] : [BoxShadow(color: Colors.white.withValues(alpha: 0.7), blurRadius: 20, offset: const Offset(0, 5))]),
+                boxShadow: isLive
+                    ? [
+                        BoxShadow(
+                            color: Colors.blueAccent.withValues(alpha: 0.1),
+                            blurRadius: 30,
+                            spreadRadius: -5)
+                      ]
+                    : (isDark || isCanceled
+                        ? []
+                        : [
+                            BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                blurRadius: 20,
+                                offset: const Offset(0, 5))
+                          ]),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
@@ -303,20 +414,37 @@ class _TimetableRow extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: isLive ? Colors.blueAccent.withValues(alpha: 0.2) : (isCanceled ? Colors.redAccent.withValues(alpha: 0.2) : color.withValues(alpha: 0.1)),
+                                color: isLive
+                                    ? Colors.blueAccent.withValues(alpha: 0.2)
+                                    : (isCanceled
+                                        ? Colors.redAccent
+                                            .withValues(alpha: 0.2)
+                                        : color.withValues(alpha: 0.1)),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
-                                isLive ? Icons.sensors_rounded : (isCanceled ? Icons.event_busy_rounded : Icons.menu_book_rounded),
-                                color: isLive ? Colors.blueAccent : (isCanceled ? Colors.redAccent : color),
+                                isLive
+                                    ? Icons.sensors_rounded
+                                    : (isCanceled
+                                        ? Icons.event_busy_rounded
+                                        : Icons.menu_book_rounded),
+                                color: isLive
+                                    ? Colors.blueAccent
+                                    : (isCanceled ? Colors.redAccent : color),
                                 size: 16,
                               ),
                             ),
                             const SizedBox(width: 12),
                             if (isLive) ...[
                               Text(
-                                AppLocalizations.of(context)!.translate('live_now').toUpperCase(),
-                                style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 2),
+                                AppLocalizations.of(context)!
+                                    .translate('live_now')
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                    color: Colors.blueAccent,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 2),
                               ),
                               const SizedBox(width: 8),
                             ],
@@ -326,32 +454,65 @@ class _TimetableRow extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 18,
-                                  color: isCanceled ? Colors.redAccent : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                  color: isCanceled
+                                      ? Colors.redAccent
+                                      : (isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A)),
                                   letterSpacing: -0.5,
-                                  decoration: isCanceled ? TextDecoration.lineThrough : null,
+                                  decoration: isCanceled
+                                      ? TextDecoration.lineThrough
+                                      : null,
                                 ),
                               ),
                             ),
                             if (isCanceled)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
-                                child: Text(AppLocalizations.of(context)!.translate('canceled_upper'), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                    color:
+                                        Colors.redAccent.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('canceled_upper'),
+                                    style: const TextStyle(
+                                        color: Colors.redAccent,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 10,
+                                        letterSpacing: 1)),
                               ),
                           ],
                         ),
                         const SizedBox(height: 20),
-                        Divider(color: isDark ? Colors.white10 : Colors.white, height: 1),
+                        Divider(
+                            color: isDark ? Colors.white10 : Colors.white,
+                            height: 1),
                         const SizedBox(height: 20),
                         Row(
                           children: [
-                            Icon(Icons.person_rounded, size: 16, color: secondaryTextColor),
+                            Icon(Icons.person_rounded,
+                                size: 16, color: secondaryTextColor),
                             const SizedBox(width: 8),
-                            Text(teacher, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12, fontWeight: FontWeight.w900)),
+                            Text(teacher,
+                                style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white54
+                                        : Colors.black54,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900)),
                             const Spacer(),
-                            Icon(Icons.location_on_rounded, size: 16, color: secondaryTextColor),
+                            Icon(Icons.location_on_rounded,
+                                size: 16, color: secondaryTextColor),
                             const SizedBox(width: 8),
-                            Text(room, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12, fontWeight: FontWeight.w900)),
+                            Text(room,
+                                style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white54
+                                        : Colors.black54,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900)),
                           ],
                         ),
                       ],

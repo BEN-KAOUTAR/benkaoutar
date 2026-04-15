@@ -14,20 +14,20 @@ class AppState extends ChangeNotifier {
   int _selectedChildIndex = 0;
   Locale _locale = const Locale('fr');
   bool _isOffline = false;
-  
+
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final lang = prefs.getString('language_code') ?? 'fr';
     _locale = Locale(lang);
     _isDarkMode = prefs.getBool('is_dark_mode') ?? true;
-    
-    
+
     final token = prefs.getString('auth_token');
     if (token != null) {
       ApiService.instance.setToken(token);
     }
     notifyListeners();
   }
+
   int _dashboardIndex = 0;
   bool _biometricsEnabled = true;
 // Removed global _profileAvatarIndex in favor of UserModel.avatarIndex
@@ -60,13 +60,14 @@ class AppState extends ChangeNotifier {
   Set<String> get groupAdminOnlyMessaging => _groupAdminOnlyMessaging;
 
   // RTL Logic
-  TextDirection get textDirection => _locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr;
+  TextDirection get textDirection =>
+      _locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr;
 
   void setLocale(Locale loc) async {
     _locale = loc;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language_code', loc.languageCode);
-    
+
     notifyListeners();
   }
 
@@ -79,11 +80,11 @@ class AppState extends ChangeNotifier {
       final authData = await ApiService.instance.login(email, password);
       if (authData['user'] != null) {
         _currentUser = UserModel.fromJson(authData['user']);
-        
+
         final prefs = await SharedPreferences.getInstance();
         final token = authData['token'] ?? authData['access_token'];
         await prefs.setString('auth_token', token);
-        
+
         notifyListeners();
       } else {
         throw Exception('User data not found in response');
@@ -93,16 +94,15 @@ class AppState extends ChangeNotifier {
     }
   }
 
-
   void logout() async {
     _currentUser = null;
     _dashboardIndex = 0;
-    
+
     ApiService.instance.clearToken();
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
-    
+
     notifyListeners();
   }
 
@@ -154,10 +154,25 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void togglePush(bool value) { _pushEnabled = value; notifyListeners(); }
-  void toggleAcademicAlerts(bool value) { _academicAlertsEnabled = value; notifyListeners(); }
-  void toggleSecuritySafety(bool value) { _securitySafetyEnabled = value; notifyListeners(); }
-  void toggleNewsAlerts(bool value) { _newsAlertsEnabled = value; notifyListeners(); }
+  void togglePush(bool value) {
+    _pushEnabled = value;
+    notifyListeners();
+  }
+
+  void toggleAcademicAlerts(bool value) {
+    _academicAlertsEnabled = value;
+    notifyListeners();
+  }
+
+  void toggleSecuritySafety(bool value) {
+    _securitySafetyEnabled = value;
+    notifyListeners();
+  }
+
+  void toggleNewsAlerts(bool value) {
+    _newsAlertsEnabled = value;
+    notifyListeners();
+  }
 
   void toggleSavePost(String postId) {
     if (_savedPostIds.contains(postId)) {
@@ -182,7 +197,7 @@ class AppState extends ChangeNotifier {
   void deleteChat(String chatId) {
     notifyListeners();
   }
-  
+
   void toggleAdminOnlyMessaging(String groupName) {
     if (_groupAdminOnlyMessaging.contains(groupName)) {
       _groupAdminOnlyMessaging.remove(groupName);

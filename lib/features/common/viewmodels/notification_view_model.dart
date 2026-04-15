@@ -50,9 +50,10 @@ class NotificationViewModel extends ChangeNotifier {
 
   Future<void> markAllAsRead() async {
     final oldNotifications = List<NotificationModel>.from(_notifications);
-    
+
     // Optimistic UI
-    _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+    _notifications =
+        _notifications.map((n) => n.copyWith(isRead: true)).toList();
     notifyListeners();
 
     try {
