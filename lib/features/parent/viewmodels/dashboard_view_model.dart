@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
@@ -25,6 +26,62 @@ class DashboardViewModel extends ChangeNotifier {
 
   int _currentEventIndex = 0;
   int get currentEventIndex => _currentEventIndex;
+
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
+
+  void startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => refreshData());
+    debugPrint('Dashboard polling started (1s interval)');
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    debugPrint('Dashboard polling stopped');
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshData() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    
+    try {
+      // 1. Fetch children first to get their IDs
+      await fetchChildren(silent: true);
+
+      // 2. Determine if we should fetch stats
+      bool isStudent = false;
+      try {
+        final profile = await _apiService.getProfile();
+        isStudent = profile.role.toString().contains('student') ||
+            profile.role == UserRole.parent && profile.childrenIds.isEmpty;
+      } catch (_) {}
+
+      // 3. Fetch everything else in parallel
+      final tasks = [
+        fetchTodayAgenda(silent: true),
+        fetchActivities(silent: true),
+        fetchSubjectAverages(silent: true),
+        fetchUpcomingEvents(silent: true),
+      ];
+
+      if (!isStudent) {
+        tasks.add(fetchStats(silent: true));
+      }
+
+      await Future.wait(tasks);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
 
   void setCurrentEventIndex(int index) {
     _currentEventIndex = index;
@@ -56,31 +113,14 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    // 1. Fetch children first to get their IDs
-    await fetchChildren();
-
-    // 2. Determine if we should fetch stats (skip for student role to avoid 403)
-    bool isStudent = false;
-    try {
-      final profile = await _apiService.getProfile();
-      isStudent = profile.role.toString().contains('student') ||
-          profile.role == UserRole.parent && profile.childrenIds.isEmpty;
-      // Note: In this app, sometimes students use the parent dashboard logic if they are self-managed.
-    } catch (_) {}
-
-    // 3. Fetch everything else in parallel using the child ID where needed
-    final tasks = [
-      fetchTodayAgenda(),
-      fetchActivities(),
-      fetchSubjectAverages(),
-      fetchUpcomingEvents(),
-    ];
-
-    if (!isStudent) {
-      tasks.add(fetchStats());
-    }
-
-    await Future.wait(tasks);
+    // Standard init with loading indicator
+    _isLoading = true;
+    notifyListeners();
+    
+    await refreshData();
+    
+    _isLoading = false;
+    notifyListeners();
   }
 
   bool _isSameDay(dynamic dateA, DateTime dateB) {
@@ -163,7 +203,7 @@ class DashboardViewModel extends ChangeNotifier {
         normalizedA.isAfter(normalizedB);
   }
 
-  Future<void> fetchTodayAgenda() async {
+  Future<void> fetchTodayAgenda({bool silent = false}) async {
     try {
       final now = DateTime.now();
       final dayOfWeekIndex = now.weekday - 1; // 0=Mon, ..., 6=Sun
@@ -321,7 +361,7 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchUpcomingEvents() async {
+  Future<void> fetchUpcomingEvents({bool silent = false}) async {
     try {
       final now = DateTime.now();
       final studentId = _children.isNotEmpty ? _children[0].id : 'me';
@@ -424,22 +464,26 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchChildren() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> fetchChildren({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       _children = await _apiService.getChildren();
     } catch (e) {
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
-  Future<void> fetchStats() async {
+  Future<void> fetchStats({bool silent = false}) async {
     try {
       final stats = await _apiService.getDashboardStats();
       if (stats.isEmpty) return;
@@ -450,7 +494,7 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchActivities() async {
+  Future<void> fetchActivities({bool silent = false}) async {
     try {
       final rawActivities = await _apiService.getDashboardActivities();
       _activities = rawActivities.map((a) {
@@ -492,7 +536,7 @@ class DashboardViewModel extends ChangeNotifier {
   List<GradeModel>? _cachedGrades;
 
   Future<void> fetchSubjectAverages(
-      {String? semester, bool forceRefresh = false}) async {
+      {String? semester, bool forceRefresh = false, bool silent = false}) async {
     try {
       if (forceRefresh || _cachedGrades == null) {
         final studentId = _children.isNotEmpty ? _children[0].id : 'me';

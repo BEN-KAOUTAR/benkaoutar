@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
@@ -15,18 +16,54 @@ class NotificationViewModel extends ChangeNotifier {
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
-  Future<void> fetchNotifications() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
+
+  void startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => refreshSilent());
+    debugPrint('Notification polling started (1s interval)');
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    debugPrint('Notification polling stopped');
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshSilent() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await fetchNotifications(silent: true);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  Future<void> fetchNotifications({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       _notifications = await _apiService.getNotifications();
     } catch (e) {
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,38 @@ class SuiviViewModel extends ChangeNotifier {
   String? _lastStudentId;
   String? _forcedKeysLoadedForStudentId;
   Map<String, String> _localJustifications = {};
+
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
+
+  void startPolling(String studentId) {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => refreshSilent(studentId));
+    debugPrint('Suivi polling started (1s interval) for student: $studentId');
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    debugPrint('Suivi polling stopped');
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshSilent(String studentId) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await fetchSuiviData(studentId, silent: true);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
 
   String _attendanceKey(AttendanceRecord a) {
     if (a.id.isNotEmpty && a.id != 'null' && a.id != '0') {
@@ -89,12 +122,15 @@ class SuiviViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> fetchSuiviData(String studentId) async {
+  Future<void> fetchSuiviData(String studentId, {bool silent = false}) async {
     _lastStudentId = studentId;
     await _loadForcedJustifiedKeys(studentId);
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       debugPrint('Fetching suivi data for student: $studentId');
@@ -239,10 +275,12 @@ class SuiviViewModel extends ChangeNotifier {
       _processEvolutionDataFromGrades();
     } catch (e) {
       debugPrint('Error fetching suivi data: $e');
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

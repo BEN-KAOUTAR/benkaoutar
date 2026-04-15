@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/models.dart';
@@ -26,10 +27,45 @@ class HomeworkViewModel extends ChangeNotifier {
     return _homeworks.any((h) => !_seenAssignmentIds.contains(h.id));
   }
 
-  Future<void> fetchHomework(String studentId) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
+
+  void startPolling(String studentId) {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(
+        const Duration(seconds: 1), (_) => refreshSilent(studentId));
+    debugPrint('Homework polling started for student $studentId (1s interval)');
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    debugPrint('Homework polling stopped');
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshSilent(String studentId) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await fetchHomework(studentId, silent: true);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  Future<void> fetchHomework(String studentId, {bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     if (!_initialized) {
       await _loadSeenIds();
@@ -56,10 +92,12 @@ class HomeworkViewModel extends ChangeNotifier {
         return a.dueDate.compareTo(b.dueDate);
       });
     } catch (e) {
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

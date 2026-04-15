@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/models.dart';
@@ -14,11 +15,45 @@ class FeedViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
+
+  void startPolling({String? currentUserName}) {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => refreshSilent(currentUserName: currentUserName));
+    debugPrint('Feed polling started (1s interval)');
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    debugPrint('Feed polling stopped');
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshSilent({String? currentUserName}) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await fetchPosts(currentUserName: currentUserName, silent: true);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
   // Fetch posts from API
-  Future<void> fetchPosts({String? currentUserName}) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> fetchPosts({String? currentUserName, bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       final freshPosts = await _apiService.getPosts();
@@ -44,18 +79,18 @@ class FeedViewModel extends ChangeNotifier {
         if (finalIsLiked) {
           // If we know we liked it, ensure the count is at least 1
           if (correctLikes == 0) correctLikes = 1;
-          // If we have a local like but API hasn't caught up, ensure we don't double count
-          // (already handled by trusting post.likes if it's > 0)
         }
 
         return post.copyWith(isLiked: finalIsLiked, likes: correctLikes);
       }).toList();
 
-      _isLoading = false;
+      if (!silent) _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) {
+        _isLoading = false;
+        _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      }
       notifyListeners();
     }
   }

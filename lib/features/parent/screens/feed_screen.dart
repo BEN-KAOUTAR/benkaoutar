@@ -25,12 +25,21 @@ class _FeedScreenState extends State<FeedScreen> {
   String _searchQuery = '';
 
   @override
+  void dispose() {
+    context.read<FeedViewModel>().stopPolling();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     // Fetch posts on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userName = context.read<AppState>().currentUser?.name;
-      context.read<FeedViewModel>().fetchPosts(currentUserName: userName);
+      final feedVM = context.read<FeedViewModel>();
+      feedVM.startPolling(currentUserName: userName);
+      feedVM.fetchPosts(currentUserName: userName);
     });
   }
 

@@ -179,6 +179,13 @@ class _ParentHomeState extends State<_ParentHome> {
   @override
   void dispose() {
     _urgentPageController.dispose();
+    
+    // Stop real-time polling
+    context.read<DashboardViewModel>().stopPolling();
+    context.read<FeedViewModel>().stopPolling();
+    context.read<NotificationViewModel>().stopPolling();
+    context.read<EventViewModel>().stopPolling();
+    
     super.dispose();
   }
 
@@ -190,6 +197,17 @@ class _ParentHomeState extends State<_ParentHome> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboardVM = context.read<DashboardViewModel>();
+      final feedVM = context.read<FeedViewModel>();
+      final notifVM = context.read<NotificationViewModel>();
+      final eventVM = context.read<EventViewModel>();
+
+      // Start real-time polling (1s interval)
+      dashboardVM.startPolling();
+      feedVM.startPolling(
+          currentUserName: context.read<AppState>().currentUser?.name);
+      notifVM.startPolling();
+      eventVM.startPolling();
+
       dashboardVM.init().then((_) {
         if (!mounted) return;
 
@@ -200,9 +218,6 @@ class _ParentHomeState extends State<_ParentHome> {
           context.read<HomeworkViewModel>().fetchHomework(studentId);
         }
       });
-      context.read<FeedViewModel>().fetchPosts();
-      context.read<NotificationViewModel>().fetchNotifications();
-      context.read<EventViewModel>().fetchEvents();
     });
   }
 

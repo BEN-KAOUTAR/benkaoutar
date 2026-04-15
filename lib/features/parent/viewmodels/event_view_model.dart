@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
@@ -17,21 +18,56 @@ class EventViewModel extends ChangeNotifier {
   bool get isLoadingDetails => _isLoadingDetails;
   String? get errorMessage => _errorMessage;
 
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
+
+  void startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => refreshSilent());
+    debugPrint('Event polling started (1s interval)');
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    debugPrint('Event polling stopped');
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshSilent() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await fetchEvents(silent: true);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
   // Fetch all events
-  Future<void> fetchEvents() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> fetchEvents({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       _events = await _apiService.getEvents();
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
       debugPrint('Error fetching events: $e');
-      notifyListeners();
+    } finally {
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

@@ -25,12 +25,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotificationViewModel>().fetchNotifications();
+      final notifVM = context.read<NotificationViewModel>();
+      notifVM.startPolling();
+      notifVM.fetchNotifications();
     });
   }
 
   @override
   void dispose() {
+    context.read<NotificationViewModel>().stopPolling();
     _searchController.dispose();
     super.dispose();
   }

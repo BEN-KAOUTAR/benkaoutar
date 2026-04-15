@@ -22,8 +22,16 @@ class _TimetableGridScreenState extends State<TimetableGridScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TimetableViewModel>().fetchTimetable(widget.student.id);
+      final timetableVM = context.read<TimetableViewModel>();
+      timetableVM.startPolling(widget.student.id);
+      timetableVM.fetchTimetable(widget.student.id);
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<TimetableViewModel>().stopPolling();
+    super.dispose();
   }
 
   @override

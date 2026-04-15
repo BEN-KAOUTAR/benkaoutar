@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,6 +20,38 @@ class PaymentViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isDownloading => _isDownloading;
+
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
+
+  void startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => refreshSilent());
+    debugPrint('Payment polling started (1s interval)');
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    debugPrint('Payment polling stopped');
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshSilent() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await fetchPayments(silent: true);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
 
   // Summary statistics (count each type separately)
   int get paidCount => _monthGroups.where((g) => g.allPaid).length;
@@ -107,10 +140,12 @@ class PaymentViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> fetchPayments() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> fetchPayments({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       final apiPayments = await _apiService.getPayments();
@@ -184,10 +219,12 @@ class PaymentViewModel extends ChangeNotifier {
         );
       }).toList();
     } catch (e) {
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

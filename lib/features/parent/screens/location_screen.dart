@@ -30,8 +30,14 @@ class _LocationScreenState extends State<LocationScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LocationViewModel>().startTracking(widget.student.id);
+      context.read<LocationViewModel>().startPolling(widget.student.id);
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<LocationViewModel>().stopPolling();
+    super.dispose();
   }
 
   @override
@@ -186,7 +192,7 @@ class _LocationScreenState extends State<LocationScreen>
                                 fontSize: 16)),
                         const SizedBox(height: 24),
                         ElevatedButton(
-                          onPressed: () => vm.startTracking(widget.student.id),
+                          onPressed: () => vm.startPolling(widget.student.id),
                           child: Text(
                               AppLocalizations.of(context)!.translate('retry')),
                         ),

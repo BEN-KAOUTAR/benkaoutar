@@ -22,8 +22,16 @@ class _PaymentScreenState extends State<PaymentScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PaymentViewModel>().fetchPayments();
+      final paymentVM = context.read<PaymentViewModel>();
+      paymentVM.startPolling();
+      paymentVM.fetchPayments();
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<PaymentViewModel>().stopPolling();
+    super.dispose();
   }
 
   // ── Yearly Summary Card ─────────────────────────────────────────────────────

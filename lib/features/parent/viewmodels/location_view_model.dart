@@ -10,32 +10,51 @@ class LocationViewModel extends ChangeNotifier {
   List<LocationHistoryRecord> _history = [];
   bool _isLoading = false;
   String? _errorMessage;
-  Timer? _pollingTimer;
 
   BusLocationModel? get currentLocation => _currentLocation;
   List<LocationHistoryRecord> get history => _history;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  void startTracking(String studentId) {
-    fetchLocationData(studentId);
+  // Real-time polling
+  Timer? _pollingTimer;
+  bool _isRefreshing = false;
 
-    // Polling every 10 seconds for live bus updates
+  void startPolling(String studentId) {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      _pollBusLocation(studentId);
-    });
+    _pollingTimer = Timer.periodic(
+        const Duration(seconds: 1), (_) => refreshSilent(studentId));
+    debugPrint('Location polling started for student $studentId (1s interval)');
   }
 
-  void stopTracking() {
+  void stopPolling() {
     _pollingTimer?.cancel();
     _pollingTimer = null;
+    debugPrint('Location polling stopped');
   }
 
-  Future<void> fetchLocationData(String studentId) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> refreshSilent(String studentId) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await fetchLocationData(studentId, silent: true);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  Future<void> fetchLocationData(String studentId, {bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       final results = await Future.wait([
@@ -46,25 +65,13 @@ class LocationViewModel extends ChangeNotifier {
       _currentLocation = results[0] as BusLocationModel;
       _history = results[1] as List<LocationHistoryRecord>;
     } catch (e) {
-      _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
+      debugPrint('Error fetching location data: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
-  }
-
-  Future<void> _pollBusLocation(String studentId) async {
-    try {
-      _currentLocation = await _apiService.getBusLocation(studentId);
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Polling error: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    stopTracking();
-    super.dispose();
   }
 }

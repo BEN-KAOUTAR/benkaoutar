@@ -27,18 +27,18 @@ class _HomeworkScreenState extends State<HomeworkScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<HomeworkViewModel>()
-          .fetchHomework(widget.studentId)
-          .then((_) {
+      final homeworkVM = context.read<HomeworkViewModel>();
+      homeworkVM.startPolling(widget.studentId);
+      homeworkVM.fetchHomework(widget.studentId).then((_) {
         if (!mounted) return;
-        context.read<HomeworkViewModel>().markAllAsSeen();
+        homeworkVM.markAllAsSeen();
       });
     });
   }
 
   @override
   void dispose() {
+    context.read<HomeworkViewModel>().stopPolling();
     _tabController.dispose();
     super.dispose();
   }

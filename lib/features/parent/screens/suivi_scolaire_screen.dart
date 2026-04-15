@@ -28,6 +28,12 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
   late String _selectedYear;
 
   @override
+  void dispose() {
+    context.read<SuiviViewModel>().stopPolling();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     final now = DateTime.now();
@@ -44,7 +50,9 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
     // Fetch data on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SuiviViewModel>().fetchSuiviData(widget.student.id);
+      final suiviVM = context.read<SuiviViewModel>();
+      suiviVM.startPolling(widget.student.id);
+      suiviVM.fetchSuiviData(widget.student.id);
     });
   }
 

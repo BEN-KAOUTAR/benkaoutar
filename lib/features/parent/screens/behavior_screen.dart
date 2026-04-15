@@ -23,8 +23,16 @@ class _BehaviorScreenState extends State<BehaviorScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BehaviorViewModel>().fetchBehaviorData(widget.student.id);
+      final behaviorVM = context.read<BehaviorViewModel>();
+      behaviorVM.startPolling(widget.student.id);
+      behaviorVM.fetchBehaviorData(widget.student.id);
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<BehaviorViewModel>().stopPolling();
+    super.dispose();
   }
 
   @override
