@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/app_state.dart';
-import 'features/auth/screens/splash_screen.dart';
+import 'features/auth/screens/auth_gate.dart';
 import 'features/parent/viewmodels/feed_view_model.dart';
 import 'features/parent/viewmodels/suivi_view_model.dart';
 import 'features/parent/viewmodels/homework_view_model.dart';
@@ -84,7 +84,7 @@ class IkenasApp extends StatelessWidget {
           child: child!,
         );
       },
-      home: const SplashScreen(),
+      home: const AuthGate(),
     );
   }
 }

@@ -762,11 +762,14 @@ class PostModel {
       isUrgent: json['isUrgent'] ?? false,
       isCompleted: json['isCompleted'] ?? false,
       eventDate: json['eventDate'],
+      // NOTE: Don't fall back to json['status'] — that holds post publication state,
+      // not the user's RSVP answer ('oui'/'non').
       participationStatus: json['participationStatus'] ??
+          json['participation_status'] ??
           json['userResponse'] ??
           json['userParticipation'] ??
-          json['myStatus'] ??
-          json['status'],
+          json['myParticipation'] ??
+          json['myStatus'],
       commentsList: (json['comments'] is List &&
               json['comments'].isNotEmpty &&
               json['comments'][0] is Map)
@@ -1095,11 +1098,14 @@ class EventModel {
       time: json['time'] ?? '',
       type: json['type'] ?? '',
       location: json['location'],
+      // NOTE: Don't fall back to json['status'] — that holds event publication state
+      // (e.g. 'active', 'upcoming'), not the user's RSVP answer ('oui'/'non').
       participationStatus: json['participationStatus'] ??
+          json['participation_status'] ??
           json['userResponse'] ??
           json['userParticipation'] ??
-          json['myStatus'] ??
-          json['status'],
+          json['myParticipation'] ??
+          json['myStatus'],
       createdAt:
           json['createdAt'] ?? json['date'], // fallback to date if not provided
     );

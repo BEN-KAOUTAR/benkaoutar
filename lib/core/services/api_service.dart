@@ -1035,9 +1035,24 @@ class ApiService {
   // Respond to event (yes/no/maybe)
   Future<EventModel?> respondToEventNew(String eventId, String status) async {
     try {
+      // Attempt to get studentId to include in payload to fix admin synchronization
+      String? studentId;
+      try {
+        final children = await getChildren();
+        if (children.isNotEmpty) {
+          studentId = children.first.id;
+        }
+      } catch (_) {}
+
+      final dataPayload = {'status': status};
+      if (studentId != null) {
+        dataPayload['studentId'] = studentId;
+        dataPayload['student_id'] = studentId;
+      }
+
       final response = await _dio.put(
         '/events/$eventId/respond',
-        data: {'status': status},
+        data: dataPayload,
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         // First try to extract updated event from response
@@ -1058,7 +1073,11 @@ class ApiService {
         try {
           final eventResponse = await _dio.get('/events/$eventId');
           if (eventResponse.statusCode == 200) {
-            final eventData = eventResponse.data;
+            final raw = eventResponse.data;
+            // Unwrap standard API envelope: {"success":true,"data":{...}}
+            final eventData = (raw is Map && raw.containsKey('data'))
+                ? raw['data']
+                : raw;
             if (eventData is Map) {
               return EventModel.fromJson(Map<String, dynamic>.from(eventData));
             }
@@ -1197,9 +1216,25 @@ class ApiService {
   Future<bool> respondToEvent(String id, String response,
       {bool isPost = false}) async {
     try {
-      // API strictly defines PUT /events/{id}/respond
+      // Attempt to get studentId to include in payload to fix admin synchronization
+      String? studentId;
+      try {
+        final children = await getChildren();
+        if (children.isNotEmpty) {
+          studentId = children.first.id;
+        }
+      } catch (_) {}
+
+      final dataPayload = {'status': response};
+      if (studentId != null) {
+        dataPayload['studentId'] = studentId;
+        dataPayload['student_id'] = studentId;
+      }
+
+      // If the event is actually a post, we might need a different endpoint.
+      final endpoint = isPost ? '/news/$id/respond' : '/events/$id/respond';
       final res =
-          await _dio.put('/events/$id/respond', data: {'status': response});
+          await _dio.put(endpoint, data: dataPayload);
       return res.statusCode == 200 || res.statusCode == 201;
     } catch (e) {
       debugPrint('Error responding to event: $e');

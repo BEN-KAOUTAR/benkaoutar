@@ -179,13 +179,13 @@ class _ParentHomeState extends State<_ParentHome> {
   @override
   void dispose() {
     _urgentPageController.dispose();
-    
+
     // Stop real-time polling
     context.read<DashboardViewModel>().stopPolling();
     context.read<FeedViewModel>().stopPolling();
     context.read<NotificationViewModel>().stopPolling();
     context.read<EventViewModel>().stopPolling();
-    
+
     super.dispose();
   }
 
@@ -208,6 +208,7 @@ class _ParentHomeState extends State<_ParentHome> {
       notifVM.startPolling();
       eventVM.startPolling();
 
+      // Initialize viewmodels and load cached data
       dashboardVM.init().then((_) {
         if (!mounted) return;
 
@@ -218,6 +219,8 @@ class _ParentHomeState extends State<_ParentHome> {
           context.read<HomeworkViewModel>().fetchHomework(studentId);
         }
       });
+
+      eventVM.init();
     });
   }
 
@@ -241,6 +244,8 @@ class _ParentHomeState extends State<_ParentHome> {
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
           bool isSubmitting = false;
+          String? successMessage;
+          String? errorMessage;
 
           return BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -493,25 +498,43 @@ class _ParentHomeState extends State<_ParentHome> {
                                                           post, 'going');
                                                 }
                                                 if (ok) {
-                                                  currentResponse = 'going';
-                                                  setModalState(() =>
-                                                      isSubmitting = false);
+                                                  setModalState(() {
+                                                    currentResponse = 'going';
+                                                    successMessage =
+                                                        'تم تسجيل ردك بنجاح! ✓';
+                                                    errorMessage = null;
+                                                  });
+                                                } else {
+                                                  setModalState(() {
+                                                    errorMessage =
+                                                        'حدث خطأ أثناء إرسال الرد';
+                                                  });
                                                 }
+                                                setModalState(
+                                                    () => isSubmitting = false);
                                               },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: currentResponse ==
-                                                      'oui' || currentResponse == 'going' || currentResponse == 'present'
+                                                      'going' ||
+                                                  currentResponse == 'oui' ||
+                                                  currentResponse ==
+                                                      'present' ||
+                                                  currentResponse == 'yes'
                                               ? Colors.green
                                               : (isDark
                                                   ? Colors.white10
                                                   : Colors.black
                                                       .withValues(alpha: 0.05)),
-                                          foregroundColor:
-                                              currentResponse == 'oui' || currentResponse == 'going' || currentResponse == 'present'
+                                          foregroundColor: currentResponse ==
+                                                      'going' ||
+                                                  currentResponse == 'oui' ||
+                                                  currentResponse ==
+                                                      'present' ||
+                                                  currentResponse == 'yes'
+                                              ? Colors.white
+                                              : (isDark
                                                   ? Colors.white
-                                                  : (isDark
-                                                      ? Colors.white
-                                                      : Colors.black),
+                                                  : Colors.black),
                                           elevation: 0,
                                           shape: RoundedRectangleBorder(
                                               borderRadius:
@@ -553,25 +576,46 @@ class _ParentHomeState extends State<_ParentHome> {
                                                           post, 'not_going');
                                                 }
                                                 if (ok) {
-                                                  currentResponse = 'not_going';
-                                                  setModalState(() =>
-                                                      isSubmitting = false);
+                                                  setModalState(() {
+                                                    currentResponse =
+                                                        'not_going';
+                                                    successMessage =
+                                                        'تم تسجيل ردك بنجاح! ✓';
+                                                    errorMessage = null;
+                                                  });
+                                                } else {
+                                                  setModalState(() {
+                                                    errorMessage =
+                                                        'حدث خطأ أثناء إرسال الرد';
+                                                  });
                                                 }
+                                                setModalState(
+                                                    () => isSubmitting = false);
                                               },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: currentResponse ==
-                                                      'non' || currentResponse == 'not_going' || currentResponse == 'absent'
+                                                      'not_going' ||
+                                                  currentResponse == 'non' ||
+                                                  currentResponse ==
+                                                      'not_going' ||
+                                                  currentResponse == 'absent' ||
+                                                  currentResponse == 'no'
                                               ? Colors.redAccent
                                               : (isDark
                                                   ? Colors.white10
                                                   : Colors.black
                                                       .withValues(alpha: 0.05)),
-                                          foregroundColor:
-                                              currentResponse == 'non' || currentResponse == 'not_going' || currentResponse == 'absent'
+                                          foregroundColor: currentResponse ==
+                                                      'not_going' ||
+                                                  currentResponse == 'non' ||
+                                                  currentResponse ==
+                                                      'not_going' ||
+                                                  currentResponse == 'absent' ||
+                                                  currentResponse == 'no'
+                                              ? Colors.white
+                                              : (isDark
                                                   ? Colors.white
-                                                  : (isDark
-                                                      ? Colors.white
-                                                      : Colors.black),
+                                                  : Colors.black),
                                           elevation: 0,
                                           shape: RoundedRectangleBorder(
                                               borderRadius:
@@ -587,13 +631,77 @@ class _ParentHomeState extends State<_ParentHome> {
                                     ),
                                   ],
                                 ),
-                                if (currentResponse != null)
+                                if (errorMessage != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 12),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent
+                                            .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                            color: Colors.redAccent, width: 1),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.error_outline,
+                                              color: Colors.redAccent,
+                                              size: 18),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              errorMessage!,
+                                              style: const TextStyle(
+                                                  color: Colors.redAccent,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (successMessage != null &&
+                                    errorMessage == null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 12),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.green.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                            color: Colors.green, width: 1),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.check_circle_outline,
+                                              color: Colors.green, size: 18),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              successMessage!,
+                                              style: const TextStyle(
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (currentResponse != null &&
+                                    successMessage == null &&
+                                    errorMessage == null)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 12),
                                     child: Text(
-                                      "Réponse enregistrée : ${(currentResponse == 'oui' || currentResponse == 'going' || currentResponse == 'present') ? 'Présent' : 'Absent'}",
+                                      "حالتك: ${(currentResponse == 'going' || currentResponse == 'oui' || currentResponse == 'present' || currentResponse == 'yes') ? 'مشارك ✓' : 'غير مشارك ✗'}",
                                       style: const TextStyle(
-                                          color: Colors.green,
+                                          color: Colors.blueAccent,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12),
                                     ),
@@ -1702,7 +1810,8 @@ class _ParentHomeState extends State<_ParentHome> {
                           showTitles: true,
                           interval: 1,
                           getTitlesWidget: (value, meta) {
-                            if (value != value.toInt()) return const SizedBox.shrink();
+                            if (value != value.toInt())
+                              return const SizedBox.shrink();
                             final avgs = context
                                 .read<DashboardViewModel>()
                                 .subjectAverages;
@@ -2017,18 +2126,32 @@ class _ParentHomeState extends State<_ParentHome> {
 
   Widget _buildEventCard(BuildContext context, EventModel event, bool isDark,
       EventViewModel eventVM) {
-    final String statusColor = event.participationStatus == 'going'
+    final String statusColor = (event.participationStatus == 'oui' ||
+            event.participationStatus == 'going' ||
+            event.participationStatus == 'present' ||
+            event.participationStatus == 'yes')
         ? 'Confirmé'
-        : (event.participationStatus == 'not_going' ? 'Refusé' : 'En attente');
+        : ((event.participationStatus == 'non' ||
+                event.participationStatus == 'not_going' ||
+                event.participationStatus == 'absent' ||
+                event.participationStatus == 'no')
+            ? 'Refusé'
+            : 'En attente');
 
-    final statusColorIcon = event.participationStatus == 'going'
+    final statusColorIcon = (event.participationStatus == 'oui' ||
+            event.participationStatus == 'going' ||
+            event.participationStatus == 'present' ||
+            event.participationStatus == 'yes')
         ? Colors.greenAccent
-        : (event.participationStatus == 'not_going'
+        : ((event.participationStatus == 'non' ||
+                event.participationStatus == 'not_going' ||
+                event.participationStatus == 'absent' ||
+                event.participationStatus == 'no')
             ? Colors.redAccent
             : Colors.amberAccent);
 
     return GestureDetector(
-      // onTap: () => _showEventDetails(context, event, eventVM),
+      onTap: () => _showEventDetails(context, event, eventVM),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -2139,9 +2262,15 @@ class _ParentHomeState extends State<_ParentHome> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    event.participationStatus == 'going'
+                    (event.participationStatus == 'oui' ||
+                            event.participationStatus == 'going' ||
+                            event.participationStatus == 'present' ||
+                            event.participationStatus == 'yes')
                         ? Icons.check_rounded
-                        : (event.participationStatus == 'not_going'
+                        : ((event.participationStatus == 'non' ||
+                                event.participationStatus == 'not_going' ||
+                                event.participationStatus == 'absent' ||
+                                event.participationStatus == 'no')
                             ? Icons.close_rounded
                             : Icons.help_outline_rounded),
                     color: statusColorIcon,
@@ -2184,6 +2313,8 @@ class _ParentHomeState extends State<_ParentHome> {
         return StatefulBuilder(builder: (context, setModalState) {
           bool isSubmitting = false;
           String? currentResponse = event.participationStatus;
+          String? successMessage;
+          String? errorMessage;
 
           return BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -2419,25 +2550,41 @@ class _ParentHomeState extends State<_ParentHome> {
                                                   await eventVM.respondToEvent(
                                                       event.id, 'going');
                                               if (ok) {
-                                                currentResponse = 'going';
-                                                setModalState(
-                                                    () => isSubmitting = false);
+                                                setModalState(() {
+                                                  currentResponse = 'going';
+                                                  successMessage =
+                                                      ' ✓ Votre réponse a été enregistrée avec succès !';
+                                                  errorMessage = null;
+                                                });
+                                              } else {
+                                                setModalState(() {
+                                                  errorMessage =
+                                                      'Une erreur s’est produite lors de l’envoi de la réponse';
+                                                });
                                               }
+                                              setModalState(
+                                                  () => isSubmitting = false);
                                             },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: currentResponse ==
-                                                'going'
+                                        backgroundColor: (currentResponse ==
+                                                    'going' ||
+                                                currentResponse == 'oui' ||
+                                                currentResponse == 'present' ||
+                                                currentResponse == 'yes')
                                             ? Colors.green
                                             : (isDark
                                                 ? Colors.white10
                                                 : Colors.black
                                                     .withValues(alpha: 0.05)),
-                                        foregroundColor:
-                                            currentResponse == 'going'
+                                        foregroundColor: (currentResponse ==
+                                                    'going' ||
+                                                currentResponse == 'oui' ||
+                                                currentResponse == 'present' ||
+                                                currentResponse == 'yes')
+                                            ? Colors.white
+                                            : (isDark
                                                 ? Colors.white
-                                                : (isDark
-                                                    ? Colors.white
-                                                    : Colors.black),
+                                                : Colors.black),
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
@@ -2470,25 +2617,41 @@ class _ParentHomeState extends State<_ParentHome> {
                                                   await eventVM.respondToEvent(
                                                       event.id, 'not_going');
                                               if (ok) {
-                                                currentResponse = 'not_going';
-                                                setModalState(
-                                                    () => isSubmitting = false);
+                                                setModalState(() {
+                                                  currentResponse = 'not_going';
+                                                  successMessage =
+                                                      ' ✓ Votre réponse a été enregistrée avec succès !';
+                                                  errorMessage = null;
+                                                });
+                                              } else {
+                                                setModalState(() {
+                                                  errorMessage =
+                                                      'Une erreur s’est produite lors de l’envoi de la réponse';
+                                                });
                                               }
+                                              setModalState(
+                                                  () => isSubmitting = false);
                                             },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: currentResponse ==
-                                                'not_going'
+                                        backgroundColor: (currentResponse ==
+                                                    'not_going' ||
+                                                currentResponse == 'non' ||
+                                                currentResponse == 'absent' ||
+                                                currentResponse == 'no')
                                             ? Colors.redAccent
                                             : (isDark
                                                 ? Colors.white10
                                                 : Colors.black
                                                     .withValues(alpha: 0.05)),
-                                        foregroundColor:
-                                            currentResponse == 'not_going'
+                                        foregroundColor: (currentResponse ==
+                                                    'not_going' ||
+                                                currentResponse == 'non' ||
+                                                currentResponse == 'absent' ||
+                                                currentResponse == 'no')
+                                            ? Colors.white
+                                            : (isDark
                                                 ? Colors.white
-                                                : (isDark
-                                                    ? Colors.white
-                                                    : Colors.black),
+                                                : Colors.black),
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
@@ -2504,13 +2667,76 @@ class _ParentHomeState extends State<_ParentHome> {
                                   ),
                                 ],
                               ),
-                              if (currentResponse != null)
+                              if (errorMessage != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Colors.redAccent, width: 1),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.error_outline,
+                                            color: Colors.redAccent, size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            errorMessage!,
+                                            style: const TextStyle(
+                                                color: Colors.redAccent,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              if (successMessage != null &&
+                                  errorMessage == null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.green.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Colors.green, width: 1),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.check_circle_outline,
+                                            color: Colors.green, size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            successMessage!,
+                                            style: const TextStyle(
+                                                color: Colors.green,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              if (currentResponse != null &&
+                                  successMessage == null &&
+                                  errorMessage == null)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 12),
                                   child: Text(
-                                    "Réponse enregistrée : ${currentResponse == 'going' ? 'Présent' : 'Absent'}",
+                                    "Ton état: ${(currentResponse == 'going' || currentResponse == 'oui' || currentResponse == 'present' || currentResponse == 'yes') ? ' ✓ Présent' : ' ✗ Absence'}",
                                     style: const TextStyle(
-                                        color: Colors.green,
+                                        color: Colors.blueAccent,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12),
                                   ),
@@ -2639,7 +2865,7 @@ class _ActivityPlatinumTile extends StatelessWidget {
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
           bool isSubmitting = false;
-          
+
           return BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
@@ -2688,8 +2914,8 @@ class _ActivityPlatinumTile extends StatelessWidget {
                               Text(
                                 _getTypeLabel(type),
                                 style: TextStyle(
-                                    color: activity['color'] ??
-                                        Colors.blueAccent,
+                                    color:
+                                        activity['color'] ?? Colors.blueAccent,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 10,
                                     letterSpacing: 2),
@@ -2728,8 +2954,7 @@ class _ActivityPlatinumTile extends StatelessWidget {
                             isDarkMode,
                             Icons.location_on_rounded,
                             'Lieu',
-                            activity['location']?.toString() ??
-                                'Non spécifié',
+                            activity['location']?.toString() ?? 'Non spécifié',
                           ),
                           const SizedBox(height: 12),
                         ],
@@ -2888,9 +3113,10 @@ class _ActivityPlatinumTile extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: currentResponse == 'going' ||
+                  color: (currentResponse == 'oui' ||
+                          currentResponse == 'going' ||
                           currentResponse == 'yes' ||
-                          currentResponse == 'oui'
+                          currentResponse == 'present')
                       ? Colors.green.withValues(alpha: 0.1)
                       : Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -2900,29 +3126,33 @@ class _ActivityPlatinumTile extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        currentResponse == 'going' ||
+                        (currentResponse == 'oui' ||
+                                currentResponse == 'going' ||
                                 currentResponse == 'yes' ||
-                                currentResponse == 'oui'
+                                currentResponse == 'present')
                             ? Icons.check_circle_rounded
                             : Icons.cancel_rounded,
-                        color: currentResponse == 'going' ||
+                        color: (currentResponse == 'oui' ||
+                                currentResponse == 'going' ||
                                 currentResponse == 'yes' ||
-                                currentResponse == 'oui'
+                                currentResponse == 'present')
                             ? Colors.green
                             : Colors.red,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        currentResponse == 'going' ||
+                        (currentResponse == 'oui' ||
+                                currentResponse == 'going' ||
                                 currentResponse == 'yes' ||
-                                currentResponse == 'oui'
-                            ? "Vous participez ✓"
+                                currentResponse == 'present')
+                            ? " ✓ Vous participez"
                             : "Vous ne participez pas",
                         style: TextStyle(
-                          color: currentResponse == 'going' ||
+                          color: (currentResponse == 'oui' ||
+                                  currentResponse == 'going' ||
                                   currentResponse == 'yes' ||
-                                  currentResponse == 'oui'
+                                  currentResponse == 'present')
                               ? Colors.green
                               : Colors.red,
                           fontWeight: FontWeight.bold,
@@ -2943,7 +3173,6 @@ class _ActivityPlatinumTile extends StatelessWidget {
                       ? null
                       : () async {
                           setModalState(() => isSubmitting = true);
-                          // Get event ID from activity or use a generic one
                           final eventId = activity['event_id'] as String? ?? '';
                           if (eventId.isEmpty) {
                             setModalState(() => isSubmitting = false);
@@ -2960,20 +3189,37 @@ class _ActivityPlatinumTile extends StatelessWidget {
                           }
 
                           try {
-                            final eventVM =
-                                context.read<EventViewModel>();
-                            final success =
-                                await eventVM.respondToEvent(eventId, 'going');
+                            final dashVM = context.read<DashboardViewModel>();
+                            final isPost = activity['is_post'] == true;
+
+                            bool success;
+                            if (isPost) {
+                              // We need to pass a PostModel mock or just call the API directly through DashboardViewModel
+                              // But wait, submitParticipation takes `dynamic item`. We can just create a dummy PostModel:
+                              final dummyPost = PostModel(
+                                id: eventId,
+                                authorName: "",
+                                authorRole: "",
+                                content: "",
+                                date: "",
+                              );
+                              success = await dashVM.submitParticipation(
+                                  dummyPost, 'oui');
+                            } else {
+                              final eventVM = context.read<EventViewModel>();
+                              success =
+                                  await eventVM.respondToEvent(eventId, 'oui');
+                            }
 
                             if (success && context.mounted) {
                               setModalState(() {
                                 isSubmitting = false;
-                                currentResponse = 'going';
+                                currentResponse = 'oui';
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                      'Votre réponse a été enregistrée !'),
+                                  content:
+                                      Text('Votre réponse a été enregistrée !'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
@@ -3002,16 +3248,18 @@ class _ActivityPlatinumTile extends StatelessWidget {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: currentResponse == 'going' ||
+                    backgroundColor: (currentResponse == 'oui' ||
+                            currentResponse == 'going' ||
                             currentResponse == 'yes' ||
-                            currentResponse == 'oui'
+                            currentResponse == 'present')
                         ? Colors.green
                         : (isDarkMode
                             ? Colors.white10
                             : Colors.black.withValues(alpha: 0.05)),
-                    foregroundColor: currentResponse == 'going' ||
+                    foregroundColor: (currentResponse == 'oui' ||
+                            currentResponse == 'going' ||
                             currentResponse == 'yes' ||
-                            currentResponse == 'oui'
+                            currentResponse == 'present')
                         ? Colors.white
                         : (isDarkMode ? Colors.white : Colors.black),
                     elevation: 0,
@@ -3019,7 +3267,9 @@ class _ActivityPlatinumTile extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: isSubmitting && currentResponse != 'going'
+                  child: isSubmitting &&
+                          (currentResponse != 'oui' &&
+                              currentResponse != 'going')
                       ? const SizedBox(
                           height: 18,
                           width: 18,
@@ -3057,20 +3307,35 @@ class _ActivityPlatinumTile extends StatelessWidget {
                           }
 
                           try {
-                            final eventVM =
-                                context.read<EventViewModel>();
-                            final success =
-                                await eventVM.respondToEvent(eventId, 'not_going');
+                            final dashVM = context.read<DashboardViewModel>();
+                            final isPost = activity['is_post'] == true;
+
+                            bool success;
+                            if (isPost) {
+                              final dummyPost = PostModel(
+                                id: eventId,
+                                authorName: "",
+                                authorRole: "",
+                                content: "",
+                                date: "",
+                              );
+                              success = await dashVM.submitParticipation(
+                                  dummyPost, 'non');
+                            } else {
+                              final eventVM = context.read<EventViewModel>();
+                              success =
+                                  await eventVM.respondToEvent(eventId, 'non');
+                            }
 
                             if (success && context.mounted) {
                               setModalState(() {
                                 isSubmitting = false;
-                                currentResponse = 'not_going';
+                                currentResponse = 'non';
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                      'Votre réponse a été enregistrée !'),
+                                  content:
+                                      Text('Votre réponse a été enregistrée !'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
@@ -3099,16 +3364,18 @@ class _ActivityPlatinumTile extends StatelessWidget {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: currentResponse == 'not_going' ||
+                    backgroundColor: (currentResponse == 'non' ||
+                            currentResponse == 'not_going' ||
                             currentResponse == 'no' ||
-                            currentResponse == 'non'
+                            currentResponse == 'absent')
                         ? Colors.redAccent
                         : (isDarkMode
                             ? Colors.white10
                             : Colors.black.withValues(alpha: 0.05)),
-                    foregroundColor: currentResponse == 'not_going' ||
+                    foregroundColor: (currentResponse == 'non' ||
+                            currentResponse == 'not_going' ||
                             currentResponse == 'no' ||
-                            currentResponse == 'non'
+                            currentResponse == 'absent')
                         ? Colors.white
                         : (isDarkMode ? Colors.white : Colors.black),
                     elevation: 0,
@@ -3116,7 +3383,9 @@ class _ActivityPlatinumTile extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: isSubmitting && currentResponse != 'not_going'
+                  child: isSubmitting &&
+                          (currentResponse != 'non' &&
+                              currentResponse != 'not_going')
                       ? const SizedBox(
                           height: 18,
                           width: 18,
@@ -3218,7 +3487,8 @@ class _ActivityPlatinumTile extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.3),
                   ),
-                  if ((activity['content'] as String?)?.isNotEmpty ?? false) ...[
+                  if ((activity['content'] as String?)?.isNotEmpty ??
+                      false) ...[
                     const SizedBox(height: 4),
                     Text(
                       activity['content']?.toString() ?? '',

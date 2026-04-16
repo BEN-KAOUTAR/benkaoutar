@@ -1573,9 +1573,10 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                   final currentDayDate = DateTime(realYear, realMonth, dayNum);
                   final attendance = vm.getAttendanceForDate(currentDayDate);
 
-                  final isAbsent = attendance?.status == 'absent';
-                  final isLate = attendance?.status == 'late';
-                  final isPresent = attendance?.status == 'present';
+                  final statusStr = attendance?.status.toLowerCase() ?? '';
+                  final isAbsent = statusStr == 'absent';
+                  final isLate = statusStr == 'late' || statusStr == 'retard';
+                  final isPresent = statusStr == 'present';
                   final isToday = dayNum == DateTime.now().day &&
                       realMonth == DateTime.now().month &&
                       realYear == DateTime.now().year;
@@ -1754,12 +1755,13 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
               Color color;
 
+              final statusStr = a.status.toLowerCase();
               if (a.isJustified) {
                 color = const Color(0xFF8B5CF6); // Violet for justified absence
-              } else if (a.status == 'absent') {
+              } else if (statusStr == 'absent') {
                 color = Colors.redAccent;
-              } else if (a.status == 'late') {
-                color = const Color(0xFFFBBF24); // Amber for late
+              } else if (statusStr == 'late' || statusStr == 'retard') {
+                color = const Color(0xFFFBBF24); // Amber for late/retard
               } else {
                 color = const Color(0xFF10B981); // Teal for presence
               }
@@ -1839,6 +1841,33 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                           'Autre'
                         ];
                         final isJustified = a.isJustified;
+                        final statusStr = a.status.toLowerCase();
+                        final isPresent = statusStr == 'present';
+                        final isLate = statusStr == 'late' || statusStr == 'retard';
+                        final isAbsent = statusStr == 'absent';
+
+                        // Color & icon for header
+                        final headerColor = isPresent
+                            ? const Color(0xFF10B981)
+                            : isLate
+                                ? const Color(0xFFFBBF24)
+                                : isJustified
+                                    ? const Color(0xFF8B5CF6)
+                                    : Colors.redAccent;
+                        final headerIcon = isPresent
+                            ? Icons.check_circle_rounded
+                            : isLate
+                                ? Icons.watch_later_rounded
+                                : isJustified
+                                    ? Icons.verified_rounded
+                                    : Icons.cancel_rounded;
+                        final headerLabel = isPresent
+                            ? 'PRÉSENCE'
+                            : isLate
+                                ? 'RETARD'
+                                : isJustified
+                                    ? AppLocalizations.of(context)!.translate('absence_justifiee').toUpperCase()
+                                    : AppLocalizations.of(context)!.translate('unjustified').toUpperCase();
 
                         return Container(
                           padding: EdgeInsets.only(
@@ -1874,19 +1903,12 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: (isJustified
-                                                ? const Color(0xFF8B5CF6)
-                                                : Colors.redAccent)
-                                            .withValues(alpha: 0.1),
+                                        color: headerColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       child: Icon(
-                                        isJustified
-                                            ? Icons.verified_rounded
-                                            : Icons.cancel_rounded,
-                                        color: isJustified
-                                            ? const Color(0xFF8B5CF6)
-                                            : Colors.redAccent,
+                                        headerIcon,
+                                        color: headerColor,
                                         size: 28,
                                       ),
                                     ),
@@ -1900,28 +1922,14 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 10, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: (isJustified
-                                                      ? const Color(0xFF8B5CF6)
-                                                      : Colors.redAccent)
-                                                  .withValues(alpha: 0.1),
+                                              color: headerColor.withValues(alpha: 0.1),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              (isJustified
-                                                      ? AppLocalizations.of(
-                                                              context)!
-                                                          .translate(
-                                                              'absence_justifiee')
-                                                      : AppLocalizations.of(
-                                                              context)!
-                                                          .translate(
-                                                              'unjustified'))
-                                                  .toUpperCase(),
+                                              headerLabel,
                                               style: TextStyle(
-                                                  color: isJustified
-                                                      ? const Color(0xFF8B5CF6)
-                                                      : Colors.redAccent,
+                                                  color: headerColor,
                                                   fontWeight: FontWeight.w900,
                                                   fontSize: 10,
                                                   letterSpacing: 0.8),
@@ -1958,7 +1966,31 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
 
                                 const SizedBox(height: 48),
 
-                                if (!isEditing) ...[
+                                // Only show justification section for absences
+                                if (!isAbsent) ...[
+                                  // For presence/late: just a close button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 56,
+                                    child: ElevatedButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: headerColor.withValues(alpha: 0.12),
+                                        foregroundColor: headerColor,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20)),
+                                      ),
+                                      child: Text(
+                                        'Fermer',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 16,
+                                            color: headerColor),
+                                      ),
+                                    ),
+                                  ),
+                                ] else if (!isEditing) ...[
                                   // View Mode (Details of existing justification)
                                   Text("Motif de l'absence",
                                       style: TextStyle(

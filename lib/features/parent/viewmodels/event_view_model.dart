@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/api_service.dart';
 
@@ -17,6 +18,9 @@ class EventViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoadingDetails => _isLoadingDetails;
   String? get errorMessage => _errorMessage;
+
+  // Cache for participation statuses loaded from SharedPreferences
+  Map<String, String?> _cachedParticipationStatuses = {};
 
   // Real-time polling
   Timer? _pollingTimer;
@@ -40,6 +44,35 @@ class EventViewModel extends ChangeNotifier {
     super.dispose();
   }
 
+  /// Initialize EventViewModel - load cached participation statuses
+  Future<void> init() async {
+    await _loadCachedParticipationStatuses();
+    await fetchEvents();
+  }
+
+  /// Load all participation statuses from SharedPreferences into cache
+  Future<void> _loadCachedParticipationStatuses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys();
+      _cachedParticipationStatuses.clear();
+
+      for (final key in keys) {
+        if (key.startsWith('event_participation_')) {
+          final eventId = key.replaceFirst('event_participation_', '');
+          final status = prefs.getString(key);
+          if (status != null) {
+            _cachedParticipationStatuses[eventId] = status;
+            debugPrint('Loaded participation status for $eventId: $status');
+          }
+        }
+      }
+      debugPrint('Loaded ${_cachedParticipationStatuses.length} participation statuses from SharedPreferences');
+    } catch (e) {
+      debugPrint('Error loading cached participation statuses: $e');
+    }
+  }
+
   Future<void> refreshSilent() async {
     if (_isRefreshing) return;
     _isRefreshing = true;
@@ -59,7 +92,24 @@ class EventViewModel extends ChangeNotifier {
     }
 
     try {
-      _events = await _apiService.getEvents();
+      final freshEvents = await _apiService.getEvents();
+
+      // Preserve known RSVP status from local state if the server doesn't return one.
+      // This prevents the 1-second polling from erasing the user's confirmed response.
+      final Map<String, String?> knownStatuses = {
+        for (final e in _events) e.id: e.participationStatus
+      };
+
+      // Add cached participation statuses from SharedPreferences
+      knownStatuses.addAll(_cachedParticipationStatuses);
+
+      _events = freshEvents.map((e) {
+        final localStatus = knownStatuses[e.id];
+        if (e.participationStatus == null && localStatus != null) {
+          return e.copyWith(participationStatus: localStatus);
+        }
+        return e;
+      }).toList();
     } catch (e) {
       if (!silent) _errorMessage = _apiService.getLocalizedErrorMessage(e);
       debugPrint('Error fetching events: $e');
@@ -104,24 +154,42 @@ class EventViewModel extends ChangeNotifier {
   // Respond to event (RSVP)
   Future<bool> respondToEvent(String eventId, String status) async {
     try {
-      final updatedEvent = await _apiService.respondToEventNew(eventId, status);
+      // Ensure we send standardized values to API
+      final String standardizedStatus =
+          (status.toLowerCase() == 'going' || status.toLowerCase() == 'oui' || status.toLowerCase() == 'yes')
+              ? 'going'
+              : 'not_going';
 
-      if (updatedEvent != null) {
+      final success =
+          await _apiService.respondToEvent(eventId, standardizedStatus);
+
+      if (success) {
+        // Save participation status to local storage for persistence
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('event_participation_$eventId', standardizedStatus);
+          // Also update cache
+          _cachedParticipationStatuses[eventId] = standardizedStatus;
+          debugPrint('Saved participation status for $eventId: $standardizedStatus');
+        } catch (e) {
+          debugPrint('Error saving participation status: $e');
+        }
+
         // Update local event with the updated data from API
         final index = _events.indexWhere((e) => e.id == eventId);
         if (index != -1) {
-          _events[index] = updatedEvent;
+          _events[index] = _events[index].copyWith(participationStatus: standardizedStatus);
           notifyListeners();
         }
 
         // Update selected event if it's the same
         if (_selectedEvent?.id == eventId) {
-          _selectedEvent = updatedEvent;
+          _selectedEvent = _selectedEvent!.copyWith(participationStatus: standardizedStatus);
           notifyListeners();
         }
       }
 
-      return updatedEvent != null;
+      return success;
     } catch (e) {
       _errorMessage = _apiService.getLocalizedErrorMessage(e);
       debugPrint('Error responding to event: $e');

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
-
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 
 class AppState extends ChangeNotifier {
   AppState() {
-    _loadSettings();
+    _initializeApp();
   }
 
   UserModel? _currentUser;
@@ -14,6 +14,12 @@ class AppState extends ChangeNotifier {
   int _selectedChildIndex = 0;
   Locale _locale = const Locale('fr');
   bool _isOffline = false;
+
+  /// Initialize app settings and auth service
+  Future<void> _initializeApp() async {
+    await AuthService.instance.init();
+    await _loadSettings();
+  }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -75,15 +81,40 @@ class AppState extends ChangeNotifier {
   bool get isParent => _currentUser?.role == UserRole.parent;
   bool get isTeacher => _currentUser?.role == UserRole.teacher;
 
+  /// Restore user session from persistent storage on app startup
+  /// Returns true if session was successfully restored, false otherwise
+  Future<bool> restoreSessionFromStorage() async {
+    try {
+      final session = await AuthService.instance.restoreSession();
+      if (session != null) {
+        _currentUser = session.user;
+        ApiService.instance.setToken(session.token);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      // If restoration fails, clear any corrupted data
+      await AuthService.instance.clearSession();
+      return false;
+    }
+  }
+
   Future<void> login(String email, String password) async {
     try {
       final authData = await ApiService.instance.login(email, password);
       if (authData['user'] != null) {
         _currentUser = UserModel.fromJson(authData['user']);
-
-        final prefs = await SharedPreferences.getInstance();
         final token = authData['token'] ?? authData['access_token'];
-        await prefs.setString('auth_token', token);
+
+        // Save session persistently
+        await AuthService.instance.saveSession(
+          token: token,
+          user: _currentUser!,
+        );
+
+        // Set token in API service
+        ApiService.instance.setToken(token);
 
         notifyListeners();
       } else {
@@ -94,14 +125,15 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void logout() async {
+  Future<void> logout() async {
     _currentUser = null;
     _dashboardIndex = 0;
 
-    ApiService.instance.clearToken();
+    // Clear session from storage
+    await AuthService.instance.clearSession();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
+    // Clear API token
+    ApiService.instance.clearToken();
 
     notifyListeners();
   }
