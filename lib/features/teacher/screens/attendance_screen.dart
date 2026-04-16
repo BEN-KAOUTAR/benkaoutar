@@ -46,45 +46,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     });
   }
 
-  String _getDayKey(DateTime date) {
-    final lang = AppLocalizations.of(context)?.locale.languageCode ?? 'fr';
-
-    if (lang == 'ar') {
-      final days = [
-        'الاثنين',
-        'الثلاثاء',
-        'الأربعاء',
-        'الخميس',
-        'الجمعة',
-        'السبت',
-        'الأحد'
-      ];
-      return days[date.weekday - 1];
-    } else if (lang == 'en') {
-      final days = [
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-        'Sunday'
-      ];
-      return days[date.weekday - 1];
-    } else {
-      final days = [
-        'Lundi',
-        'Mardi',
-        'Mercredi',
-        'Jeudi',
-        'Vendredi',
-        'Samedi',
-        'Dimanche'
-      ];
-      return days[date.weekday - 1];
-    }
-  }
-
   void _initStatus() {
     _studentStatus.clear();
     for (var cls in _todaysClasses) {
@@ -278,7 +239,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           _loadSchedule();
                         },
                         itemBuilder: (BuildContext context) {
-                          String dayKey = _getDayKey(_selectedDate);
                           final daySessions = [];
                           return daySessions.map((session) {
                             return PopupMenuItem<String>(

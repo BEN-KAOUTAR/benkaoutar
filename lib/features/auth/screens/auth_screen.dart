@@ -8,6 +8,7 @@ import '../../parent/screens/parent_dashboard.dart';
 import '../../teacher/screens/teacher_dashboard.dart';
 
 enum AuthView { welcome, login }
+enum PortalType { parent, teacher }
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -18,6 +19,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   AuthView _currentView = AuthView.welcome;
+  PortalType? _selectedPortal;
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -59,8 +61,15 @@ class _AuthScreenState extends State<AuthScreen> {
                     children: [
                       if (_currentView == AuthView.login)
                         GestureDetector(
-                          onTap: () =>
-                              setState(() => _currentView = AuthView.welcome),
+                          onTap: () {
+                            setState(() {
+                              _currentView = AuthView.welcome;
+                              _selectedPortal = null;
+                              _emailController.clear();
+                              _passwordController.clear();
+                              _errorMessage = null;
+                            });
+                          },
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
@@ -157,6 +166,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 Icons.person_pin_rounded,
                 Colors.blueAccent, () {
               setState(() {
+                _selectedPortal = PortalType.parent;
                 _currentView = AuthView.login;
               });
             }),
@@ -168,6 +178,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 Icons.school_rounded,
                 Colors.purpleAccent, () {
               setState(() {
+                _selectedPortal = PortalType.teacher;
                 _currentView = AuthView.login;
               });
             }),
@@ -369,12 +380,34 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (!_formKey.currentState!.validate()) return;
 
+    // Validate portal selection
+    if (_selectedPortal == null) {
+      setState(() => _errorMessage = 'Veuillez sélectionner un portail');
+      return;
+    }
+
     setState(() => _isLoading = true);
     final appState = Provider.of<AppState>(context, listen: false);
 
     try {
       await appState.login(_emailController.text, _passwordController.text);
       if (!mounted) return;
+
+      // ✅ CRITICAL: Validate that login credentials match the selected portal
+      final isLoginParent = appState.isParent;
+      final selectedParent = _selectedPortal == PortalType.parent;
+
+      if (isLoginParent != selectedParent) {
+        // ❌ Role mismatch - reject login and show error
+        await appState.logout();
+        setState(() {
+          _isLoading = false;
+          _errorMessage = selectedParent
+              ? 'Identifiants invalides pour l\'espace parent. Veuillez utiliser les identifiants d\'un parent.'
+              : 'Identifiants invalides pour l\'espace professeur. Veuillez utiliser les identifiants d\'un professeur.';
+        });
+        return;
+      }
 
       if (appState.isParent) {
         Navigator.pushAndRemoveUntil(

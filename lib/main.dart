@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/app_state.dart';
 import 'features/auth/screens/auth_gate.dart';
@@ -7,7 +8,8 @@ import 'features/parent/viewmodels/feed_view_model.dart';
 import 'features/parent/viewmodels/suivi_view_model.dart';
 import 'features/parent/viewmodels/homework_view_model.dart';
 import 'features/parent/viewmodels/payment_view_model.dart';
-import 'features/parent/viewmodels/chat_view_model.dart';
+import 'features/chat/viewmodels/chat_view_model.dart';
+import 'features/chat/chat_api_service.dart';
 import 'features/parent/viewmodels/location_view_model.dart';
 import 'features/parent/viewmodels/event_view_model.dart';
 import 'features/common/viewmodels/notification_view_model.dart';
@@ -35,7 +37,12 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SuiviViewModel()),
         ChangeNotifierProvider(create: (_) => HomeworkViewModel()),
         ChangeNotifierProvider(create: (_) => PaymentViewModel()),
-        ChangeNotifierProvider(create: (_) => ChatViewModel()),
+        ChangeNotifierProvider<ChatViewModel>(create: (_) {
+          final dio = Dio(BaseOptions(
+            baseUrl: 'https://api-demo.intranet.ikenas.com',
+          ));
+          return ChatViewModel(ChatApiService(dio));
+        }),
         ChangeNotifierProvider(create: (_) => LocationViewModel()),
         ChangeNotifierProvider(create: (_) => EventViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
@@ -84,6 +91,8 @@ class IkenasApp extends StatelessWidget {
           child: child!,
         );
       },
+      // Production: Use AuthGate for proper authentication flow
+      // Testing: Change to ChatConversationsScreen() to test chat feature
       home: const AuthGate(),
     );
   }

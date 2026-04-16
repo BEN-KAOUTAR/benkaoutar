@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../core/widgets/deep_space_background.dart';
-import '../../../core/localization/app_localizations.dart';
 
 class AttendanceDetailScreen extends StatefulWidget {
   final Map<String, dynamic> sessionData;
@@ -44,7 +43,6 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final pt = isDark ? Colors.white : const Color(0xFF0F172A);
-    final loc = AppLocalizations.of(context)!;
     final students = <dynamic>[];
 
     return Scaffold(

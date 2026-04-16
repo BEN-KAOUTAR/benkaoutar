@@ -201,7 +201,7 @@ class _FeedScreenState extends State<FeedScreen> {
                           padding: const EdgeInsets.fromLTRB(28, 24, 28, 100),
                           itemCount: currentPost.commentsList.length,
                           itemBuilder: (context, index) {
-                            final comment = currentPost.commentsList[index];
+                            final comment = currentPost.commentsList.reversed.toList()[index];
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 24),
                               child: Row(

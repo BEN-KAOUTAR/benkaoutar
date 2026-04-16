@@ -32,6 +32,16 @@ class ApiService {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
+  String? get token {
+    final authHeader = _dio.options.headers['Authorization'];
+    if (authHeader is String && authHeader.startsWith('Bearer ')) {
+      return authHeader.substring(7);
+    }
+    return null;
+  }
+
+  String get baseUrl => _dio.options.baseUrl;
+
   // Helper to extract list data from various API response shapes:
   // { data: [...] }, { result: [...] }, { list: [...] }, { items: [...] },
   // { attendances: [...] }, { grades: [...] }, { records: [...] }, or plain [...]

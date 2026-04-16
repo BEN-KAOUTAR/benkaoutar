@@ -27,7 +27,7 @@ class GradesHistoryScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          loc.translate('grades_history_title') ?? 'Historique des Saisies',
+          loc.translate('grades_history_title'),
           style:
               TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
         ),

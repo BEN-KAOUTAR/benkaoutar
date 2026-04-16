@@ -18,7 +18,6 @@ class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final loc = AppLocalizations.of(context)!;

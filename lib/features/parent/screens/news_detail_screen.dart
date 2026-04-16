@@ -61,16 +61,6 @@ class NewsDetailScreen extends StatelessWidget {
                               color: secondaryTextColor,
                               fontSize: 12,
                               fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 24),
-                      Icon(Icons.timer_outlined,
-                          color: secondaryTextColor, size: 14),
-                      const SizedBox(width: 6),
-                      Text(
-                          '5 ${AppLocalizations.of(context)!.translate('read_time')}',
-                          style: TextStyle(
-                              color: secondaryTextColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -84,19 +74,6 @@ class NewsDetailScreen extends StatelessWidget {
                         fontWeight: FontWeight.w500),
                   ),
                   _buildActionRow(context, likes, commentsCount),
-                  const SizedBox(height: 48),
-                  Text(
-                      AppLocalizations.of(context)!
-                          .translate('gallery_photos_upper'),
-                      style: TextStyle(
-                          color: isDark ? Colors.white38 : Colors.black38,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5)),
-                  const SizedBox(height: 20),
-                  _buildPhotoGallery(),
-                  const SizedBox(height: 48),
-                  _buildQuoteSection(context),
                   const SizedBox(height: 16),
                   Divider(
                       height: 48,
@@ -243,95 +220,7 @@ class NewsDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPhotoGallery() {
-    return SizedBox(
-      height: 180,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _buildGalleryImage(
-              'https://images.unsplash.com/photo-1564066394514-821079bc0863?auto=format&fit=crop&q=80'),
-          _buildGalleryImage(
-              'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80'),
-          _buildGalleryImage(
-              'https://images.unsplash.com/photo-1544621591-4e7892af2f6e?auto=format&fit=crop&q=80'),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildGalleryImage(String url) {
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: CachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: Colors.white.withValues(alpha: 0.1),
-            child: const Center(
-                child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))),
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: Colors.white.withValues(alpha: 0.1),
-            child:
-                const Icon(Icons.broken_image_rounded, color: Colors.white24),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuoteSection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.indigoAccent.withValues(alpha: 0.05)
-            : const Color(0xFFEEF2FF),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.indigoAccent.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.format_quote_rounded,
-              color: isDark ? Colors.indigoAccent : const Color(0xFF4338CA),
-              size: 40),
-          const SizedBox(height: 16),
-          Text(
-            '« Voir l\'étincelle de curiosité dans les yeux de nos enfants est la plus belle récompense pour toute l\'équipe pédagogique. »',
-            style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF4338CA),
-                fontSize: 16,
-                height: 1.6,
-                fontWeight: FontWeight.w900,
-                fontStyle: FontStyle.italic),
-          ),
-          const SizedBox(height: 24),
-          Text('— Mme. Dubois, Directrice',
-              style: TextStyle(
-                  color: isDark ? Colors.indigoAccent : const Color(0xFF6366F1),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13)),
-        ],
-      ),
-    );
-  }
 
   Widget _buildCommentsSection(BuildContext context, String count) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

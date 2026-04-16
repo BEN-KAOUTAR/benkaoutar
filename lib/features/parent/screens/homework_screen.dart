@@ -652,8 +652,7 @@ class _HomeworkListItem extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                     AppLocalizations.of(context)!
-                                            .translate('view_attachment') ??
-                                        'Ouvrir la pièce jointe',
+                                        .translate('view_attachment'),
                                     style: const TextStyle(
                                         color: Colors.blueAccent,
                                         fontWeight: FontWeight.bold,
@@ -845,8 +844,7 @@ class _HomeworkListItem extends StatelessWidget {
                           if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(
-                                  loc.translate('homework_sent_success') ??
-                                      'Devoir envoyé avec succès',
+                                  loc.translate('homework_sent_success'),
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold)),
                               backgroundColor: Colors.greenAccent.shade700,
@@ -886,8 +884,7 @@ class _HomeworkListItem extends StatelessWidget {
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2))
                       : Text(
-                          loc.translate('send_finish_button') ??
-                              'Envoyer et terminer',
+                          loc.translate('send_finish_button'),
                           style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,

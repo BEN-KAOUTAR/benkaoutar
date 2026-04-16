@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -24,12 +25,20 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatViewModel>().fetchThreads();
+      final chatVM = context.read<ChatViewModel>();
+      // Initialize WebSocket for real-time chat
+      chatVM.initializeWebSocket();
+      // Fallback to polling if WebSocket is not enabled
+      if (!chatVM.isWebSocketConnected) {
+        chatVM.startPolling();
+      }
+      chatVM.fetchThreads();
     });
   }
 
   @override
   void dispose() {
+    context.read<ChatViewModel>().stopPolling();
     _searchController.dispose();
     super.dispose();
   }
@@ -514,7 +523,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isWriting = false;
-  final bool _isRecording = false;
+  Timer? _messagePollingTimer;
 
   @override
   void initState() {
@@ -523,15 +532,36 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       final isWriting = _controller.text.trim().isNotEmpty;
       if (isWriting != _isWriting) {
         setState(() => _isWriting = isWriting);
+        // Send typing indicator if WebSocket is connected
+        if (isWriting) {
+          context.read<ChatViewModel>().sendTypingIndicator(widget.thread.id);
+        } else {
+          context.read<ChatViewModel>().stopTypingIndicator(widget.thread.id);
+        }
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatViewModel>().fetchMessages(widget.thread.id);
+      final vm = context.read<ChatViewModel>();
+      vm.fetchMessages(widget.thread.id);
+      // Only start polling if WebSocket is not connected
+      if (!vm.isWebSocketConnected) {
+        _startMessagePolling();
+      }
     });
+  }
+
+  void _startMessagePolling() {
+    _messagePollingTimer?.cancel();
+    _messagePollingTimer = Timer.periodic(
+        const Duration(seconds: 2),
+        (_) => context
+            .read<ChatViewModel>()
+            .fetchMessages(widget.thread.id, silent: true));
   }
 
   @override
   void dispose() {
+    _messagePollingTimer?.cancel();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();

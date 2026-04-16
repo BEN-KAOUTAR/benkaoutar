@@ -29,7 +29,7 @@ class DashboardViewModel extends ChangeNotifier {
   int get currentEventIndex => _currentEventIndex;
 
   // Cache for participation statuses loaded from SharedPreferences
-  Map<String, String?> _cachedParticipationStatuses = {};
+  final Map<String, String?> _cachedParticipationStatuses = {};
 
   // Real-time polling
   Timer? _pollingTimer;

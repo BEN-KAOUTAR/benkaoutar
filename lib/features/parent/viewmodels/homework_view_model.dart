@@ -96,8 +96,9 @@ class HomeworkViewModel extends ChangeNotifier {
     } finally {
       if (!silent) {
         _isLoading = false;
-        notifyListeners();
       }
+      // Always notify listeners so UI updates reflect data changes
+      notifyListeners();
     }
   }
 

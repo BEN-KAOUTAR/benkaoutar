@@ -282,7 +282,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final loc = AppLocalizations.of(context)!;
     switch (filter) {
       case 'all':
-        return loc.translate('all_filter') ?? 'Tout';
+        return loc.translate('all_filter');
       case 'exams':
         return "Examens";
       case 'devoirs':
@@ -290,9 +290,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'evenements':
         return "Événements";
       case 'payment':
-        return loc.translate('payments_nav') ?? 'Paiements';
+        return loc.translate('payments_nav');
       case 'message':
-        return loc.translate('messages') ?? 'Messages';
+        return loc.translate('messages');
       default:
         return filter;
     }

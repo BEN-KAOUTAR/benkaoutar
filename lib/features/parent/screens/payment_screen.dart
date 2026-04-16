@@ -190,16 +190,6 @@ class _PaymentScreenState extends State<PaymentScreen>
   Widget _buildMonthCard(
       MonthPaymentGroup group, int index, bool isDark, PaymentViewModel vm) {
     final loc = AppLocalizations.of(context)!;
-    final overallStatus = group.overallStatus;
-    bool isFirstPending = false;
-    final pendingGroups = vm.monthGroups
-        .where((g) => g.overallStatus == PaymentStatus.pending)
-        .toList();
-    if (overallStatus == PaymentStatus.pending &&
-        pendingGroups.isNotEmpty &&
-        pendingGroups.first.month == group.month) {
-      isFirstPending = true;
-    }
 
     // Logic for identifying specifically the color theme
     final isCurrentMonth = group.month.toLowerCase() == vm.currentMonthName;

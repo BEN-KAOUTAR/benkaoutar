@@ -26,8 +26,7 @@ class AttendanceHistoryScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          loc.translate('attendance_history_title') ??
-              'Historique des Présences',
+          loc.translate('attendance_history_title'),
           style:
               TextStyle(color: pt, fontWeight: FontWeight.w900, fontSize: 18),
         ),
@@ -52,8 +51,6 @@ class AttendanceHistoryScreen extends StatelessWidget {
 
   Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item,
       int index, bool isDark, Color pt) {
-    final secondaryTextColor = isDark ? Colors.white38 : Colors.black38;
-
     return GestureDetector(
       onTap: () {
         Navigator.push(
