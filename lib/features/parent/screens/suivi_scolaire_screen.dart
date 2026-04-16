@@ -384,6 +384,72 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
                           ),
                           const SizedBox(height: 6),
                           // Stats row
+                          Row(
+                            children: [
+                              Icon(Icons.military_tech_rounded,
+                                  size: 14,
+                                  color: color.withValues(alpha: 0.6)),
+                              const SizedBox(width: 4),
+                              Builder(builder: (ctx) {
+                                final rank = vm.getSubjectRank(subjectId);
+                                final classSize =
+                                    vm.getSubjectClassSize(subjectId);
+                                String label = rank != null
+                                    ? (classSize != null
+                                        ? '$rank/$classSize'
+                                        : '$rank')
+                                    : '--';
+                                return Text('Classement: $label',
+                                    style: TextStyle(
+                                        color: primaryTextColor.withValues(
+                                            alpha: 0.45),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.2));
+                              }),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // Premium History Link
+                          InkWell(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                isScrollControlled: true,
+                                builder: (context) =>
+                                    _buildAcademicHistorySheet(
+                                        context, isDark, subjectId, color, vm),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('academic_history')
+                                        .toUpperCase(),
+                                    style: TextStyle(
+                                        color: color,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.8),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.arrow_forward_ios_rounded,
+                                      size: 8, color: color),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -434,6 +500,107 @@ class _SuiviScolaireScreenState extends State<SuiviScolaireScreen> {
       },
     );
   }
+
+  Widget _buildAcademicHistorySheet(BuildContext context, bool isDark,
+      String subjectId, Color color, SuiviViewModel vm) {
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final secondaryTextColor = isDark ? Colors.white54 : Colors.black54;
+
+    // Filter history for exact subject if available
+    final history = vm.groupedGrades[subjectId] ?? [];
+
+    return Container(
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+      ),
+      padding: const EdgeInsets.fromLTRB(32, 20, 32, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 48,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black12,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle),
+                child: Icon(Icons.history_rounded, color: color, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        AppLocalizations.of(context)!
+                            .translate('academic_history'),
+                        style: TextStyle(
+                            color: secondaryTextColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5)),
+                    const SizedBox(height: 4),
+                    Text(AppLocalizations.of(context)!.translate(subjectId),
+                        style: TextStyle(
+                            color: primaryTextColor,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5)),
+                  ],
+                ),
+              ),
+              IconButton(
+                padding: EdgeInsets.zero,
+                icon: Icon(Icons.close_rounded, color: secondaryTextColor),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          if (history.isEmpty)
+            Center(
+                child: Text(
+                    AppLocalizations.of(context)!.translate('no_history'),
+                    style: TextStyle(color: secondaryTextColor)))
+          else
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                itemCount: history.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final h = history[index];
+                  return _HistoryRowItem(
+                    h: h,
+                    isDark: isDark,
+                    themeColor: color,
+                  );
+                },
+              ),
+            ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
 
 
 
