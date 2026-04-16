@@ -9,7 +9,6 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/models/models.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/feed_view_model.dart';
-import 'news_detail_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -800,20 +799,7 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           ),
 
-          GestureDetector(
-            onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => NewsDetailScreen(news: {
-                          'title': post.authorName,
-                          'content': post.content,
-                          'image': post.imageUrl,
-                          'time': _formatPostDate(post.date),
-                          'likes': post.likes,
-                          'comments_count': post.comments,
-                          'category': 'Actualité',
-                        }))),
-            child: Column(
+          Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
@@ -877,7 +863,6 @@ class _FeedScreenState extends State<FeedScreen> {
                 ],
               ],
             ),
-          ),
 
           // Interaction Stats Row
           Padding(
