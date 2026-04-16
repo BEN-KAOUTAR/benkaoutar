@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'chat_service.dart';
-import 'chat_api_service.dart';
-import 'package:dio/dio.dart';
-import '../../core/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'viewmodels/chat_view_model.dart';
 import 'models/chat_message_model.dart';
 import 'screens/chat_search_screen.dart';
 
@@ -21,288 +19,187 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  ChatService? _chatService;
-  ChatApiService? _apiService;
   final TextEditingController _controller = TextEditingController();
-  final List<ChatMessage> _messages = [];
-  bool _loading = true;
-  String? _userId;
-  String? _userName;
-  bool _isConnected = false;
-  
-  // Use threadId from widget or default to 'general'
   late String _threadId;
 
   @override
   void initState() {
     super.initState();
     _threadId = widget.threadId ?? 'general';
-    _initChat();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadThread();
+    });
   }
 
-  Future<void> _initChat() async {
-    try {
-      // Ensure AuthService is initialized
-      await AuthService.instance.init();
-      final token = AuthService.instance.getStoredToken();
-      final user = AuthService.instance.getStoredUser();
-
-      setState(() {
-        _userId = user?.id;
-        _userName = user?.name;
-      });
-
-      if (token == null) {
-        setState(() => _loading = false);
-        return;
-      }
-
-      // Setup API and WebSocket with token
-      final dio = Dio(BaseOptions(
-        baseUrl: 'https://api-demo.intranet.ikenas.com',
-        headers: {'Authorization': 'Bearer $token'},
-      ));
-      _apiService = ChatApiService(dio);
-      _chatService = ChatService('wss://api-demo.intranet.ikenas.com/chat?token=$token');
-
-      await _loadHistory();
-      try {
-        _chatService!.connect();
-      } catch (e) {
-        debugPrint('WebSocket connection error: $e');
-      }
-
-      _chatService!.onMessage.listen((message) {
-        _handleIncomingMessage(message);
-      });
-    } catch (e) {
-      debugPrint('Error initializing chat: $e');
-      setState(() => _loading = false);
-    }
+  void _loadThread() {
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+    chatViewModel.loadMessages(_threadId);
   }
 
-  void _handleIncomingMessage(dynamic message) {
-    try {
-      setState(() {
-        _isConnected = _chatService?.isConnected ?? false;
-      });
-
-      if (message is Map<String, dynamic>) {
-        final chatMsg = ChatMessage.fromJson(message, isOwn: message['senderId'] == _userId);
-        setState(() {
-          _messages.add(chatMsg);
-        });
-      } else if (message is Map) {
-        // Cast to Map<String, dynamic>
-        final jsonMap = Map<String, dynamic>.from(message);
-        final chatMsg = ChatMessage.fromJson(jsonMap, isOwn: jsonMap['senderId'] == _userId);
-        setState(() {
-          _messages.add(chatMsg);
-        });
-      } else if (message is String) {
-        // Fallback for string messages
-        final chatMsg = ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          senderId: 'system',
-          senderName: 'System',
-          senderAvatar: '',
-          content: message,
-          timestamp: DateTime.now(),
-        );
-        setState(() {
-          _messages.add(chatMsg);
-        });
-      }
-    } catch (e) {
-      debugPrint('Error handling message: $e');
-    }
-  }
-
-  Future<void> _loadHistory() async {
-    if (_apiService == null) return;
-    try {
-      final history = await _apiService!.fetchMessages(threadId: _threadId);
-      final messages = <ChatMessage>[];
-      for (var msg in history) {
-        if (msg is Map<String, dynamic>) {
-          messages.add(ChatMessage.fromJson(msg, isOwn: msg['senderId'] == _userId));
-        } else if (msg is Map) {
-          final jsonMap = Map<String, dynamic>.from(msg);
-          messages.add(ChatMessage.fromJson(jsonMap, isOwn: jsonMap['senderId'] == _userId));
-        }
-      }
-      setState(() {
-        _messages.clear();
-        _messages.addAll(messages);
-        _loading = false;
-      });
-    } catch (e) {
-      debugPrint('Error loading history: $e');
-      setState(() => _loading = false);
-    }
-  }
-
-  void _sendMessage() {
-    if (_controller.text.trim().isNotEmpty && _chatService != null) {
-      final message = {
-        'type': 'message',
-        'action': 'send',
-        'threadId': _threadId,
-        'content': _controller.text.trim(),
-        'messageType': 'text',
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-      _chatService!.sendMessage(message);
+  void _sendMessage(ChatViewModel chatViewModel) {
+    if (_controller.text.trim().isNotEmpty) {
+      chatViewModel.sendMessage(_controller.text.trim());
       _controller.clear();
+      // Send typing stop indicator
+      chatViewModel.stopTypingIndicator();
     }
+  }
+
+  void _onTyping(ChatViewModel chatViewModel) {
+    chatViewModel.sendTypingIndicator();
   }
 
   @override
   void dispose() {
-    _chatService?.disconnect();
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.threadName ?? 'Chat'),
-        elevation: 2,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () async {
-              final result = await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ChatSearchScreen(messages: _messages),
-                ),
-              );
-              if (result is ChatMessage) {
-                // Scroll to message or show it
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Found: ${result.content}')),
-                );
-              }
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Center(
-              child: _isConnected
-                  ? const Tooltip(
-                      message: 'Connected',
-                      child: Chip(
-                        label: Text('Online'),
-                        backgroundColor: Colors.green,
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                    )
-                  : const Tooltip(
-                      message: 'Disconnected',
-                      child: Chip(
-                        label: Text('Offline'),
-                        backgroundColor: Colors.red,
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
+    return Consumer<ChatViewModel>(
+      builder: (context, chatViewModel, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.threadName ?? 'Chat'),
+            elevation: 2,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ChatSearchScreen(messages: chatViewModel.messages),
                     ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            )
-          else if (_messages.isEmpty)
-            const Expanded(
-              child: Center(
-                child: Text('No messages yet. Start a conversation!'),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                reverse: true,
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final msg = _messages[_messages.length - 1 - index];
-                  return _buildMessageBubble(msg);
+                  );
+                  if (result is ChatMessage) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Found: ${result.content}')),
+                    );
+                  }
                 },
               ),
-            ),
-          // Typing Indicators
-          if (_isConnected && _messages.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SizedBox(
-                height: 30,
+              Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Others typing', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      const SizedBox(width: 4),
-                      SizedBox(
-                        width: 30,
-                        height: 20,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            3,
-                            (i) => Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                              width: 4,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.grey,
-                                borderRadius: BorderRadius.circular(2),
+                  child: chatViewModel.isConnected
+                      ? const Tooltip(
+                          message: 'Connected',
+                          child: Chip(
+                            label: Text('Online'),
+                            backgroundColor: Colors.green,
+                            labelStyle: TextStyle(color: Colors.white),
+                          ),
+                        )
+                      : const Tooltip(
+                          message: 'Disconnected',
+                          child: Chip(
+                            label: Text('Offline'),
+                            backgroundColor: Colors.red,
+                            labelStyle: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              if (chatViewModel.loading)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                )
+              else if (chatViewModel.messages.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Text('No messages yet. Start a conversation!'),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    reverse: true,
+                    itemCount: chatViewModel.messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = chatViewModel.messages[chatViewModel.messages.length - 1 - index];
+                      return _buildMessageBubble(msg, chatViewModel);
+                    },
+                  ),
+                ),
+              // Typing Indicators
+              if (chatViewModel.isConnected && chatViewModel.messages.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    height: 30,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Others typing', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const SizedBox(width: 4),
+                          SizedBox(
+                            width: 30,
+                            height: 20,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                3,
+                                (i) => Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
+                ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        onChanged: (_) {
+                          _onTyping(chatViewModel);
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Type a message',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        ),
+                        maxLines: null,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FloatingActionButton.small(
+                      onPressed: () => _sendMessage(chatViewModel),
+                      child: const Icon(Icons.send),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: 'Type a message',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    ),
-                    maxLines: null,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FloatingActionButton.small(
-                  onPressed: _sendMessage,
-                  child: const Icon(Icons.send),
-                ),
-              ],
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage msg) {
+  Widget _buildMessageBubble(ChatMessage msg, ChatViewModel chatViewModel) {
     final isOwn = msg.isOwn;
     final emojis = ['👍', '❤️', '😂', '😮', '😢', '😭'];
     
@@ -379,7 +276,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   radius: 16,
                   backgroundColor: Colors.blue,
                   child: Text(
-                    (_userName?.isNotEmpty ?? false) ? _userName![0].toUpperCase() : 'U',
+                    (chatViewModel.userName?.isNotEmpty ?? false)
+                        ? chatViewModel.userName![0].toUpperCase()
+                        : 'U',
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),

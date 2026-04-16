@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'chat_screen.dart';
-import 'chat_api_service.dart';
 import 'models/chat_thread_model.dart';
-import 'package:dio/dio.dart';
+import 'viewmodels/chat_view_model.dart';
 import '../../core/services/auth_service.dart';
 
 class ChatConversationsScreen extends StatefulWidget {
@@ -13,114 +13,118 @@ class ChatConversationsScreen extends StatefulWidget {
 }
 
 class _ChatConversationsScreenState extends State<ChatConversationsScreen> {
-  late ChatApiService _apiService;
-  final List<ChatThread> _conversations = [];
-  bool _loading = true;
-
   @override
   void initState() {
     super.initState();
-    _initConversations();
+    _initChat();
   }
 
-  Future<void> _initConversations() async {
+  Future<void> _initChat() async {
     try {
       await AuthService.instance.init();
       final token = AuthService.instance.getStoredToken();
+      final user = AuthService.instance.getStoredUser();
 
-      if (token == null) {
-        setState(() => _loading = false);
-        return;
+      if (token != null && mounted) {
+        // Get ChatViewModel from Provider and initialize WebSocket
+        final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+        
+        // Initialize user info
+        chatViewModel.setUserId(user?.id ?? '');
+        chatViewModel.setUserName(user?.name ?? '');
+        
+        // Initialize WebSocket with token and base URL
+        await chatViewModel.initializeWebSocket(
+          token: token,
+          baseUrl: 'https://api-demo.intranet.ikenas.com/api',
+        );
+        
+        // Load conversations
+        await chatViewModel.loadConversations();
       }
-
-
-
-      final dio = Dio(BaseOptions(
-        baseUrl: 'https://api-demo.intranet.ikenas.com',
-        headers: {'Authorization': 'Bearer $token'},
-      ));
-      _apiService = ChatApiService(dio);
-
-      await _loadConversations();
     } catch (e) {
-      debugPrint('Error initializing conversations: $e');
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _loadConversations() async {
-    try {
-      final threads = await _apiService.fetchThreads();
-      final conversations = <ChatThread>[];
-
-      for (var thread in threads) {
-        if (thread is Map) {
-          try {
-            conversations.add(ChatThread.fromJson(Map<String, dynamic>.from(thread)));
-          } catch (e) {
-            debugPrint('Error parsing thread: $e');
-          }
-        }
-      }
-
-      setState(() {
-        _conversations.clear();
-        _conversations.addAll(conversations);
-        _loading = false;
-      });
-    } catch (e) {
-      debugPrint('Error loading conversations: $e');
-      setState(() {
-        _loading = false;
-        // Add demo conversations if API fails
-        _conversations.addAll([
-          ChatThread(
-            id: 'general',
-            name: 'General',
-            description: 'General discussion',
-            lastMessage: 'Welcome to the general chat',
-            lastMessageTime: DateTime.now(),
-            participantIds: [],
-          ),
-          ChatThread(
-            id: 'announcements',
-            name: 'Announcements',
-            description: 'Important announcements',
-            lastMessage: 'No new announcements',
-            lastMessageTime: DateTime.now(),
-            participantIds: [],
-          ),
-        ]);
-      });
+      debugPrint('Error initializing chat: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chats'),
-        elevation: 2,
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _conversations.isEmpty
-              ? const Center(
-                  child: Text('No conversations yet.'),
+    return Consumer<ChatViewModel>(
+      builder: (context, chatViewModel, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Chats'),
+            elevation: 2,
+            actions: [
+              if (chatViewModel.isConnected)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Connected',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
-              : ListView.builder(
-                  itemCount: _conversations.length,
-                  itemBuilder: (context, index) {
-                    final thread = _conversations[index];
-                    return _buildConversationTile(context, thread);
-                  },
+              else
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.grey,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Connecting...',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implement new conversation
-        },
-        child: const Icon(Icons.add),
-      ),
+            ],
+          ),
+          body: chatViewModel.loading
+              ? const Center(child: CircularProgressIndicator())
+              : chatViewModel.conversations.isEmpty
+                  ? const Center(
+                      child: Text('No conversations yet.'),
+                    )
+                  : ListView.builder(
+                      itemCount: chatViewModel.conversations.length,
+                      itemBuilder: (context, index) {
+                        final thread = chatViewModel.conversations[index];
+                        return _buildConversationTile(context, thread);
+                      },
+                    ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              // TODO: Implement new conversation
+            },
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 
